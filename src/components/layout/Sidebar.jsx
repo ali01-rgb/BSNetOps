@@ -1,55 +1,67 @@
 import React from 'react';
-import { X, Settings } from 'lucide-react';
-// Menggunakan ekstensi .jsx secara eksplisit untuk menjamin Vite melakukan bundling dengan benar
-import { menuConfig } from '../../config/menuConfig.jsx';
+import { Settings, LogOut } from 'lucide-react';
+import { menuConfig } from '../../config/menuConfig';
 
 export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurrentView }) {
-  const activeMenu = menuConfig[role] || [];
+  const menus = menuConfig[role] || [];
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-0'} bg-zinc-950 transition-all duration-500 overflow-hidden text-zinc-100 flex flex-col shrink-0`}>
-      {/* Header Sidebar */}
-      <div className="p-6 flex items-center justify-between border-b border-zinc-800">
-        <span className="text-xl font-bold">Menu</span>
-        <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full border border-zinc-600 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer">
-          <X size={16} />
-        </button>
-      </div>
-      
-      {/* Navigasi Menu Otomatis */}
-      <nav className="flex-1 p-4 space-y-2">
-        {activeMenu.map((item) => {
-          // LOGIKA OTOMATIS: Mengubah "Manajemen User" -> "manajemen-user"
-          const menuId = item.name.toLowerCase().replace(/\s+/g, '-');
-          const isActive = currentView === menuId;
-
-          return (
-            <button
-              key={item.name}
-              onClick={() => setCurrentView(menuId)}
-              className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all text-left text-sm cursor-pointer ${
-                isActive 
-                  ? 'bg-[#00664b] text-white font-semibold shadow-md scale-[1.02]' 
-                  : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-white'
-              }`}
-            >
-              <div className="shrink-0">{item.icon}</div>
-              <span>{item.name}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Footer Profile User */}
-      <div className="p-4 border-t border-zinc-800 mt-auto flex items-center justify-between bg-zinc-900/30">
-        <div className="flex items-center gap-3">
-          <img src="https://ui-avatars.com/api/?name=Chico+Diar&background=random" className="h-10 w-10 rounded-full border border-zinc-700 shadow-xs" alt="Profile" />
-          <div className="flex flex-col text-xs">
-            <span className="font-semibold text-zinc-200">Chico Diar</span>
-            <span className="text-zinc-500 capitalize font-medium">{role}</span>
-          </div>
+    <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-zinc-900 text-zinc-400 min-h-screen p-4 flex flex-col justify-between transition-all duration-300 border-r border-zinc-800`}>
+      {/* Bagian Atas: Logo & Menu Utama */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2 py-3 border-b border-zinc-800">
+          <h2 className={`font-bold text-white tracking-wider transition-all ${isOpen ? 'text-lg block' : 'text-xs text-center w-full'}`}>
+            {isOpen ? 'BSN INVENTORY' : 'BSN'}
+          </h2>
         </div>
-        <Settings size={18} className="text-zinc-500 cursor-pointer hover:text-white transition-colors" />
+
+        <nav className="space-y-1.5">
+          {menus.map((item, index) => {
+            const menuId = item.name.toLowerCase().replace(/\s+/g, '-');
+            const isActive = currentView === menuId;
+            return (
+              <button
+                key={index}
+                onClick={() => setCurrentView(menuId)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  isActive 
+                    ? 'bg-[#58a27d] text-white shadow-md shadow-[#58a27d]/20' 
+                    : 'hover:bg-zinc-800/60 hover:text-zinc-200'
+                }`}
+              >
+                <div className="shrink-0">{item.icon}</div>
+                {isOpen && <span className="truncate">{item.name}</span>}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Bagian Bawah: Profil Pengguna & Gear */}
+      <div className="pt-4 border-t border-zinc-800 flex items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-[#58a27d]/20 border border-[#58a27d]/40 flex items-center justify-center font-bold text-white shrink-0 text-sm">
+            CD
+          </div>
+          {isOpen && (
+            <div className="flex flex-col truncate">
+              <span className="text-xs font-bold text-zinc-200 truncate">Chico Diar</span>
+              <span className="text-[10px] capitalize tracking-wider font-semibold text-[#58a27d]">{role}</span>
+            </div>
+          )}
+        </div>
+
+        {/* IKON GEAR DENGAN ANIMASI ROTASI HALUS */}
+        <button 
+          onClick={() => setCurrentView('edit-profil')}
+          className={`p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-all cursor-pointer group`}
+          title="Pengaturan Profil"
+        >
+          <Settings 
+            size={18} 
+            className="transform group-hover:rotate-90 transition-transform duration-500 ease-out" 
+          />
+        </button>
       </div>
     </aside>
   );

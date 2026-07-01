@@ -8,6 +8,7 @@ import StokBarang from './pages/admin/stokbarang/StokBarang';
 import UserManagement from './pages/admin/manajemenuser/UserManagement'; // Dikunci sesuai nama folder aslimu
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
 import HistoryPeminjaman from './pages/admin/history/HistoryPeminjaman';
+import EditProfil from './pages/admin/user/EditProfil';
 import UserDashboard from './pages/user/UserDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 
@@ -59,6 +60,9 @@ export default function App() {
 
           {/* 5. ROUTE: HISTORY PEMINJAMAN GLOBAL */}
           {currentView === 'history-peminjaman' && <HistoryPeminjaman />}
+
+          {/* 6. ROUTE INTERNAL: EDIT DATA PROFIL ANGGOTA */}
+          {currentView === 'edit-profil' && <EditProfil />}
 
         </main>
       </div>
