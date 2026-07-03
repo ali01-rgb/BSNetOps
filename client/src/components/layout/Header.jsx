@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, LogOut, ChevronDown } from 'lucide-react';
 
-export default function Header({ isOpen, setIsOpen, notificationCount = 3 }) {
+// FIX: Menambahkan destructuring props 'role' dengan default value 'manager'
+export default function Header({ isOpen, setIsOpen, role = 'manager', notificationCount = 3 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -49,7 +50,7 @@ export default function Header({ isOpen, setIsOpen, notificationCount = 3 }) {
 
         {/* Pembungkus Dropdown Profil */}
         <div className="relative" ref={dropdownRef}>
-          {/* Komponen Foto Profil (Sekarang bisa diklik) */}
+          {/* Komponen Foto Profil */}
           <button 
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 cursor-pointer group focus:outline-none bg-transparent border-none text-white"
@@ -73,7 +74,8 @@ export default function Header({ isOpen, setIsOpen, notificationCount = 3 }) {
               {/* Info akun singkat biar estetik */}
               <div className="px-3 py-1.5 border-b border-zinc-100 mb-1 select-none">
                 <p className="text-xs font-bold text-zinc-800">Chico Diar</p>
-                <p className="text-[10px] text-zinc-400 font-medium">Admin</p>
+                {/* FIX: Teks 'Admin' diganti dinamis menggunakan data props role & di-capitalize */}
+                <p className="text-[10px] text-zinc-400 capitalize font-medium">{role}</p>
               </div>
 
               {/* Tombol Logout */}
@@ -82,7 +84,7 @@ export default function Header({ isOpen, setIsOpen, notificationCount = 3 }) {
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer text-left group"
               >
                 <LogOut size={15} className="text-red-500 group-hover:translate-x-0.5 transition-transform" />
-                <span>Logout</span>
+                <span>Logout.</span>
               </button>
               
             </div>

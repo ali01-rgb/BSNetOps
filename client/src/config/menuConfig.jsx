@@ -6,7 +6,8 @@ import {
   CheckSquare, 
   PlusCircle, 
   BoxIcon,
-  History
+  History,
+  Computer
 } from 'lucide-react';
 
 export const menuConfig = {
@@ -20,7 +21,7 @@ export const menuConfig = {
   manager: [
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },
     { name: 'Approval Request', icon: <CheckSquare size={20}/> },
-    { name: 'Laporan Keuangan', icon: <Package size={20}/> },
+    { name: 'Aset Kantor', icon: <Computer size={20}/> },
   ],
   user: [
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },

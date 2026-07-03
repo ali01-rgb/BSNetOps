@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 
-// Impor komponen modular berdasarkan arsitektur folder role aslimu
+// Impor komponen modular berdasarkan arsitektur folder role asli
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StokBarang from './pages/admin/stokbarang/StokBarang';
-import UserManagement from './pages/admin/manajemenuser/UserManagement'; // Dikunci sesuai nama folder aslimu
+import UserManagement from './pages/admin/manajemenuser/UserManagement'; 
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
 import HistoryPeminjaman from './pages/admin/history/HistoryPeminjaman';
 import EditProfil from './pages/admin/user/EditProfil';
 import UserDashboard from './pages/user/UserDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
+import ApprovalRequest from './pages/manager/appreq/ApprovalRequest';
+import AsetKantor from './pages/manager/asetkantor/AsetKantor';
 
 export default function App() {
-  // Akun testing utama diset ke 'admin'
-  const [role, setRole] = useState('admin');
+  // Akun testing utama diset ke 'manager'
+  const [role, setRole] = useState('manager');
   
   // State pengontrol halaman aktif
   const [currentView, setCurrentView] = useState('dashboard');
@@ -25,7 +27,9 @@ export default function App() {
   }, [isOpen]);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    // FIX TOTAL: Menggunakan h-screen dan overflow-hidden pada root layout agar scroll terkontrol
+    <div className="flex h-screen w-full overflow-hidden bg-zinc-50 select-none">
+      
       {/* Sidebar pengirim state navigasi */}
       <Sidebar 
         role={role} 
@@ -35,10 +39,14 @@ export default function App() {
         setCurrentView={setCurrentView} 
       />
       
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-[#00664b]/70 via-zinc-50/50 to-zinc-50">
-        <Header isOpen={isOpen} setIsOpen={setIsOpen} />
+      {/* FIX TOTAL: Ditambahkan h-screen flex flex-col overflow-hidden agar Header terkunci statis */}
+      <div className="flex-1 h-screen flex flex-col overflow-hidden bg-gradient-to-b from-[#00664b]/20 via-zinc-50 to-zinc-50">
         
-        <main className="p-8 animate-in fade-in duration-700">
+        {/* Header Atas (Sekarang statis tidak akan ikut bergeser) */}
+        <Header isOpen={isOpen} setIsOpen={setIsOpen} role={role} />
+        
+        {/* FIX TOTAL: main diberikan flex-1 dan overflow-y-auto sebagai wadah satu-satunya area scroll */}
+        <main className="flex-1 p-8 overflow-y-auto animate-in fade-in duration-700">
           
           {/* 1. ROUTE: DASHBOARD PANEL OVERVIEW */}
           {currentView === 'dashboard' && (
@@ -48,6 +56,8 @@ export default function App() {
               {role === 'user' && <UserDashboard />}
             </>
           )}
+
+          {/* ROUTE KHUSUS ADMIN AJA!!! */}
 
           {/* 2. ROUTE: MANAJEMEN STOK GUDANG */}
           {currentView === 'stok-barang' && <StokBarang role={role} />}
@@ -63,6 +73,13 @@ export default function App() {
 
           {/* 6. ROUTE INTERNAL: EDIT DATA PROFIL ANGGOTA */}
           {currentView === 'edit-profil' && <EditProfil />}
+
+          {/* ROUTE KHUSUS USER AJA!!! */}
+          {}
+
+          {/* ROUTE KHUSUS MANAGER AJA!!! */}
+          {currentView === 'approval-request' && <ApprovalRequest />}
+          {currentView === 'aset-kantor' && <AsetKantor />}
 
         </main>
       </div>
