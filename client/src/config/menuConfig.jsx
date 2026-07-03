@@ -5,9 +5,10 @@ import {
   Users, 
   CheckSquare, 
   PlusCircle, 
-  BoxIcon,
+  Boxes, 
   History,
-  Computer
+  Computer,
+  FileText 
 } from 'lucide-react';
 
 export const menuConfig = {
@@ -15,7 +16,7 @@ export const menuConfig = {
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },
     { name: 'Stok Barang', icon: <Package size={20}/> },
     { name: 'Manajemen User', icon: <Users size={20}/> },
-    { name: 'Kategori Barang', icon: <BoxIcon size={20}/> },
+    { name: 'Kategori Barang', icon: <Boxes size={20}/> },
     { name: 'History Peminjaman', icon: <History size={20}/> },
   ],
   manager: [
@@ -25,7 +26,8 @@ export const menuConfig = {
   ],
   user: [
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },
-    { name: 'Barang Saya', icon: <Package size={20}/> },
-    { name: 'Ajukan Peminjaman', icon: <PlusCircle size={20}/> },
+    { name: 'Aset', icon: <Package size={20}/> }, 
+    { name: 'Ajukan Permintaan', icon: <FileText size={20}/> }, 
+    { name: 'Riwayat Permintaan', icon: <History size={20}/> }, 
   ]
 };

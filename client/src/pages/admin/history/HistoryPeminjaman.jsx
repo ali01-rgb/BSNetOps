@@ -35,8 +35,8 @@ export default function HistoryPeminjaman() {
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header Halaman */}
       <div>
-        <h2 className="text-xl font-bold text-[#00805e]">History Peminjaman Global</h2>
-        <p className="text-xs text-zinc-500 mt-0.5">Pantau status validasi manajer dan kelola distribusi logistik fisik ke seluruh user</p>
+        <h2 className="text-xl font-bold text-white">History Peminjaman Global</h2>
+        <p className="text-xs text-white-500 mt-0.5">Pantau status validasi manajer dan kelola distribusi logistik fisik ke seluruh user</p>
       </div>
 
       {/* Filter Kontrol */}

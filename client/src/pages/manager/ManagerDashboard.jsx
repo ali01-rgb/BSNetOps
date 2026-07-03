@@ -102,8 +102,8 @@ export default function ManagerDashboard() {
       
       {/* 1. Header Halaman */}
       <div>
-        <h2 className="text-xl font-bold text-[#00664b] tracking-tight">Manager Oversight Dashboard</h2>
-        <p className="text-xs text-zinc-700 font-normal mt-0.5">Ringkasan Analitik Distribusi Divisi dan Status Urgensi Inventaris Global</p>
+        <h2 className="text-xl font-bold text-white tracking-tight">Manager Oversight Dashboard</h2>
+        <p className="text-xs text-white-100 font-normal mt-0.5">Ringkasan Analitik Distribusi Divisi dan Status Urgensi Inventaris Global</p>
       </div>
 
       {/* 2. Ringkasan Eksekutif */}

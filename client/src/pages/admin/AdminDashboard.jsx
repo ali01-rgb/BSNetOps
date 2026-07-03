@@ -20,8 +20,8 @@ export default function AdminDashboard({ role = 'admin' }) {
     <div className="space-y-6">
       {/* Header Utama */}
      <div className="flex justify-between items-center"><div>
-       <h2 className="text-xl font-bold text-zinc-900 capitalize">Admin Overview</h2>
-      <p className="text-xs text-zinc-500 mt-0.5">Mode Kontrol Penuh Akun Inventaris Gudang</p>
+       <h2 className="text-xl font-bold text-white text-zinc-100 capitalize">Admin Overview</h2>
+      <p className="text-xs text-white-100 mt-0.5">Mode Kontrol Penuh Akun Inventaris Gudang</p>
      </div>
 </div>
 

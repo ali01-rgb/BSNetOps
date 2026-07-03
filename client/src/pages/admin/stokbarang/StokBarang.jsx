@@ -82,8 +82,8 @@ export default function StokBarang({ role = 'admin' }) {
             </button>
           )}
           <div>
-            <h2 className="text-xl font-bold text-[#00805e]">Manajemen Stok & Inventaris</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <h2 className="text-xl font-bold text-white">Manajemen Stok & Inventaris</h2>
+            <p className="text-xs text-white-500 mt-0.5">
               {showTrash ? 'Daftar arsip barang yang dihapus sementara (Trash)' : 'Daftar fisik logistik dan aset operasional global kantor'}
             </p>
           </div>

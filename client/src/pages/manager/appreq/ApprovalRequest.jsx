@@ -72,8 +72,8 @@ export default function ApprovalRequest() {
       <div className="xl:col-span-2 space-y-5">
         {/* Judul & Deskripsi Sub-Header - FIX: Judul Bold Kembali */}
         <div>
-          <h2 className="text-xl font-bold text-[#00664b] tracking-tight">Pengajuan Permintaan</h2>
-          <p className="text-xs text-zinc-700 font-medium mt-0.5">Kelola dan tinjau berkas pengajuan persetujuan aset masuk dari karyawan.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Pengajuan Permintaan</h2>
+          <p className="text-xs text-white-700 font-medium mt-0.5">Kelola dan tinjau berkas pengajuan persetujuan aset masuk dari karyawan.</p>
         </div>
 
         {/* Kelompok Tab Navigasi Filter Status - FIX: Semua Teks Hijau Permanen */}
@@ -81,8 +81,8 @@ export default function ApprovalRequest() {
           {/* Tab Menunggu Persetujuan */}
           <button 
             onClick={() => setActiveTab('menunggu')}
-            className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer text-[#00664b] ${
-              activeTab === 'menunggu' ? 'border-[#00664b] font-bold' : 'border-transparent opacity-75'
+            className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer text-white ${
+              activeTab === 'menunggu' ? 'border-white font-bold' : 'border-transparent opacity-75'
             }`}
           >
             <span>Menunggu Persetujuan</span>
@@ -94,8 +94,8 @@ export default function ApprovalRequest() {
           {/* Tab Disetujui */}
           <button 
             onClick={() => setActiveTab('disetujui')}
-            className={`pb-2.5 border-b-2 transition-all cursor-pointer text-[#00664b] ${
-              activeTab === 'disetujui' ? 'border-[#00664b] font-bold' : 'border-transparent opacity-75'
+            className={`pb-2.5 border-b-2 transition-all cursor-pointer text-white ${
+              activeTab === 'disetujui' ? 'border-white font-bold' : 'border-transparent opacity-75'
             }`}
           >
             Disetujui
@@ -104,8 +104,8 @@ export default function ApprovalRequest() {
           {/* Tab Ditolak */}
           <button 
             onClick={() => setActiveTab('ditolak')}
-            className={`pb-2.5 border-b-2 transition-all cursor-pointer text-[#00664b] ${
-              activeTab === 'ditolak' ? 'border-[#00664b] font-bold' : 'border-transparent opacity-75'
+            className={`pb-2.5 border-b-2 transition-all cursor-pointer text-white ${
+              activeTab === 'ditolak' ? 'border-white font-bold' : 'border-transparent opacity-75'
             }`}
           >
             Ditolak

@@ -9,14 +9,19 @@ import UserManagement from './pages/admin/manajemenuser/UserManagement';
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
 import HistoryPeminjaman from './pages/admin/history/HistoryPeminjaman';
 import EditProfil from './pages/admin/user/EditProfil';
-import UserDashboard from './pages/user/UserDashboard';
+
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ApprovalRequest from './pages/manager/appreq/ApprovalRequest';
 import AsetKantor from './pages/manager/asetkantor/AsetKantor';
 
+import UserDashboard from './pages/user/UserDashboard';
+import Aset from './pages/user/aset/Aset';
+import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
+import RiwayatPermintaan from './pages/user/riwayat/RiwayatPermintaan';
+
 export default function App() {
   // Akun testing utama diset ke 'manager'
-  const [role, setRole] = useState('manager');
+  const [role, setRole] = useState('admin');
   
   // State pengontrol halaman aktif
   const [currentView, setCurrentView] = useState('dashboard');
@@ -40,7 +45,7 @@ export default function App() {
       />
       
       {/* FIX TOTAL: Ditambahkan h-screen flex flex-col overflow-hidden agar Header terkunci statis */}
-      <div className="flex-1 h-screen flex flex-col overflow-hidden bg-gradient-to-b from-[#00664b]/20 via-zinc-50 to-zinc-50">
+      <div className="flex-1 h-screen flex flex-col overflow-hidden bg-gradient-to-b from-[#00664b]/100 via-zinc-70 to-zinc-30">
         
         {/* Header Atas (Sekarang statis tidak akan ikut bergeser) */}
         <Header isOpen={isOpen} setIsOpen={setIsOpen} role={role} />
@@ -74,8 +79,12 @@ export default function App() {
           {/* 6. ROUTE INTERNAL: EDIT DATA PROFIL ANGGOTA */}
           {currentView === 'edit-profil' && <EditProfil />}
 
+
           {/* ROUTE KHUSUS USER AJA!!! */}
-          {}
+          {currentView === 'aset' && <Aset/>}
+          {currentView === 'ajukan-permintaan' && <AjukanPermintaan/>}
+          {currentView === 'riwayat-permintaan' && <RiwayatPermintaan/>}
+
 
           {/* ROUTE KHUSUS MANAGER AJA!!! */}
           {currentView === 'approval-request' && <ApprovalRequest />}

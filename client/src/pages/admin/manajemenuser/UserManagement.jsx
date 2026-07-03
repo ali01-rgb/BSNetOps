@@ -44,8 +44,8 @@ export default function UserManagement() {
       {/* Header Utama */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-[#00805e]">Manajemen Hak Akses Akun</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Kelola verifikasi profil, peran hak akses, dan kredensial sistem logistik BSN</p>
+          <h2 className="text-xl font-bold text-white">Manajemen Hak Akses Akun</h2>
+          <p className="text-xs text-white-500 mt-0.5">Kelola verifikasi profil, peran hak akses, dan kredensial sistem logistik BSN</p>
         </div>
 
         <button 

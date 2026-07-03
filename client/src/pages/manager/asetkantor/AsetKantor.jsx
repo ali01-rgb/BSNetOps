@@ -25,8 +25,8 @@ export default function AsetKantorManager() {
       {/* ================= HEADER HALAMAN ================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-[#00664b] tracking-tight">Monitoring Aset Kantor</h2>
-          <p className="text-xs text-zinc-700 font-medium mt-0.5">Tinjauan komprehensif status kondisi, kuantitas, dan lokasi penempatan aset internal BSN.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Monitoring Aset Kantor</h2>
+          <p className="text-xs text-white-700 font-medium mt-0.5">Tinjauan komprehensif status kondisi, kuantitas, dan lokasi penempatan aset internal BSN.</p>
         </div>
         
         <button 
