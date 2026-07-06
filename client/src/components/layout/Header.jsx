@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, LogOut, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // 🔥 IMPOR INI: Mengaktifkan kendali navigasi router
 
 // FIX: Menambahkan destructuring props 'role' dengan default value 'manager'
 export default function Header({ isOpen, setIsOpen, role = 'manager', notificationCount = 3 }) {
+  const navigate = useNavigate(); // 🔥 INISIALISASI NAVIGATE
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -19,9 +21,11 @@ export default function Header({ isOpen, setIsOpen, role = 'manager', notificati
     };
   }, []);
 
+  // 🔥 FUNGSI LOGOUT YANG SUDAH DIFUNGSIKAN KE LANDING PAGE
   const handleLogout = () => {
-    alert('Aksi logout berhasil dieksekusi secara lokal!');
     setDropdownOpen(false);
+    // Langsung pindah ke halaman root / landing page temanmu
+    navigate('/');
   };
 
   return (
