@@ -18,8 +18,13 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6">
+<<<<<<< HEAD
       {/* 1. Area Greetings (Dibuat Rounded & Shadow) */}
       <div className="bg-gradient-to-r from-[#00664b] to-[#004d38] p-6 text-white rounded-xl shadow-md border border-[#00553e] transition-all hover:scale-[1.005]">
+=======
+      {/* 1. Area Greetings */}
+      <div className="bg -gradient-to-r from-[#00664b] to-[#004d38] p-6 text-white shadow-sm border border-[#00553e]">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
         <h2 className="text-2xl font-bold">Halo, Chico Diar 👋</h2>
         <p className="text-green-100 text-sm mt-1">Mau pinjam atau cek inventaris barang apa hari ini? Tetap produktif ya!</p>
       </div>
@@ -30,9 +35,15 @@ export default function UserDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
           {/* Action 1 */}
+<<<<<<< HEAD
           <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-[#00664b] hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-50 text-[#00664b] group-hover:bg-[#00664b] group-hover:text-white transition-colors rounded-lg">
+=======
+          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 shadow-xs hover:border-[#00664b] hover:shadow-md transition-all group text-left w-full">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-50 text-[#00664b] group-hover:bg-[#00664b] group-hover:text-white transition-colors">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                 <PlusCircle size={24} />
               </div>
               <div>
@@ -44,9 +55,15 @@ export default function UserDashboard() {
           </button>
 
           {/* Action 2 */}
+<<<<<<< HEAD
           <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-blue-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors rounded-lg">
+=======
+          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 shadow-xs hover:border-blue-500 hover:shadow-md transition-all group text-left w-full">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                 <Hourglass size={24} />
               </div>
               <div>
@@ -58,9 +75,15 @@ export default function UserDashboard() {
           </button>
 
           {/* Action 3 */}
+<<<<<<< HEAD
           <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-amber-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors rounded-lg">
+=======
+          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 shadow-xs hover:border-amber-500 hover:shadow-md transition-all group text-left w-full">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                 <Package size={24} />
               </div>
               <div>
@@ -75,24 +98,41 @@ export default function UserDashboard() {
       </div>
 
       {/* 3. Lacak Proses Request Terakhir */}
+<<<<<<< HEAD
       <div className="bg-white p-6 border border-zinc-200 rounded-xl shadow-md">
+=======
+      <div className="bg-white p-6 border border-zinc-200 shadow-sm">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
         <div className="flex justify-between items-center border-b pb-4 mb-6">
           <div>
             <h3 className="font-semibold text-zinc-900 text-lg">Permintaan Terakhir Anda</h3>
             <p className="text-xs text-zinc-500 mt-0.5">Memonitor alur fisik logistik barang secara real-time</p>
           </div>
+<<<<<<< HEAD
           <span className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 font-medium rounded-md">
+=======
+          <span className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 font-medium rounded-sm">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
             {lastRequest.date}
           </span>
         </div>
 
+<<<<<<< HEAD
         {/* Info Barang (Di-rounded juga) */}
         <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-center">
+=======
+        {/* Info Barang */}
+        <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 flex justify-between items-center">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
           <div>
             <p className="text-sm font-semibold text-zinc-900">{lastRequest.item}</p>
             <p className="text-xs text-zinc-500 mt-0.5">Kategori: {lastRequest.category}</p>
           </div>
+<<<<<<< HEAD
           <span className="text-xs font-semibold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md">
+=======
+          <span className="text-xs font-semibold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-sm">
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
             Dalam Proses
           </span>
         </div>
@@ -106,7 +146,11 @@ export default function UserDashboard() {
             return (
               <div key={step.id} className="flex md:flex-col items-center gap-3 md:gap-2 flex-1 w-full relative">
                 
+<<<<<<< HEAD
                 {/* Garis Penghubung antar Step */}
+=======
+                {/* Garis Penghubung antar Step (Hanya untuk tampilan layar besar/desktop) */}
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                 {index < lastRequest.steps.length - 1 && (
                   <div className="hidden md:block absolute top-4 left-[60%] w-[80%] h-0.5 bg-zinc-200 z-0">
                     <div 

@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
+<<<<<<< HEAD
 import { useNavigate } from "react-router-dom"; // 🔥 IMPOR INI untuk navigasi halaman
 
 export default function LoginPage() {
   const navigate = useNavigate(); // 🔥 INISIALISASI NAVIGATE
+=======
+
+export default function LoginPage() {
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
   const [showPassword, setShowPassword] = useState(false);
 
   // CONTROL MODAL FLOW
@@ -47,7 +52,10 @@ export default function LoginPage() {
     if (!form.username) newError.username = "Masukkan username atau email";
     if (!form.password) newError.password = "Masukkan password";
 
+<<<<<<< HEAD
     // 🔴 VALIDASI PASSWORD DUMMY
+=======
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
     if (form.password && form.password !== "123456") {
       newError.password = "Username atau password salah";
     }
@@ -56,6 +64,7 @@ export default function LoginPage() {
 
     if (newError.username || newError.password) return;
 
+<<<<<<< HEAD
     // 🔥 LOGIKA REDIRECT BERDASARKAN USERNAME (Simulasi Role Base Login)
     const inputUser = form.username.toLowerCase();
 
@@ -67,6 +76,9 @@ export default function LoginPage() {
       // Jika diisi nama lain (misal: chico, staff, dll) otomatis masuk sebagai User/Staff biasa
       navigate("/user");
     }
+=======
+    alert("Login berhasil");
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
   };
 
   // RESET PASSWORD SUBMIT
@@ -80,10 +92,17 @@ export default function LoginPage() {
 
     alert("Link reset password dikirim ke email (dummy)");
 
+<<<<<<< HEAD
     // CLOSE RESET POPUP
     setShowForgot(false);
 
     // RESET INPUT
+=======
+    // 🔥 CLOSE RESET POPUP
+    setShowForgot(false);
+
+    // 🔥 RESET INPUT
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
     setForgotEmail("");
   };
 
@@ -135,7 +154,11 @@ export default function LoginPage() {
                   name="username"
                   value={form.username}
                   onChange={handleChange}
+<<<<<<< HEAD
                   placeholder="Ketik 'admin', 'manager', atau nama kamu"
+=======
+                  placeholder="Masukkan username atau email"
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
 
@@ -157,7 +180,11 @@ export default function LoginPage() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
+<<<<<<< HEAD
                   placeholder="Password bawaan: 123456"
+=======
+                  placeholder="Masukkan password"
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
 
@@ -225,14 +252,28 @@ export default function LoginPage() {
         </section>
       )}
 
+<<<<<<< HEAD
       {/* FORGOT PASSWORD MODAL */}
       {showForgot && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
           <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+=======
+      {/* FORGOT PASSWORD MODAL (HIDE LOGIN WHEN ACTIVE) */}
+      {showForgot && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 px-6">
+
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+
+            {/* HEADER */}
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#00634b]">
                 Reset Password
               </h2>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
               <button
                 onClick={() => setShowForgot(false)}
                 className="cursor-pointer text-xl"
@@ -240,7 +281,14 @@ export default function LoginPage() {
                 <FaXmark />
               </button>
             </div>
+<<<<<<< HEAD
             <form onSubmit={handleForgot} className="space-y-3">
+=======
+
+            {/* FORM */}
+            <form onSubmit={handleForgot} className="space-y-3">
+
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
               <input
                 type="email"
                 placeholder="Masukkan email kamu"
@@ -248,13 +296,23 @@ export default function LoginPage() {
                 onChange={(e) => setForgotEmail(e.target.value)}
                 className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
               />
+<<<<<<< HEAD
+=======
+
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
               <button
                 type="submit"
                 className="w-full cursor-pointer rounded-lg bg-[#00634b] py-2 text-sm font-bold text-white hover:bg-[#004d3a]"
               >
                 Kirim Link Reset
               </button>
+<<<<<<< HEAD
             </form>
+=======
+
+            </form>
+
+>>>>>>> 04a7edbcff2dfc95e437a8dd4169afd100df5539
           </div>
         </div>
       )}
