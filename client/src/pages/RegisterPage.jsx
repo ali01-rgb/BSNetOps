@@ -1,0 +1,208 @@
+import { useState } from "react";
+import { FaXmark } from "react-icons/fa6";
+
+export default function RegisterPage() {
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    staffId: "",
+  });
+
+  const [error, setError] = useState({});
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setForm({
+      ...form,
+      [name]: value,
+    });
+
+    setError({
+      ...error,
+      [name]: "",
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    let newError = {};
+
+    // VALIDASI FIELD WAJIB
+    if (!form.username) newError.username = "Username wajib diisi";
+    if (!form.email) newError.email = "Email wajib diisi";
+    if (!form.password) newError.password = "Password wajib diisi";
+    if (!form.confirmPassword)
+      newError.confirmPassword = "Konfirmasi password wajib diisi";
+    if (!form.staffId) newError.staffId = "ID Staff wajib diisi";
+
+    // VALIDASI PASSWORD
+    if (form.password && form.confirmPassword) {
+      if (form.password !== form.confirmPassword) {
+        newError.confirmPassword = "Password tidak sama";
+      }
+    }
+
+    // VALIDASI ID STAFF (dummy rule)
+    if (form.staffId && !form.staffId.startsWith("BSN")) {
+      newError.staffId = "ID Staff tidak valid (harus diawali BSN)";
+    }
+
+    setError(newError);
+
+    if (Object.keys(newError).length > 0) return;
+
+    alert("Registrasi berhasil");
+  };
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-slate-100">
+
+      {/* BACKGROUND */}
+      <div
+        className="absolute inset-0 bg-cover bg-center blur-sm"
+        style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }}
+      />
+      <div className="absolute inset-0 bg-black/35" />
+
+      {/* CARD */}
+      <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
+
+        <div className="relative w-full max-w-[520px] rounded-2xl bg-white px-8 py-8 shadow-2xl">
+
+          {/* CLOSE */}
+          <a
+            href="/"
+            className="absolute right-5 top-5 text-xl text-slate-900 transition hover:scale-110 hover:text-[#00634b]"
+          >
+            <FaXmark />
+          </a>
+
+          {/* TITLE */}
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-[#00634b]">
+              Buat Akun Baru
+            </h1>
+            <p className="text-sm text-[#4a9b7c]">
+              Lengkapi data untuk akses sistem BSN
+            </p>
+          </div>
+
+          {/* FORM */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* USERNAME */}
+              <div>
+                <label className="text-sm font-semibold">Username</label>
+                <input
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                  placeholder="Masukkan username"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+                {error.username && (
+                  <p className="text-xs text-red-500">{error.username}</p>
+                )}
+              </div>
+
+              {/* PASSWORD */}
+              <div>
+                <label className="text-sm font-semibold">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Masukkan password"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+                {error.password && (
+                  <p className="text-xs text-red-500">{error.password}</p>
+                )}
+              </div>
+
+              {/* EMAIL */}
+              <div>
+                <label className="text-sm font-semibold">Email</label>
+                <input
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="Masukkan email"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+                {error.email && (
+                  <p className="text-xs text-red-500">{error.email}</p>
+                )}
+              </div>
+
+              {/* CONFIRM PASSWORD */}
+              <div>
+                <label className="text-sm font-semibold">
+                  Konfirmasi Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Ulangi password"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+                {error.confirmPassword && (
+                  <p className="text-xs text-red-500">
+                    {error.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* ID STAFF */}
+              <div className="col-span-2">
+                <label className="text-sm font-semibold">ID Staff</label>
+
+                <input
+                  name="staffId"
+                  value={form.staffId}
+                  onChange={handleChange}
+                  placeholder="Contoh: BSN-001"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+
+                {error.staffId && (
+                  <p className="text-xs text-red-500">{error.staffId}</p>
+                )}
+              </div>
+
+            </div>
+
+            {/* BUTTON */}
+            <button
+              type="submit"
+              className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#004d3a]"
+            >
+              Daftar
+            </button>
+          </form>
+
+          {/* FOOTER */}
+          <p className="mt-5 text-center text-sm">
+            Sudah punya akun?{" "}
+            <a
+              href="/login"
+              className="font-semibold text-[#00634b] hover:underline"
+            >
+              Masuk Sekarang
+            </a>
+          </p>
+
+        </div>
+      </section>
+    </main>
+  );
+}
