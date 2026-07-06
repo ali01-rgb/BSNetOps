@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { FaXmark } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom"; // Tambahan buat pindah halaman
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false); // Tambahan efek loading
+
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -11,24 +15,23 @@ export default function RegisterPage() {
   });
 
   const [error, setError] = useState({});
+  const [serverError, setServerError] = useState(""); // Tambahan buat nangkep eror backend
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setForm({
       ...form,
       [name]: value,
     });
-
     setError({
       ...error,
       [name]: "",
     });
+    setServerError(""); // Hilangin eror server pas user ngetik ulang
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     let newError = {};
 
     // VALIDASI FIELD WAJIB
@@ -46,21 +49,54 @@ export default function RegisterPage() {
       }
     }
 
-    // VALIDASI ID STAFF (dummy rule)
+    // VALIDASI ID STAFF
     if (form.staffId && !form.staffId.startsWith("BSN")) {
       newError.staffId = "ID Staff tidak valid (harus diawali BSN)";
     }
 
     setError(newError);
-
     if (Object.keys(newError).length > 0) return;
 
-    alert("Registrasi berhasil");
+    // ==========================================
+    // BAGIAN INTEGRASI KE BACKEND NESTJS
+    // ==========================================
+    setIsLoading(true);
+    setServerError("");
+
+    try {
+      const response = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: form.staffId, // Map staffId frontend -> employeeId backend
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Kalau ditolak backend (misal: ID ga ada, atau udah pernah daftar)
+        throw new Error(data.message || "Gagal melakukan registrasi");
+      }
+
+      // Kalau sukses!
+      alert("Registrasi berhasil! Silakan login dengan akun baru Anda.");
+      navigate("/login"); // Otomatis pindah ke halaman login
+
+    } catch (err) {
+      setServerError(err.message); // Tampilkan pesan eror dari backend
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-100">
-
       {/* BACKGROUND */}
       <div
         className="absolute inset-0 bg-cover bg-center blur-sm"
@@ -70,9 +106,7 @@ export default function RegisterPage() {
 
       {/* CARD */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-
         <div className="relative w-full max-w-[520px] rounded-2xl bg-white px-8 py-8 shadow-2xl">
-
           {/* CLOSE */}
           <a
             href="/"
@@ -91,11 +125,16 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          {/* ALER EROR DARI BACKEND */}
+          {serverError && (
+            <div className="mb-4 rounded-lg bg-red-100 p-3 text-sm text-red-700 text-center border border-red-200">
+              {serverError}
+            </div>
+          )}
+
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
             <div className="grid grid-cols-2 gap-4">
-
               {/* USERNAME */}
               <div>
                 <label className="text-sm font-semibold">Username</label>
@@ -165,7 +204,6 @@ export default function RegisterPage() {
               {/* ID STAFF */}
               <div className="col-span-2">
                 <label className="text-sm font-semibold">ID Staff</label>
-
                 <input
                   name="staffId"
                   value={form.staffId}
@@ -173,20 +211,19 @@ export default function RegisterPage() {
                   placeholder="Contoh: BSN-001"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
-
                 {error.staffId && (
                   <p className="text-xs text-red-500">{error.staffId}</p>
                 )}
               </div>
-
             </div>
 
             {/* BUTTON */}
             <button
               type="submit"
-              className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#004d3a]"
+              disabled={isLoading}
+              className="w-full flex justify-center items-center cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Daftar
+              {isLoading ? "Memproses..." : "Daftar"}
             </button>
           </form>
 
@@ -200,7 +237,6 @@ export default function RegisterPage() {
               Masuk Sekarang
             </a>
           </p>
-
         </div>
       </section>
     </main>
