@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlusCircle, Hourglass, Package, CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 
-export default function UserDashboard() {
+export default function UserDashboard({ setCurrentView }) {
   // Data dummy untuk melacak proses request terakhir
   const lastRequest = {
     item: 'Laptop Dell Latitude',
@@ -29,8 +29,11 @@ export default function UserDashboard() {
         <h3 className="text-zinc-700 font-semibold mb-3 text-sm tracking-wide uppercase">Aksi Cepat</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
-          {/* Action 1 */}
-          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-[#00664b] hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
+          {/* Action 1: Request Barang -> Ajukan Permintaan */}
+          <button 
+            onClick={() => setCurrentView && setCurrentView('ajukan-permintaan')}
+            className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-[#00664b] hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01] cursor-pointer"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-50 text-[#00664b] group-hover:bg-[#00664b] group-hover:text-white transition-colors rounded-lg">
                 <PlusCircle size={24} />
@@ -43,8 +46,11 @@ export default function UserDashboard() {
             <ArrowRight size={16} className="text-zinc-400 group-hover:text-[#00664b] group-hover:translate-x-1 transition-all" />
           </button>
 
-          {/* Action 2 */}
-          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-blue-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
+          {/* Action 2: Progres Request -> Riwayat Permintaan */}
+          <button 
+            onClick={() => setCurrentView && setCurrentView('riwayat-permintaan')}
+            className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-blue-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01] cursor-pointer"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors rounded-lg">
                 <Hourglass size={24} />
@@ -57,8 +63,11 @@ export default function UserDashboard() {
             <ArrowRight size={16} className="text-zinc-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
           </button>
 
-          {/* Action 3 */}
-          <button className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-amber-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01]">
+          {/* Action 3: Lihat Inventory -> Aset */}
+          <button 
+            onClick={() => setCurrentView && setCurrentView('aset')}
+            className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl shadow-md hover:border-amber-500 hover:shadow-lg transition-all group text-left w-full hover:scale-[1.01] cursor-pointer"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors rounded-lg">
                 <Package size={24} />
@@ -86,7 +95,7 @@ export default function UserDashboard() {
           </span>
         </div>
 
-        {/* Info Barang (Di-rounded juga) */}
+        {/* Info Barang */}
         <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-center">
           <div>
             <p className="text-sm font-semibold text-zinc-900">{lastRequest.item}</p>

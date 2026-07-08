@@ -2,28 +2,32 @@ import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Plus, Trash2, Edit3 } from 'lucide-react';
 
+// REVISI: Menggunakan 3 kategori (Elektronik, ATK, dan Lainnya)
 const data = [
   { name: 'Elektronik', value: 400 },
   { name: 'ATK', value: 300 },
-  { name: 'Perabot', value: 300 },
   { name: 'Lainnya', value: 200 },
 ];
-const COLORS = ['#00664b', '#3B82F6', '#F59E0B', '#EF4444'];
+
+// REVISI: Disesuaikan dengan 3 warna (Hijau BSN, Biru, dan Kuning/Amber)
+const COLORS = ['#00664b', '#3B82F6', '#FFBF00'];
+
 const activityLogs = [
   { id: 1, item: 'Laptop Dell', category: 'Elektronik', type: 'Keluar', date: '30/06/2026' },
   { id: 2, item: 'Kertas A4', category: 'ATK', type: 'Masuk', date: '30/06/2026' },
-  { id: 3, item: 'Kursi Kantor', category: 'Perabot', type: 'Keluar', date: '29/06/2026' },
+  { id: 3, item: 'Proyektor Portable', category: 'Lainnya', type: 'Keluar', date: '29/06/2026' },
 ];
 
 export default function AdminDashboard({ role = 'admin' }) {
   return (
     <div className="space-y-6">
       {/* Header Utama */}
-     <div className="flex justify-between items-center"><div>
-       <h2 className="text-xl font-bold text-white text-zinc-100 capitalize">Admin Overview</h2>
-      <p className="text-xs text-white-100 mt-0.5">Mode Kontrol Penuh Akun Inventaris Gudang</p>
-     </div>
-</div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-white text-zinc-100 capitalize">Admin Overview</h2>
+          <p className="text-xs text-white-100 mt-0.5">Mode Kontrol Penuh Akun Inventaris Gudang</p>
+        </div>
+      </div>
 
       {/* 1. Ringkasan Statistik (Dibuat Rounded & Shadow) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -44,14 +48,16 @@ export default function AdminDashboard({ role = 'admin' }) {
       {/* 2. Bagian Konten Utama */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Grafik Distribusi Stok (Dibuat Rounded & Shadow) */}
+        {/* Grafik Distribusi Stok (3 Kategori) */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">Distribusi Kategori</h2>
           <div className="h-64 w-full pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                 <Pie data={data} startAngle={180} endAngle={0} innerRadius={60} outerRadius={80} dataKey="value">
-                  {data.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                  {data.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
                 </Pie>
                 <Tooltip /><Legend verticalAlign="bottom" iconType="circle" />
               </PieChart>
@@ -59,7 +65,7 @@ export default function AdminDashboard({ role = 'admin' }) {
           </div>
         </div>
 
-        {/* Tabel Aktivitas Terakhir (Dibuat Rounded & Shadow) */}
+        {/* Tabel Aktivitas Terakhir */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">Aktivitas Terakhir</h2>
           <div className="overflow-x-auto">

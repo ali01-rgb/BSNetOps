@@ -28,6 +28,34 @@ export default function Sidebar({ role, isOpen, setIsOpen }) {
           <div className="flex flex-col text-xs">
             <span className="font-medium">Chico Diar</span>
             <span className="text-zinc-500 capitalize">{role}</span>
+    // 🖨️ DITAMBAHKAN print:hidden DI SINI
+    <aside 
+      className={`fixed md:sticky top-0 bottom-0 left-0 z-50 h-screen bg-[#FEFEFA] text-zinc-500 flex flex-col justify-between transition-all duration-300 print:hidden ${
+        isOpen 
+          ? 'w-64 p-4 opacity-100 shadow-[4px_0_24px_rgba(0,0,0,0.08)]' 
+          : 'w-0 p-0 opacity-0 overflow-hidden shadow-none'
+      }`}
+    >
+      {/* INTERNAL WRAPPER: Membungkus seluruh konten agar flex-col bekerja sempurna */}
+      <div className="flex flex-col h-full justify-between overflow-hidden">
+        
+        {/* ================= BAGIAN ATAS: NAVIGASI MENU ================= */}
+        <div className="flex flex-col space-y-4 flex-1 overflow-y-auto pr-1 select-none">
+          
+          {/* Header Kontrol dengan Label Teks MENU di Kiri & Tombol X di Kanan */}
+          <div className="flex items-center justify-between px-2 py-1.5 shrink-0">
+            {/* Warna label Menu Navigasi disesuaikan ke text-zinc-400 */}
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+              Menu Navigasi
+            </span>
+            
+            <button 
+              onClick={() => setIsOpen(false)}
+              className="p-1 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 rounded-lg transition-colors cursor-pointer block"
+              title="Tutup Menu"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
         <Settings size={18} className="text-zinc-500 cursor-pointer hover:text-white" />

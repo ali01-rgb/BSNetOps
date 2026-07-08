@@ -69,7 +69,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58a27d' }}></span>
-              <span className="text-zinc-600 font-medium">Sedang Dipinjam</span>
+              <span className="text-zinc-600 font-medium">Permintaan Selesai</span>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-[#58a27d] border border-emerald-100/50 rounded-md shrink-0">
               <span className="font-bold">{pinjamVal}</span>

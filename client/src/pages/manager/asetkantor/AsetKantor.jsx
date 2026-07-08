@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { Search, Filter, Download, Box, CheckCircle, AlertTriangle, Wrench, Eye, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Search, Download, Box, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 export default function AsetKantorManager() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
 
-  // Mock Data Aset Kantor BSN - Menggunakan kategori ATK & Elektronik
+  // REVISI: Kode ID Aset disesuaikan (AST-EL untuk Elektronik & AST-ATK untuk ATK)
   const [assets] = useState([
-    { id: 'AST-OFF-001', nama: 'Kertas HVS A4 80gr', kategori: 'ATK', total: 15, bagus: 14, rusak: 0, perbaikan: 1, lokasi: 'Ruang Rapat Utama' },
-    { id: 'AST-OFF-002', nama: 'Pena Gel Hitam Box', kategori: 'ATK', total: 40, bagus: 35, rusak: 2, perbaikan: 3, lokasi: 'Area Kerja Lt. 2' },
-    { id: 'AST-OFF-003', nama: 'AC Split Daikin 2 PK', kategori: 'Elektronik', total: 8, bagus: 7, rusak: 0, perbaikan: 1, lokasi: 'Seluruh Ruangan' },
-    { id: 'AST-OFF-004', nama: 'Proyektor Epson EB-X400', kategori: 'Elektronik', total: 5, bagus: 4, rusak: 1, perbaikan: 0, lokasi: 'Ruang Aula' },
-    { id: 'AST-OFF-005', nama: 'Buku Agenda Kerja BSN', kategori: 'ATK', total: 12, bagus: 12, rusak: 0, perbaikan: 0, lokasi: 'Ruang Arsip' },
+    { id: 'AST-ATK-2026-001', nama: 'Kertas HVS A4 80gr', kategori: 'ATK', total: 15, bagus: 15, rusak: 0, lokasi: 'Ruang Rapat Utama' },
+    { id: 'AST-ATK-2026-002', nama: 'Pena Gel Hitam Box', kategori: 'ATK', total: 40, bagus: 38, rusak: 2, lokasi: 'Area Kerja Lt. 2' },
+    { id: 'AST-EL-2026-001', nama: 'AC Split Daikin 2 PK', kategori: 'Elektronik', total: 8, bagus: 8, rusak: 0, lokasi: 'Seluruh Ruangan' },
+    { id: 'AST-EL-2026-002', nama: 'Proyektor Epson EB-X400', kategori: 'Elektronik', total: 5, bagus: 4, rusak: 1, lokasi: 'Ruang Aula' },
+    { id: 'AST-ATK-2026-003', nama: 'Buku Agenda Kerja BSN', kategori: 'ATK', total: 12, bagus: 12, rusak: 0, lokasi: 'Ruang Arsip' },
   ]);
 
   const totalBarang = assets.reduce((acc, curr) => acc + curr.total, 0);
   const totalBagus = assets.reduce((acc, curr) => acc + curr.bagus, 0);
   const totalRusak = assets.reduce((acc, curr) => acc + curr.rusak, 0);
-  const totalPerbaikan = assets.reduce((acc, curr) => acc + curr.perbaikan, 0);
 
   return (
     <div className="w-full space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500 text-zinc-800">
@@ -38,7 +37,7 @@ export default function AsetKantorManager() {
       </div>
 
       {/* ================= KARTU RINGKASAN STATISTIK ================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Total Aset */}
         <div className="bg-white border border-zinc-200/60 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-4 group">
           <div className="w-12 h-12 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-500 shrink-0 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300 shadow-sm">
@@ -58,17 +57,6 @@ export default function AsetKantorManager() {
           <div>
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Kondisi Bagus</p>
             <h3 className="text-xl font-black text-[#58a27d] mt-0.5">{totalBagus} <span className="text-xs font-medium text-zinc-400">Unit</span></h3>
-          </div>
-        </div>
-
-        {/* Sedang Diperbaiki */}
-        <div className="bg-white border border-zinc-200/60 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-4 group">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100/50 flex items-center justify-center text-amber-600 shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-sm">
-            <Wrench size={22} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Dalam Perbaikan</p>
-            <h3 className="text-xl font-black text-yellow-500 mt-0.5">{totalPerbaikan} <span className="text-xs font-medium text-yellow-600/80">Unit</span></h3>
           </div>
         </div>
 
@@ -116,7 +104,6 @@ export default function AsetKantorManager() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              {/* FIX TOTAL: Background baris judul menggunakan warna #58a27d dan teks diubah menjadi putih (text-white) */}
               <tr 
                 className="text-[11px] font-black uppercase tracking-wider text-white" 
                 style={{ backgroundColor: '#58a27d' }}
@@ -126,10 +113,8 @@ export default function AsetKantorManager() {
                 <th className="py-4 px-4">Kategori</th>
                 <th className="py-4 px-4 text-center">Total Stok</th>
                 <th className="py-4 px-4 text-center">Bagus</th>
-                <th className="py-4 px-4 text-center">Perbaikan</th>
                 <th className="py-4 px-4 text-center">Rusak</th>
                 <th className="py-4 px-5">Lokasi Penempatan</th>
-                <th className="py-4 px-5 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 text-xs font-medium text-zinc-700">
@@ -147,20 +132,10 @@ export default function AsetKantorManager() {
                     </td>
                     <td className="py-4 px-4 text-center font-black text-zinc-900">{asset.total}</td>
                     <td className="py-4 px-4 text-center font-bold text-[#58a27d] bg-emerald-50/10">{asset.bagus}</td>
-                    <td className="py-4 px-4 text-center font-bold text-amber-600 bg-amber-50/10">{asset.perbaikan}</td>
                     <td className="py-4 px-4 text-center font-bold text-red-600 bg-red-50/10">{asset.rusak}</td>
                     <td className="py-4 px-5 text-zinc-500 font-normal">{asset.lokasi}</td>
-                    <td className="py-4 px-5 text-center">
-                      <button 
-                        onClick={() => alert(`Membuka histori lengkap pelacakan untuk ${asset.nama}`)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-zinc-200 hover:border-[#58a27d] hover:bg-emerald-50/30 text-zinc-500 hover:text-[#58a27d] rounded-xl transition-all duration-200 cursor-pointer font-bold text-[11px]"
-                        title="Tinjau Log Aset"
-                      >
-                        <Eye size={13} /> <span>Detail</span>
-                      </button>
-                    </td>
                   </tr>
-              ))}
+                ))}
             </tbody>
           </table>
         </div>
