@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Clock, CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { Search, Filter, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 const initialHistoryData = [
   { id: 'REQ-99201', requester: 'Chico Diar', itemName: 'MacBook Pro 14"', qty: 1, date: '2026-06-28', managerStatus: 'Approved', adminStatus: 'Selesai' },
@@ -35,7 +35,7 @@ export default function HistoryPeminjaman() {
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header Halaman */}
       <div>
-        <h2 className="text-xl font-bold text-white">History Peminjaman Global</h2>
+        <h2 className="text-xl font-bold text-white">History Peminjaman</h2>
         <p className="text-xs text-white-500 mt-0.5">Pantau status validasi manajer dan kelola distribusi logistik fisik ke seluruh user</p>
       </div>
 
@@ -78,14 +78,13 @@ export default function HistoryPeminjaman() {
                 <th className="p-4">Barang & Logistik</th>
                 <th className="p-4">Jumlah</th>
                 <th className="p-4">Tanggal Ajuan</th>
-                <th className="p-4">Status Manajer</th>
-                <th className="p-4 text-right rounded-tr-xl">Aksi</th>
+                <th className="p-4 rounded-tr-xl">Status Manajer</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
+                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
                     Tidak ditemukan history log peminjaman yang cocok.
                   </td>
                 </tr>
@@ -100,11 +99,6 @@ export default function HistoryPeminjaman() {
                       {new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="p-4">{getStatusBadge(item.managerStatus)}</td>
-                    <td className="p-4 text-right">
-                      <button className="p-1.5 text-zinc-500 hover:text-[#58a27d] hover:bg-emerald-50 rounded-lg transition-all inline-flex items-center cursor-pointer" title="Detail Log">
-                        <Eye size={16} />
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

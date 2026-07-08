@@ -62,7 +62,7 @@ export default function StokBarang({ role = 'admin' }) {
     })
     .sort((a, b) => {
       if (sortOrder === 'asc') return a.name.localeCompare(b.name);
-      if (sortOrder === 'desc') return b.name.localeCompare(b.name);
+      if (sortOrder === 'desc') return b.name.localeCompare(a.name);
       return 0;
     });
 
@@ -84,25 +84,26 @@ export default function StokBarang({ role = 'admin' }) {
           <div>
             <h2 className="text-xl font-bold text-white">Manajemen Stok & Inventaris</h2>
             <p className="text-xs text-white-500 mt-0.5">
-              {showTrash ? 'Daftar arsip barang yang dihapus sementara (Trash)' : 'Daftar fisik logistik dan aset operasional global kantor'}
+              {showTrash ? 'Daftar arsip barang yang dihapus sementara (Trash)' : 'Daftar fisik logistik dan aset operasional kantor'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* REVISI: Tombol "Lihat Trash" sudah dilengkapi Icon Tempat Sampah (Trash2) */}
           {!showTrash && (
             <button 
               onClick={() => setShowTrash(true)}
-              className="px-4 py-2.5 bg-white text-zinc-600 border border-zinc-200 rounded-xl text-sm font-semibold shadow-xs hover:bg-zinc-50 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all cursor-pointer group"
             >
-              Lihat Trash
+              <Trash2 size={16} className="text-zinc-500 group-hover:text-red-600 transition-colors" />
             </button>
           )}
 
           {isAdmin && !showTrash && (
             <button 
               onClick={() => setIsAddOpen(true)}
-              className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95"
+              className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               <Plus size={16} /> Tambah Item Baru
             </button>
@@ -177,7 +178,6 @@ export default function StokBarang({ role = 'admin' }) {
               ) : (
                 processedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-zinc-50/40 transition-colors">
-                    {/* SUDAH DIUBAH MENJADI HITAM SOLID DAN BERSIH */}
                     <td className="p-4 font-mono text-xs font-bold text-zinc-900 bg-zinc-50/30">{item.id}</td>
                     
                     <td className="p-4 font-semibold text-zinc-900">{item.name}</td>
@@ -195,7 +195,7 @@ export default function StokBarang({ role = 'admin' }) {
                         {showTrash ? (
                           <button 
                             onClick={() => handleRestore(item.id)}
-                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all inline-flex items-center gap-1 text-xs font-semibold border border-amber-200"
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all inline-flex items-center gap-1 text-xs font-semibold border border-amber-200 cursor-pointer"
                           >
                             <RefreshCw size={14} /> Restore
                           </button>
@@ -203,13 +203,13 @@ export default function StokBarang({ role = 'admin' }) {
                           <>
                             <button 
                               onClick={() => handleEditClick(item)}
-                              className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center"
+                              className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center cursor-pointer"
                             >
                               <Edit3 size={16} />
                             </button>
                             <button 
                               onClick={() => handleSoftDelete(item.id)}
-                              className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center"
+                              className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center cursor-pointer"
                             >
                               <Trash2 size={16} />
                             </button>

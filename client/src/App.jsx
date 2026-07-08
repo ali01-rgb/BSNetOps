@@ -1,38 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// ================= 1. IMPOR HALAMAN UTAMA & AUTH (YANG BARU KAMU TARIK) =================
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
-// ================= 2. IMPOR LAYOUT STRUKTUR (MILIKMU) =================
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 
-// ================= 3. IMPOR KOMPONEN MODULAR DALEMAN =================
-// FIX: Jalur impor dashboard disesuaikan agar sejajar di dalam folder /pages/ sesuai image_dc974a.png
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ManagerDashboard from "./pages/ManagerDashboard.jsx";
 import UserDashboard from "./pages/UserDashboard.jsx";
 
-// Subfolder Admin Pages
 import StokBarang from './pages/admin/stokbarang/StokBarang';
 import UserManagement from './pages/admin/manajemenuser/UserManagement'; 
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
 import HistoryPeminjaman from './pages/admin/history/HistoryPeminjaman';
 import EditProfil from './pages/admin/user/EditProfil';
 
-// Subfolder Manager Pages
 import ApprovalRequest from './pages/manager/appreq/ApprovalRequest';
 import AsetKantor from './pages/manager/asetkantor/AsetKantor';
 
-// Subfolder User/Staff Pages
 import Aset from './pages/user/aset/Aset';
 import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
 import RiwayatPermintaan from './pages/user/riwayat/RiwayatPermintaan';
 
-// Layout Wrapper khusus daleman agar Sidebar & Header mengunci sempurna
 function DashboardLayout({ role, currentView, setCurrentView, children }) {
   const [isOpen, setIsOpen] = useState(() => JSON.parse(localStorage.getItem('sidebarOpen')) ?? true);
 
@@ -65,7 +57,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Route Umum & Halaman Depan */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -95,17 +86,18 @@ export default function App() {
         {/* ================= ROUTE ROLE: USER ================= */}
         <Route path="/user" element={
           <DashboardLayout role="user" currentView={currentView} setCurrentView={setCurrentView}>
-            {currentView === 'dashboard' && <UserDashboard />}
-            {currentView === 'aset' && <Aset />}
+            {/* 💡 FIX: setCurrentView dioper ke UserDashboard agar tombol Aksi Cepat bisa diklik */}
+            {currentView === 'dashboard' && <UserDashboard setCurrentView={setCurrentView} />}
+            
+            {currentView === 'aset' && <Aset setCurrentView={setCurrentView} />}
             {currentView === 'ajukan-permintaan' && <AjukanPermintaan />}
             {currentView === 'riwayat-permintaan' && <RiwayatPermintaan />}
             {currentView === 'edit-profil' && <EditProfil />}
           </DashboardLayout>
         } />
 
-        {/* Keamanan: kalau ngetik sembarang langsung dilempar ke landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
-  );                                                                          
+  );                                                                                      
 }

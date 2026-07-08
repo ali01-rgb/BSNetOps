@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Check, X, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ApprovalRequest() {
-  // State untuk Tab Filter Status Aktif
+  // State untuk Tab Filter Status Aktif ('menunggu', 'disetujui', 'ditolak')
   const [activeTab, setActiveTab] = useState('menunggu');
   
-  // State Input Pencarian dan Filter Dropdown
+  // State Input Pencarian dan Dropdown Filter Kategori/Prioritas
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
   const [selectedPriority, setSelectedPriority] = useState('Semua Prioritas');
 
-  // Mock Data Permintaan Aset sesuai gambar mockup BSN Inventory
+  // Mock Data Permintaan Aset
   const [requests, setRequests] = useState([
     {
       id: 'AST-2026-0001',
@@ -62,7 +62,6 @@ export default function ApprovalRequest() {
   // Fungsi pengubah status persetujuan (Setujui / Tolak)
   const handleApproval = (id, newStatus) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
-    alert(`Permintaan ${id} berhasil di-${newStatus}!`);
   };
 
   return (
@@ -70,15 +69,14 @@ export default function ApprovalRequest() {
       
       {/* ================= SISI KIRI: TABEL PERMINTAAN (KOLOM 1 & 2) ================= */}
       <div className="xl:col-span-2 space-y-5">
-        {/* Judul & Deskripsi Sub-Header - FIX: Judul Bold Kembali */}
+        {/* Judul & Deskripsi Sub-Header */}
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">Pengajuan Permintaan</h2>
           <p className="text-xs text-white-700 font-medium mt-0.5">Kelola dan tinjau berkas pengajuan persetujuan aset masuk dari karyawan.</p>
         </div>
 
-        {/* Kelompok Tab Navigasi Filter Status - FIX: Semua Teks Hijau Permanen */}
+        {/* Kelompok Tab Navigasi Filter Status */}
         <div className="flex items-center gap-6 border-b border-[#00664b]/20 text-sm">
-          {/* Tab Menunggu Persetujuan */}
           <button 
             onClick={() => setActiveTab('menunggu')}
             className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer text-white ${
@@ -91,7 +89,6 @@ export default function ApprovalRequest() {
             </span>
           </button>
           
-          {/* Tab Disetujui */}
           <button 
             onClick={() => setActiveTab('disetujui')}
             className={`pb-2.5 border-b-2 transition-all cursor-pointer text-white ${
@@ -101,7 +98,6 @@ export default function ApprovalRequest() {
             Disetujui
           </button>
 
-          {/* Tab Ditolak */}
           <button 
             onClick={() => setActiveTab('ditolak')}
             className={`pb-2.5 border-b-2 transition-all cursor-pointer text-white ${
@@ -112,9 +108,9 @@ export default function ApprovalRequest() {
           </button>
         </div>
 
-        {/* Filter Bar & Kotak Pencarian */}
+        {/* Bar Pencarian + Dropdown Kategori & Prioritas (Tanpa Tombol Filter) */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          {/* Kolom Input Cari */}
+          {/* Input Pencarian */}
           <div className="relative flex-1 w-full flex items-center">
             <Search size={16} className="absolute left-3 text-zinc-400" />
             <input 
@@ -126,7 +122,7 @@ export default function ApprovalRequest() {
             />
           </div>
 
-          {/* Filter Kategori */}
+          {/* Dropdown Kategori */}
           <select 
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
@@ -137,7 +133,7 @@ export default function ApprovalRequest() {
             <option>Alat Kantor</option>
           </select>
 
-          {/* Filter Prioritas */}
+          {/* Dropdown Prioritas */}
           <select 
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
@@ -148,11 +144,6 @@ export default function ApprovalRequest() {
             <option>Sedang</option>
             <option>Rendah</option>
           </select>
-
-          {/* Tombol Ekstra Filter */}
-          <button className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 border border-[#00664b]/30 text-[#00664b] hover:bg-emerald-50 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm">
-            <Filter size={14} /> Filter
-          </button>
         </div>
 
         {/* Kontainer Utama Tabel */}
@@ -168,13 +159,19 @@ export default function ApprovalRequest() {
                   <th className="py-3 px-4 text-center">Prioritas</th>
                   <th className="py-3 px-4">Tanggal Pengajuan</th>
                   <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-xs font-medium">
                 {requests
                   .filter(r => r.status === activeTab)
-                  .filter(r => r.pemohon.toLowerCase().includes(searchQuery.toLowerCase()) || r.aset.toLowerCase().includes(searchQuery.toLowerCase()) || r.id.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .filter(r => 
+                    selectedPriority === 'Semua Prioritas' ? true : r.prioritas === selectedPriority
+                  )
+                  .filter(r => 
+                    r.pemohon.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    r.aset.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    r.id.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
                   .map((item) => (
                     <tr 
                       key={item.id}
@@ -182,7 +179,7 @@ export default function ApprovalRequest() {
                       className={`hover:bg-zinc-50/80 transition-colors cursor-pointer ${selectedId === item.id ? 'bg-emerald-50/40' : ''}`}
                     >
                       {/* Checkbox Kolom */}
-                      <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-4 px-4 text-center">
                         <input 
                           type="checkbox" 
                           checked={selectedId === item.id}
@@ -190,20 +187,16 @@ export default function ApprovalRequest() {
                           className="w-4 h-4 rounded text-[#00664b] focus:ring-[#00664b] border-zinc-300 cursor-pointer accent-[#00664b]"
                         />
                       </td>
-                      {/* ID Kode No. Permintaan */}
                       <td className="py-4 px-2 font-mono font-bold text-zinc-900">{item.id}</td>
-                      {/* Identitas Karyawan Pemohon */}
                       <td className="py-4 px-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-zinc-800">{item.pemohon}</span>
                           <span className="text-[10px] text-zinc-400 font-medium">{item.divisi}</span>
                         </div>
                       </td>
-                      {/* Deskripsi Aset Kantor */}
                       <td className="py-4 px-4 max-w-[150px] truncate font-semibold text-zinc-700">
                         {item.aset}
                       </td>
-                      {/* Tingkat Prioritas Penggunaan */}
                       <td className="py-4 px-4 text-center">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                           item.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
@@ -212,14 +205,12 @@ export default function ApprovalRequest() {
                           {item.prioritas}
                         </span>
                       </td>
-                      {/* Waktu Masuk Dokumen */}
                       <td className="py-4 px-4 text-zinc-500 font-medium">
                         <div className="flex flex-col">
                           <span>{item.tanggalPengajuan}</span>
                           <span className="text-[10px] text-zinc-400">{item.jamPengajuan}</span>
                         </div>
                       </td>
-                      {/* Tag Badge Status */}
                       <td className="py-4 px-4 text-center">
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize ${
                           item.status === 'menunggu' ? 'bg-amber-100/70 text-amber-600 border-amber-200/50' :
@@ -228,17 +219,11 @@ export default function ApprovalRequest() {
                           {item.status}
                         </span>
                       </td>
-                      {/* Menu Tindakan Lain */}
-                      <td className="py-4 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1 hover:bg-zinc-200/60 rounded-md text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer">
-                          <MoreVertical size={14} />
-                        </button>
-                      </td>
                     </tr>
-                ))}
+                  ))}
                 {requests.filter(r => r.status === activeTab).length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-zinc-400 font-medium text-xs">
+                    <td colSpan={7} className="py-8 text-center text-zinc-400 font-medium text-xs">
                       Tidak ada data permintaan pada tab ini.
                     </td>
                   </tr>
@@ -247,9 +232,8 @@ export default function ApprovalRequest() {
             </table>
           </div>
 
-          {/* Pagination Footer */}
-          <div className="p-3 bg-zinc-50/50 border-t border-zinc-100 flex items-center justify-between text-[11px] font-bold text-zinc-400">
-            <span>Menampilkan 1 - {requests.filter(r => r.status === activeTab).length} data</span>
+          {/* Pagination Footer (Tanpa teks "Menampilkan X data") */}
+          <div className="p-3 bg-zinc-50/50 border-t border-zinc-100 flex items-center justify-end text-[11px] font-bold text-zinc-400">
             <div className="flex items-center gap-1.5">
               <button className="p-1 border border-zinc-200 rounded-md bg-white text-zinc-400 hover:text-zinc-600 cursor-pointer shadow-sm">
                 <ChevronLeft size={14} />
@@ -278,7 +262,7 @@ export default function ApprovalRequest() {
               </span>
             </div>
 
-            {/* List Lembar Baris Informasi Dokumen */}
+            {/* List Baris Informasi Dokumen */}
             <div className="text-xs space-y-3.5 font-medium">
               <div className="grid grid-cols-3 gap-2">
                 <span className="text-zinc-400 font-bold">Pemohon</span>
@@ -316,35 +300,25 @@ export default function ApprovalRequest() {
               </div>
             </div>
 
-            {/* Tombol Eksekusi Tindakan */}
-            <div className="pt-4 border-t border-zinc-100 flex flex-col sm:flex-row xl:flex-col items-center gap-2.5">
-              <div className="flex items-center gap-2 w-full">
-                {/* Tombol Setujui */}
-                <button 
-                  disabled={activeDetail.status !== 'menunggu'}
-                  onClick={() => handleApproval(activeDetail.id, 'disetujui')}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-[#00664b] hover:bg-[#004d38] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-900/10 transition-all cursor-pointer"
-                >
-                  <Check size={14} /> Setujui
-                </button>
-                {/* Tombol Tolak */}
-                <button 
-                  disabled={activeDetail.status !== 'menunggu'}
-                  onClick={() => handleApproval(activeDetail.id, 'ditolak')}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-md shadow-red-900/10 transition-all cursor-pointer"
-                >
-                  <X size={14} /> Tolak
-                </button>
+            {/* Tombol Aksi (Hanya muncul di tab 'menunggu') */}
+            {activeDetail.status === 'menunggu' && (
+              <div className="pt-4 border-t border-zinc-100 flex flex-col sm:flex-row xl:flex-col items-center gap-2.5">
+                <div className="flex items-center gap-2 w-full">
+                  <button 
+                    onClick={() => handleApproval(activeDetail.id, 'disetujui')}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-[#00664b] hover:bg-[#004d38] text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-900/10 transition-all cursor-pointer"
+                  >
+                    <Check size={14} /> Setujui
+                  </button>
+                  <button 
+                    onClick={() => handleApproval(activeDetail.id, 'ditolak')}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-900/10 transition-all cursor-pointer"
+                  >
+                    <X size={14} /> Tolak
+                  </button>
+                </div>
               </div>
-
-              {/* Tombol Cetak / Tinjau File Dokumen PDF */}
-              <button 
-                onClick={() => alert(`Mengunduh berkas fisik PDF untuk data ${activeDetail.id}`)}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
-              >
-                <FileText size={14} className="text-zinc-400" /> Lihat PDF
-              </button>
-            </div>
+            )}
 
           </div>
         ) : (

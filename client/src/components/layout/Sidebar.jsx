@@ -7,8 +7,9 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
   const currentMenu = menuConfig[role] || [];
 
   return (
+    // 🖨️ DITAMBAHKAN print:hidden DI SINI
     <aside 
-      className={`fixed md:sticky top-0 bottom-0 left-0 z-50 h-screen bg-[#FEFEFA] text-zinc-500 flex flex-col justify-between transition-all duration-300 ${
+      className={`fixed md:sticky top-0 bottom-0 left-0 z-50 h-screen bg-[#FEFEFA] text-zinc-500 flex flex-col justify-between transition-all duration-300 print:hidden ${
         isOpen 
           ? 'w-64 p-4 opacity-100 shadow-[4px_0_24px_rgba(0,0,0,0.08)]' 
           : 'w-0 p-0 opacity-0 overflow-hidden shadow-none'
