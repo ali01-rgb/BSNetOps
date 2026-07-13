@@ -1,11 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, Calendar, Package, X, Check } from 'lucide-react';
+import { Search, Filter, Calendar, Package, X, Check, ShoppingCart } from 'lucide-react';
 
 // REVISI: Menerima setCurrentView dari props App.jsx
 export default function Aset({ setCurrentView }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState(null);
   
+  // STATE KERANJANG (MULTI-ITEMS)
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('selectedAssetData');
+    if (savedCart) {
+      try {
+        const parsed = JSON.parse(savedCart);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
   // STATE FILTER
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Semua'); 
@@ -23,6 +37,11 @@ export default function Aset({ setCurrentView }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Sinkronisasi Cart ke LocalStorage setiap ada perubahan barang
+  useEffect(() => {
+    localStorage.setItem('selectedAssetData', JSON.stringify(cart));
+  }, [cart]);
 
   // Data Dummy Katalog Aset
   const katalogAset = [
@@ -70,26 +89,73 @@ export default function Aset({ setCurrentView }) {
     setSelectedAsset(aset);
   };
 
-  // REVISI: Mengubah view dashboard dan menyimpan data sementara ke localStorage
-  const handleRedirectToForm = () => {
+  // Fungsi menambah barang ke dalam keranjang belanja
+  const handleAddToCart = () => {
     if (selectedAsset) {
-      localStorage.setItem('selectedAssetData', JSON.stringify({
-        namaAset: selectedAsset.nama,
-        kodeAset: selectedAsset.kode
-      }));
+      const isExist = cart.some(item => item.kodeAset === selectedAsset.kode);
+      
+      if (!isExist) {
+        const updatedCart = [...cart, {
+          namaAset: selectedAsset.nama,
+          kodeAset: selectedAsset.kode,
+          jumlah: 1 // default jumlah awal item
+        }];
+        setCart(updatedCart);
+      }
+      setSelectedAsset(null); // Tutup modal setelah ditambah
+    }
+  };
 
-      // Arahkan view dashboard internal ke halaman form
+  // Fungsi menghapus item spesifik dari keranjang belanja
+  const handleRemoveFromCart = (kodeAset) => {
+    const updatedCart = cart.filter(item => item.kodeAset !== kodeAset);
+    setCart(updatedCart);
+  };
+
+  // REVISI: Mengalihkan view dashboard internal ke halaman form permintaan bawa data multi-items
+  const handleRedirectToForm = () => {
+    if (cart.length > 0) {
       setCurrentView('ajukan-permintaan');
+    } else {
+      alert("Keranjang belanja Anda masih kosong. Silakan pilih aset terlebih dahulu!");
     }
   };
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-400 min-h-screen text-zinc-800 pb-12">
       
+      {/* SEKSI NOTIFIKASI LAYOUT KERANJANG ATAS (Floating Summary) */}
+      {cart.length > 0 && (
+        <div className="w-full bg-emerald-50 border border-emerald-600/30 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#00664b] text-white rounded-xl">
+              <ShoppingCart size={18} />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-[#00664b]">Barang Permintaan ({cart.length} Item)</h4>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {cart.map((item) => (
+                  <span key={item.kodeAset} className="inline-flex items-center gap-1 bg-white border border-zinc-200 text-zinc-700 font-medium text-[10px] px-2 py-0.5 rounded-full capitalize">
+                    {item.namaAset}
+                    <button onClick={() => handleRemoveFromCart(item.kodeAset)} className="text-red-500 hover:text-red-700 ml-0.5 font-bold cursor-pointer">×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button 
+            onClick={handleRedirectToForm}
+            className="w-full sm:w-auto px-5 py-2 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer text-center"
+          >
+            Lanjutkan Permintaan ({cart.length})
+          </button>
+        </div>
+      )}
+
       {/* KONTROL ATAS: Search Bar & Filter */}
       <div className="flex items-center justify-between gap-4 w-full pt-2">
         <div className="relative w-full max-w-xs">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
           <input 
             type="text"
             placeholder="Search"
@@ -127,7 +193,7 @@ export default function Aset({ setCurrentView }) {
                 className="w-full flex items-center justify-between px-2.5 py-2 text-left text-xs font-semibold rounded-xl hover:bg-zinc-50 transition-colors cursor-pointer"
               >
                 <span className={filterType === 'Default' ? 'text-[#00664b]' : 'text-zinc-700'}>
-                  By Default (Semua)
+                  Default
                 </span>
                 {filterType === 'Default' && <Check size={14} className="text-[#00664b]" />}
               </button>
@@ -136,7 +202,7 @@ export default function Aset({ setCurrentView }) {
 
               <div className="space-y-0.5">
                 <div className="px-2.5 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                  By Kategori
+                Kategori
                 </div>
                 
                 {['ATK', 'Elektronik'].map((kat) => (
@@ -165,40 +231,51 @@ export default function Aset({ setCurrentView }) {
 
       {/* AREA GRID KATALOG */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-        {filteredAset.map((aset) => (
-          <div 
-            key={aset.id}
-            onClick={() => handleOpenModal(aset)}
-            className="bg-white border border-zinc-200/80 rounded-3xl p-4 flex gap-4 cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.01] select-none"
-          >
-            <div className="w-28 h-28 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center p-2 shrink-0 overflow-hidden">
-              <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-contain mix-blend-multiply" />
-            </div>
+        {filteredAset.map((aset) => {
+          const isAddedInCart = cart.some(item => item.kodeAset === aset.kode);
+          return (
+            <div 
+              key={aset.id}
+              onClick={() => handleOpenModal(aset)}
+              className={`bg-white border rounded-3xl p-4 flex gap-4 cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.01] select-none relative overflow-hidden ${
+                isAddedInCart ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-zinc-200/80'
+              }`}
+            >
+              {isAddedInCart && (
+                <div className="absolute top-0 right-0 bg-emerald-500 text-white pl-3 pr-2 py-1 rounded-bl-xl text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                  <Check size={10} strokeWidth={3} /> DIPILIH
+                </div>
+              )}
 
-            <div className="flex flex-col justify-between flex-1 py-1">
-              <div>
-                <h3 className="font-extrabold text-sm capitalize text-zinc-900 border-b border-zinc-900 pb-1 tracking-tight">
-                  {aset.nama}
-                </h3>
-                <div className="mt-2.5 space-y-1.5 text-[11px] font-bold text-zinc-700">
-                  <div className="flex items-center gap-2.5">
-                    <Calendar size={13} className="text-zinc-500" />
-                    <span className="text-zinc-400 font-normal">|</span>
-                    <span>{aset.tglUpdate}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Package size={13} className="text-zinc-500" />
-                    <span className="text-zinc-400 font-normal">|</span>
-                    <span>{aset.stok}</span>
+              <div className="w-28 h-28 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center p-2 shrink-0 overflow-hidden">
+                <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-contain mix-blend-multiply" />
+              </div>
+
+              <div className="flex flex-col justify-between flex-1 py-1">
+                <div>
+                  <h3 className="font-bold text-sm capitalize text-zinc-700 border-b border-zinc-900 pb-1 tracking-tight pr-14">
+                    {aset.nama}
+                  </h3>
+                  <div className="mt-2.5 space-y-1.5 text-[11px] font-bold text-zinc-700">
+                    <div className="flex items-center gap-2.5">
+                      <Calendar size={13} className="text-zinc-500" />
+                      <span className="text-zinc-400 font-normal">|</span>
+                      <span>{aset.tglUpdate}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <Package size={13} className="text-zinc-500" />
+                      <span className="text-zinc-400 font-normal">|</span>
+                      <span>{aset.stok}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="inline-block self-start text-[11px] font-bold px-3 py-0.5 border border-emerald-600/40 text-[#00664b] bg-emerald-50/30 rounded-full mt-2">
-                {aset.kode}
+                <div className="inline-block self-start text-[11px] font-bold px-3 py-0.5 border border-emerald-600/40 text-[#00664b] bg-emerald-50/30 rounded-full mt-2">
+                  {aset.kode}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* MODAL DETAIL POP-UP */}
@@ -227,18 +304,31 @@ export default function Aset({ setCurrentView }) {
 
                 <div className="mt-6 space-y-3">
                   <p className="text-xs text-zinc-500 font-medium">
-                    Apakah Anda ingin mengajukan pinjaman keperluan untuk aset inventaris ini?
+                    Masukkan aset inventaris ini ke list item permintaan untuk pengajuan bon barang sekaligus.
                   </p>
 
                   <div className="space-y-2 pt-6">
-                    <button 
-                      type="button" 
-                      onClick={handleRedirectToForm} 
-                      className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center block"
-                    >
-                      Ajukan Permintaan
-                    </button>
-                    <button type="button" onClick={() => setSelectedAsset(null)} className="w-full py-2.5 bg-white border border-red-400 text-red-500 font-bold text-xs rounded-full hover:bg-red-50 cursor-pointer transition-colors">
+                    {cart.some(item => item.kodeAset === selectedAsset.kode) ? (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          handleRemoveFromCart(selectedAsset.kode);
+                          setSelectedAsset(null);
+                        }} 
+                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
+                      >
+                        Hapus dari Permintaan
+                      </button>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={handleAddToCart} 
+                        className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
+                      >
+                        <ShoppingCart size={14} /> Masukkan ke Permintaan
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setSelectedAsset(null)} className="w-full py-2.5 bg-white border border-zinc-300 text-zinc-600 font-bold text-xs rounded-full hover:bg-zinc-50 cursor-pointer transition-colors">
                       Batal
                     </button>
                   </div>

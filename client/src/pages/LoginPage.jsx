@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom"; // 🔥 IMPOR INI untuk navigasi halaman
+import { useNavigate } from "react-router-dom"; //  IMPOR INI untuk navigasi halaman
 
 export default function LoginPage() {
-  const navigate = useNavigate(); // 🔥 INISIALISASI NAVIGATE
+  const navigate = useNavigate(); //  INISIALISASI NAVIGATE
   const [showPassword, setShowPassword] = useState(false);
 
   // CONTROL MODAL FLOW
@@ -47,7 +47,7 @@ export default function LoginPage() {
     if (!form.username) newError.username = "Masukkan username atau email";
     if (!form.password) newError.password = "Masukkan password";
 
-    // 🔴 VALIDASI PASSWORD DUMMY
+    //  VALIDASI PASSWORD DUMMY
     if (form.password && form.password !== "123456") {
       newError.password = "Username atau password salah";
     }
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
     if (newError.username || newError.password) return;
 
-    // 🔥 LOGIKA REDIRECT BERDASARKAN USERNAME (Simulasi Role Base Login)
+    // LOGIKA REDIRECT BERDASARKAN USERNAME (Simulasi Role Base Login)
     const inputUser = form.username.toLowerCase();
 
     if (inputUser === "admin") {
@@ -135,7 +135,7 @@ export default function LoginPage() {
                   name="username"
                   value={form.username}
                   onChange={handleChange}
-                  placeholder="Ketik 'admin', 'manager', atau nama kamu"
+                  placeholder="Username;88po8"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
 
@@ -157,7 +157,7 @@ export default function LoginPage() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Password bawaan: 123456"
+                  placeholder="Password"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
 

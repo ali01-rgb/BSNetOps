@@ -1,115 +1,93 @@
 import React from 'react';
 
-// Menggunakan React.forwardRef agar elemen bisa ditangkap oleh html2pdf.js / print ref
-const TemplateDokumenA4 = React.forwardRef(({ formData }, ref) => {
+const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [] }, ref) => {
+  // Minimal 5 baris, atau mengikuti jumlah barang
+  const MIN_ROWS = 5;
+  const rowCount = Math.max(MIN_ROWS, daftarBarang.length);
+  const rows = Array.from({ length: rowCount });
+
   return (
     <div 
       ref={ref} 
-      // Force background & text color ke HEX standar agar html2canvas aman dari error oklch
-      style={{ backgroundColor: '#ffffff', color: '#000000' }}
-      className="bg-white w-[210mm] min-h-[297mm] p-[20mm] text-black flex flex-col justify-between print:p-0 print:w-full"
+      className="bg-white w-[210mm] h-[297mm] p-[10mm] text-black font-sans box-border"
     >
-      <div>
-        {/* ================= HEADER SURAT ================= */}
-        <div 
-          style={{ borderColor: '#4d8c6b' }} 
-          className="flex justify-between items-start border-b-2 pb-4 mb-6"
-        >
+      {/* HEADER */}
+      <div className="flex justify-between items-start mb-6 border-b-2 border-black pb-2">
+        <div className="flex flex-col">
+          <img src="/images/logo-BSN.png" alt="Logo BSN" className="h-15 w-auto object-contain mb-1" />
           <div className="flex flex-col">
-            {/* Brand Logo BSN */}
-            <div className="flex items-center space-x-1 font-bold text-2xl tracking-tight" style={{ color: '#045936' }}>
-              <span>bsn</span>
-              <span className="text-xl font-black" style={{ color: '#f59e0b' }}>★</span>
-            </div>
-            <span className="text-[10px] font-medium tracking-wide uppercase mt-0.5" style={{ color: '#6b7280' }}>
-              bank syariah nasional
+            <span className="text-[15px] font-puppy text-middle mt-2">Cabang Semarang</span>
+          </div>
+        </div>
+        
+        <h1 className="text-xl font-bold uppercase underline underline-offset-4 decoration-2 mt-2">Bon Barang</h1>
+        
+        {/* Bagian ini diperbaiki: lebar ditambah dan justify-end digunakan */}
+        <div className="text-[12px] w-[200px] text-right font-bold mt-2">
+          <div className="flex justify-end items-center gap-2">
+            <span>Unit:</span>
+            <span className="border-b border-black w-[120px] inline-block text-center">
+              {formData?.divisi || ''}
             </span>
           </div>
-          <div className="text-right">
-            <h2 className="text-md font-bold" style={{ color: '#1f2937' }}>Form Permintaan Aset Kantor</h2>
-            <div className="text-xs mt-1" style={{ color: '#4b5563' }}>
-              <p>No. Permintaan : <span></span></p>
-              <p>Tanggal : <span>{new Date().toLocaleDateString('id-ID')}</span></p>
-            </div>
-          </div>
-        </div>
-
-        {/* ================= DATA PEMOHON ================= */}
-        <div className="mb-6">
-          <h3 className="text-sm font-bold mb-2 uppercase tracking-wide" style={{ color: '#045936' }}>
-            Data Pemohon
-          </h3>
-          <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-y-1.5 text-xs">
-            <span style={{ color: '#4b5563' }}>Nama Lengkap</span><span>: {formData?.namaLengkap}</span>
-            <span style={{ color: '#4b5563' }}>NIP/ ID Pegawai</span><span>: {formData?.nipPegawai}</span>
-            <span style={{ color: '#4b5563' }}>Divisi/ Departemen</span><span>: {formData?.divisi}</span>
-            <span style={{ color: '#4b5563' }}>Jabatan</span><span>: {formData?.jabatan}</span>
-            <span style={{ color: '#4b5563' }}>Email</span><span>: {formData?.email}</span>
-            <span style={{ color: '#4b5563' }}>No Telephone</span><span>: {formData?.noTelepon}</span>
-          </div>
-        </div>
-
-        {/* ================= DETAIL PERMINTAAN ================= */}
-        <div className="mb-6">
-          <h3 className="text-sm font-bold mb-2 uppercase tracking-wide" style={{ color: '#045936' }}>
-            Detail Permintaan
-          </h3>
-          <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-y-1.5 text-xs">
-            <span style={{ color: '#4b5563' }}>Nama Aset</span><span className="capitalize">: {formData?.namaAset}</span>
-            <span style={{ color: '#4b5563' }}>Jumlah</span><span>: {formData?.jumlah}</span>
-            <span style={{ color: '#4b5563' }}>Prioritas</span><span>: {formData?.prioritas}</span>
-            <span style={{ color: '#4b5563' }}>Tanggal Dibutuhkan</span><span>: {formData?.tanggalDibutuhkan}</span>
-            <span style={{ color: '#4b5563' }}>Alasan</span><span>: {formData?.alasanDibutuhkan}</span>
-          </div>
-        </div>
-
-        {/* ================= AREA PERSETUJUAN MANAGER ================= */}
-        <div className="mb-8">
-          <h3 className="text-sm font-bold mb-3 uppercase tracking-wide" style={{ color: '#045936' }}>
-            Persetujuan Manager
-          </h3>
-          <div className="flex space-x-8 text-xs mb-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 border" style={{ borderColor: '#9ca3af', backgroundColor: '#f3f4f6' }}></div>
-              <span>Disetujui</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 border" style={{ borderColor: '#9ca3af', backgroundColor: '#f3f4f6' }}></div>
-              <span>Ditolak</span>
-            </div>
-          </div>
-          <div className="text-xs flex items-start space-x-2" style={{ color: '#4b5563' }}>
-            <span>Catatan Manager :</span>
-            <div className="flex-1 border-b h-4 mt-1" style={{ borderColor: '#9ca3af' }}></div>
-          </div>
-          <div className="border-b h-4 w-full ml-[96px] mt-2" style={{ borderColor: '#9ca3af' }}></div>
-        </div>
-
-        {/* ================= TANDA TANGAN ================= */}
-        <div className="grid grid-cols-2 gap-12 text-center text-xs mt-12">
-          <div className="flex flex-col items-center justify-between h-24">
-            <span>Pemohon</span>
-            <div className="w-32 border-b" style={{ borderColor: '#9ca3af' }}></div>
-            <div className="text-left w-32 text-[10px]" style={{ color: '#6b7280' }}>Tanggal: _________</div>
-          </div>
-          <div className="flex flex-col items-center justify-between h-24">
-            <span>Manager Terkait,</span>
-            <div className="w-40 flex justify-between px-2" style={{ color: '#9ca3af' }}>
-              <span>(</span><span>)</span>
-            </div>
-            <div className="w-40 border-b -mt-2" style={{ borderColor: '#9ca3af' }}></div>
-            <div className="text-left w-40 text-[10px]" style={{ color: '#6b7280' }}>Tanggal: _________</div>
+          <div className="flex justify-end items-center gap-2 mt-2">
+            <span>Tanggal:</span>
+            <span className="border-b border-black w-[120px] inline-block text-center">
+              {new Date().toLocaleDateString('id-ID')}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Footer Nota A4 */}
-      <div 
-        className="text-center text-[10px] mt-12 border-t pt-2 font-mono" 
-        style={{ color: '#9ca3af', borderColor: '#e5e7eb' }}
-      >
-        Dokumen ini dicetak secara otomatis oleh BSNetOps
-      </div>
+      {/* TABEL */}
+      <table className="w-full border-collapse border-2 border-black text-sm mb-6">
+        <thead>
+          <tr className="bg-gray-100 font-bold">
+            <th className="border-2 border-black w-[10%] py-2">No</th>
+            <th className="border-2 border-black w-[45%] py-2">Nama Barang</th>
+            <th className="border-2 border-black w-[15%] py-2">Jumlah</th>
+            <th className="border-2 border-black w-[30%] py-2">Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((_, index) => {
+            const barang = daftarBarang[index];
+            return (
+              <tr key={index} className="h-[40px]">
+                <td className="border-2 border-black text-center font-bold">{index + 1}</td>
+                <td className="border-2 border-black px-3 capitalize font-semibold">{barang ? barang.namaAset : ''}</td>
+                <td className="border-2 border-black text-center font-bold">{barang ? barang.jumlah : ''}</td>
+                {/* Teks Keterangan sudah diperbesar ke text-sm */}
+                <td className="border-2 border-black px-2 text-sm font-medium">
+                  {index === 0 ? formData?.alasanDibutuhkan : ''}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* TANDA TANGAN */}
+      <table className="w-full border-collapse border-2 border-black mt-2 text-[10px] font-bold text-center table-fixed">
+        <thead>
+          <tr className="bg-gray-100">
+            <td className="border-2 border-black py-2">GA</td>
+            <td className="border-2 border-black py-2">Dikeluarkan</td>
+            <td className="border-2 border-black py-2">Atasan</td>
+            <td className="border-2 border-black py-2">Pemohon</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="h-[100px]">
+            <td className="border-2 border-black align-bottom pb-2"></td>
+            <td className="border-2 border-black align-bottom pb-2"></td>
+            <td className="border-2 border-black align-bottom pb-2"></td>
+            <td className="border-2 border-black align-bottom pb-2 capitalize font-bold text-xs">
+              {formData?.namaLengkap}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 });

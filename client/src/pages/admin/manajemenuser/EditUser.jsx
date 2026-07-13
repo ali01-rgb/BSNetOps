@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 
-export default function EditUser({ userData, onClose }) {
-  const [formData, setFormData] = useState({ id: '', name: '', email: '', role: '', status: '' });
+// Menambahkan onSave ke dalam parameter props
+export default function EditUser({ userData, onClose, onSave }) {
+  const [formData, setFormData] = useState({ id: '', name: '', email: '', role: '', status: '', isDeleted: false });
 
   useEffect(() => {
     if (userData) {
@@ -11,10 +12,17 @@ export default function EditUser({ userData, onClose }) {
         name: userData.name || '',
         email: userData.email || '',
         role: userData.role || 'Staff',
-        status: userData.status || 'Aktif'
+        status: userData.status || 'Aktif',
+        isDeleted: userData.isDeleted || false 
       });
     }
   }, [userData]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Mengirimkan data yang sudah diedit kembali ke komponen induk
+    onSave(formData);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -30,7 +38,8 @@ export default function EditUser({ userData, onClose }) {
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onClose(); }} className="p-6 space-y-4">
+        {/* Menggunakan fungsi handleSubmit */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Nama Lengkap</label>
             <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
@@ -43,17 +52,18 @@ export default function EditUser({ userData, onClose }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses (Role)</label>
+              <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses</label>
               <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Staff">Staff Gudang</option>
-                <option value="Admin">Admin Utama</option>
+                <option value="Staff">Staff</option>
+                <option value="Admin">Admin</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Akun</label>
+              {/* Value "Nonaktif" diubah jadi "Ditangguhkan" agar text di tabel selaras dengan pilihan */}
               <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Aktif">Aktif (Bisa Login)</option>
-                <option value="Nonaktif">Nonaktif (Ditangguhkan)</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Ditangguhkan">Ditangguhkan</option>
               </select>
             </div>
           </div>

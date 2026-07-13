@@ -8,6 +8,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     staffId: "",
+    unit: "",
   });
 
   const [error, setError] = useState({});
@@ -38,6 +39,7 @@ export default function RegisterPage() {
     if (!form.confirmPassword)
       newError.confirmPassword = "Konfirmasi password wajib diisi";
     if (!form.staffId) newError.staffId = "ID Staff wajib diisi";
+    if (!form.unit) newError.unit = "Unit wajib diisi";
 
     // VALIDASI PASSWORD
     if (form.password && form.confirmPassword) {
@@ -163,7 +165,7 @@ export default function RegisterPage() {
               </div>
 
               {/* ID STAFF */}
-              <div className="col-span-2">
+              <div className="text-sm font-semibold">
                 <label className="text-sm font-semibold">ID Staff</label>
 
                 <input
@@ -176,6 +178,20 @@ export default function RegisterPage() {
 
                 {error.staffId && (
                   <p className="text-xs text-red-500">{error.staffId}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold">Unit</label>
+                <input
+                  name="unit"
+                  value={form.unit}
+                  onChange={handleChange}
+                  placeholder="Masukkan unit"
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                />
+                {error.unit && (
+                  <p className="text-xs text-red-500">{error.unit}</p>
                 )}
               </div>
 

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, ArrowLeft } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft } from 'lucide-react';
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
 
 const initialUsersData = [
-  { id: 'USR-001', name: 'Chico Diar Ramadhan', email: 'chico.diar@bsn.go.id', role: 'Admin', status: 'Aktif' },
-  { id: 'USR-003', name: 'Ahmad Subarjo', email: 'ahmad.subarjo@bsn.go.id', role: 'Staff', status: 'Aktif' },
-  { id: 'USR-004', name: 'Siti Rahmawati', email: 'siti.rahma@bsn.go.id', role: 'Admin', status: 'Aktif' },
+  { id: 'USR-001', name: 'Chico Diar Ramadhan', email: 'chico.diar@bsn.go.id', role: 'Admin', status: 'Aktif', isDeleted: false },
+  { id: 'USR-003', name: 'Ahmad Subarjo', email: 'ahmad.subarjo@bsn.go.id', role: 'Staff', status: 'Aktif', isDeleted: false },
+  { id: 'USR-004', name: 'Siti Rahmawati', email: 'siti.rahma@bsn.go.id', role: 'Admin', status: 'Aktif', isDeleted: false },
 ];
 
 export default function UserManagement() {
@@ -14,8 +14,8 @@ export default function UserManagement() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
-  // STATE SEARCH & FILTER
+  
+  const [showTrash, setShowTrash] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('Semua');
 
@@ -24,14 +24,36 @@ export default function UserManagement() {
     setIsEditOpen(true);
   };
 
-  const handleDeleteUser = (id, name) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus hak akses akun untuk ${name} (${id})?`)) {
+  const handleUpdateUser = (updatedUser) => {
+    setUsers(users.map(user => user.id === updatedUser.id ? updatedUser : user));
+    setIsEditOpen(false);
+    alert(`Sukses: Data akun ${updatedUser.name} berhasil diperbarui menjadi status ${updatedUser.status}!`);
+  };
+
+  const handleSoftDelete = (id, name) => {
+    if (window.confirm(`Apakah Anda yakin ingin memindahkan akun ${name} (${id}) ke tempat sampah?`)) {
+      setUsers(users.map(user => 
+        user.id === id ? { ...user, isDeleted: true } : user
+      ));
+    }
+  };
+
+  const handleRestore = (id, name) => {
+    if (window.confirm(`Kembalikan hak akses akun untuk ${name} (${id})?`)) {
+      setUsers(users.map(user => 
+        user.id === id ? { ...user, isDeleted: false } : user
+      ));
+    }
+  };
+
+  const handleHardDelete = (id, name) => {
+    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus PERMANEN akun ${name} (${id})? Data tidak dapat dikembalikan.`)) {
       setUsers(users.filter(user => user.id !== id));
     }
   };
 
-  // LOGIKA PEMPROSESAN DATA USER (LIVE SEARCH & FILTER ROLE)
   const processedUsers = users
+    .filter(user => user.isDeleted === showTrash)
     .filter(user => (roleFilter === 'Semua' ? true : user.role === roleFilter))
     .filter(user => {
       const query = searchQuery.toLowerCase();
@@ -41,22 +63,46 @@ export default function UserManagement() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
       
-      {/* Header Utama */}
+      {/* Header Utama disamakan dengan layout Stok Barang */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white">Manajemen Hak Akses Akun</h2>
-          <p className="text-xs text-white-500 mt-0.5">Kelola verifikasi profil, peran hak akses, dan kredensial sistem logistik BSN</p>
+        <div className="flex items-center gap-3">
+          {showTrash && (
+            <button 
+              onClick={() => setShowTrash(false)} 
+              className="p-2 bg-white border border-zinc-200 rounded-xl shadow-md text-[#00664b] hover:bg-emerald-50 transition-all cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <div>
+            <h2 className="text-xl font-bold text-white">Manajemen Hak Akses Akun</h2>
+            <p className="text-xs text-white/80 mt-0.5">
+              {showTrash ? 'Daftar arsip akun (Trash)' : 'Kelola verifikasi profil, peran hak akses, dan kredensial sistem logistik BSN'}
+            </p>
+          </div>
         </div>
 
-        <button 
-          onClick={() => setIsAddOpen(true)}
-          className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95 self-start md:self-auto"
-        >
-          <Plus size={16} /> Daftarkan User Baru
-        </button>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          {!showTrash && (
+            <button 
+              onClick={() => setShowTrash(true)} 
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md group"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          
+          {!showTrash && (
+            <button 
+              onClick={() => setIsAddOpen(true)}
+              className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95"
+            >
+              <Plus size={16} /> Daftarkan User Baru
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Kontrol Pencarian & Filter Peran */}
       <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl shadow-md border border-zinc-200/80">
         <div className="flex-1 relative flex items-center">
           <Search size={18} className="absolute left-3 text-zinc-400" />
@@ -76,23 +122,22 @@ export default function UserManagement() {
             onChange={(e) => setRoleFilter(e.target.value)}
             className="bg-transparent text-sm text-zinc-600 focus:outline-none cursor-pointer py-2 pr-2 font-medium"
           >
-            <option value="Semua">Semua Peran / Role</option>
-            <option value="Admin">Admin Utama</option>
-            <option value="Staff">Staff Gudang</option>
+            <option value="Semua">Hak Akses</option>
+            <option value="Admin">Admin</option>
+            <option value="Staff">Staff</option>
           </select>
         </div>
       </div>
 
-      {/* Tabel Utama User dengan Header Emerald BSN */}
       <div className="bg-white border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-[#58a27d] text-white text-xs uppercase font-semibold tracking-wider border-b border-[#58a27d]">
+              <tr className="bg-[#58a27d] border-[#58a27d] text-white text-xs uppercase font-semibold tracking-wider border-b">
                 <th className="p-4 rounded-tl-xl">ID User</th>
                 <th className="p-4">Nama Lengkap</th>
                 <th className="p-4">Email Resmi</th>
-                <th className="p-4">Peran (Role)</th>
+                <th className="p-4">Hak Akses</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right rounded-tr-xl">Aksi Kontrol</th>
               </tr>
@@ -101,7 +146,9 @@ export default function UserManagement() {
               {processedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
-                    Tidak ditemukan data user yang cocok dengan kriteria pencarian.
+                    {showTrash 
+                      ? "Keranjang sampah kosong." 
+                      : "Tidak ditemukan data user yang cocok dengan kriteria pencarian."}
                   </td>
                 </tr>
               ) : (
@@ -109,7 +156,6 @@ export default function UserManagement() {
                   <tr key={user.id} className="hover:bg-zinc-50/40 transition-colors">
                     <td className="p-4 font-mono text-xs font-bold text-zinc-900 bg-zinc-50/30">{user.id}</td>
                     <td className="p-4 font-semibold text-zinc-900">{user.name}</td>
-                    {/* Teks Email Hitam Solid */}
                     <td className="p-4 text-zinc-900 font-medium">{user.email}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
@@ -122,22 +168,49 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-block w-2 height w-2 rounded-full mr-2 ${user.status === 'Aktif' ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
-                      <span className={`text-xs font-semibold ${user.status === 'Aktif' ? 'text-zinc-800' : 'text-zinc-400'}`}>{user.status}</span>
+                      {showTrash ? (
+                        <span className="text-xs font-semibold text-red-500">Terhapus</span>
+                      ) : (
+                        <>
+                          <span className={`inline-block h-2 w-2 rounded-full mr-2 ${user.status === 'Aktif' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                          <span className={`text-xs font-semibold ${user.status === 'Aktif' ? 'text-zinc-800' : 'text-red-600'}`}>{user.status}</span>
+                        </>
+                      )}
                     </td>
                     <td className="p-4 text-right space-x-1">
-                      <button 
-                        onClick={() => handleEditClick(user)}
-                        className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteUser(user.id, user.name)}
-                        className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {showTrash ? (
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => handleRestore(user.id, user.name)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
+                          >
+                            <RotateCcw size={14} /> Restore
+                          </button>
+                          <button 
+                            onClick={() => handleHardDelete(user.id, user.name)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
+                          >
+                            <XCircle size={14} /> Hapus Permanen
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleEditClick(user)}
+                            title="Edit Data"
+                            className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleSoftDelete(user.id, user.name)}
+                            title="Pindah ke Tempat Sampah"
+                            className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -148,7 +221,7 @@ export default function UserManagement() {
       </div>
 
       {isAddOpen && <TambahUser onClose={() => setIsAddOpen(false)} />}
-      {isEditOpen && <EditUser userData={selectedUser} onClose={() => setIsEditOpen(false)} />}
+      {isEditOpen && <EditUser userData={selectedUser} onSave={handleUpdateUser} onClose={() => setIsEditOpen(false)} />}
 
     </div>
   );
