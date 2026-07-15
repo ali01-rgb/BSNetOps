@@ -102,9 +102,9 @@ export default function ActivityLog() {
 
   const getTypeIcon = (type) => {
     if (type === 'Masuk') {
-      return <div className="p-2 bg-blue-100 text-blue-600 rounded-full ring-4 ring-white shadow-sm"><ArrowDownRight size={20} /></div>;
+      return <div className="p-2 bg-emerald-100 text-emerald-600 rounded-full ring-4 ring-white shadow-sm"><ArrowDownRight size={20} /></div>;
     }
-    return <div className="p-2 bg-emerald-100 text-[#00664b] rounded-full ring-4 ring-white shadow-sm"><ArrowUpRight size={20} /></div>;
+    return <div className="p-2 bg-red-100 text-[#FF0000] rounded-full ring-4 ring-white shadow-sm"><ArrowUpRight size={20} /></div>;
   };
 
   return (
@@ -223,64 +223,48 @@ export default function ActivityLog() {
         </div>
       </div>
 
-      {/* Tampilan Activity Log (Timeline Feed) */}
-      <div className="bg-white border border-zinc-200/80 rounded-xl shadow-md p-6">
-        {filteredHistory.length === 0 ? (
-          <div className="text-center py-12 text-zinc-400 font-medium bg-zinc-50/50 rounded-lg border border-dashed border-zinc-200">
-            Tidak ditemukan riwayat log aktivitas yang cocok dengan kriteria filter.
+        {filteredHistory.map((item) => (
+        // Tambahkan ml-6 
+        <div key={item.id} className="relative mb-4 pl-14 group">
+          
+          {/* Ikon di luar*/}
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
+            {getTypeIcon(item.type)}
           </div>
-        ) : (
-          <div className="relative border-l-2 border-zinc-100 ml-3 space-y-8 py-2">
-            {filteredHistory.map((item) => (
-              <div key={item.id} className="relative pl-8 group">
-                
-                {/* Indikator Garis & Ikon Tipe Transaksi */}
-                <div className="absolute -left-5 top-0 transition-transform group-hover:scale-110">
-                  {getTypeIcon(item.type)}
-                </div>
 
-                {/* Konten Log Aktivitas */}
-                <div className="bg-zinc-50/50 border border-zinc-100 rounded-xl p-4 hover:border-zinc-200 hover:shadow-sm transition-all duration-200">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                    
-                    <div className="space-y-2">
-                      <p className="text-sm text-zinc-700 leading-relaxed">
-                        <span className="font-bold text-zinc-900">{item.requester}</span> 
-                        {item.type === 'Masuk' ? ' mendaftarkan barang masuk/restock ke dalam inventaris berupa ' : ' mengajukan permohonan peminjaman inventaris berupa '}
-                        <span className="font-semibold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
-                      </p>
-                      
-                      {/* Meta Info */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-zinc-500">
-                        <span className="flex items-center gap-1.5 bg-zinc-100 px-2 py-1 rounded-md">
-                          <Hash size={14} className="text-zinc-400" /> 
-                          {item.id}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={14} className="text-zinc-400" /> 
-                          {new Date(item.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Package size={14} className="text-zinc-400" /> 
-                          Tipe: <strong className={item.type === 'Masuk' ? 'text-blue-600' : 'text-[#00664b]'}>{item.type}</strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status Badge */}
-                    <div className="shrink-0 mt-2 sm:mt-0">
-                      {getStatusBadge(item.managerStatus)}
-                    </div>
-                    
-                  </div>
-                </div>
-
+          {/* Konten dengan Background Putih */}
+          <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            
+            {/* Deskripsi */}
+            <div className="space-y-1">
+              <p className="text-sm text-zinc-700">
+                <span className="font-bold text-zinc-900">{item.requester}</span> 
+                {item.type === 'Masuk' ? ' mendaftarkan barang masuk/restock ke dalam inventaris berupa ' : ' mengajukan permohonan peminjaman inventaris berupa '}
+                <span className="font-semibold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
+              </p>
+              <div className="flex gap-4 text-xs text-zinc-400">
+                <span><Hash size={12} className="inline mr-1" />{item.id}</span>
+                <span><Clock size={12} className="inline mr-1" />{new Date(item.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>
-            ))}
+            </div>
+
+              {/* Status & Tipe (Sisi Kanan) */}
+              <div className="flex flex-row items-center gap-2 sm:self-start">
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border ${
+                  item.type === 'Masuk' 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  <Package size={14} /> {item.type}
+                </div>
+                {getStatusBadge(item.managerStatus)}
+              </div>
+
+            </div>
           </div>
-        )}
-      </div>
-      
+        </div>
+      ))}
     </div>
   );
 }
