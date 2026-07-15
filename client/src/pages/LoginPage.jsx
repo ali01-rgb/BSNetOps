@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; //  IMPOR INI untuk navigasi halaman
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); //  INISIALISASI NAVIGATE
   const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -32,11 +32,42 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!form.username || !form.password) {
-      setError({
-        username: !form.username ? "Masukkan username" : "",
-        password: !form.password ? "Masukkan password" : "",
-      });
+    let newError = {
+      username: "",
+      password: "",
+    };
+
+    if (!form.username) newError.username = "Masukkan username atau email";
+    if (!form.password) newError.password = "Masukkan password";
+
+    //  VALIDASI PASSWORD DUMMY
+    if (form.password && form.password !== "123456") {
+      newError.password = "Username atau password salah";
+    }
+
+    setError(newError);
+
+    if (newError.username || newError.password) return;
+
+    // LOGIKA REDIRECT BERDASARKAN USERNAME (Simulasi Role Base Login)
+    const inputUser = form.username.toLowerCase();
+
+    if (inputUser === "admin") {
+      navigate("/admin");
+    } else if (inputUser === "manager") {
+      navigate("/manager");
+    } else {
+      // Jika diisi nama lain (misal: chico, staff, dll) otomatis masuk sebagai User/Staff biasa
+      navigate("/user");
+    }
+  };
+
+  // RESET PASSWORD SUBMIT
+  const handleForgot = (e) => {
+    e.preventDefault();
+
+    if (!forgotEmail) {
+      alert("Email wajib diisi");
       return;
     }
 
@@ -100,6 +131,7 @@ export default function LoginPage() {
                   name="username"
                   value={form.username}
                   onChange={handleChange}
+                  placeholder="Username;88po8"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
               </div>
@@ -111,6 +143,7 @@ export default function LoginPage() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
+                  placeholder="Password"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 cursor-pointer text-slate-600">

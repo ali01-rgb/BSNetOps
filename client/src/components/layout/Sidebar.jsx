@@ -1,33 +1,12 @@
 import React from 'react';
-import { X, Settings } from 'lucide-react';
-import { menuConfig } from '../../config/menuConfig';
+import { Settings, X } from 'lucide-react';
+import { menuConfig } from '../../config/menuConfig'; // Sesuaikan jalur impor di proyekmu
 
-export default function Sidebar({ role, isOpen, setIsOpen }) {
-  const activeMenu = menuConfig[role] || [];
+export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurrentView }) {
+  // Ambil konfigurasi menu berdasarkan role aktif
+  const currentMenu = menuConfig[role] || [];
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-0'} bg-zinc-950 transition-all duration-500 overflow-hidden text-zinc-100 flex flex-col shrink-0`}>
-      <div className="p-6 flex items-center justify-between border-b border-zinc-800">
-        <span className="text-xl font-bold">Menu</span>
-        <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full border border-zinc-600 bg-zinc-800 hover:bg-zinc-700 text-zinc-300">
-          <X size={16} />
-        </button>
-      </div>
-      
-      <nav className="flex-1 p-4 space-y-2">
-        {activeMenu.map((item) => (
-          <a key={item.name} href="#" className="flex items-center gap-3 p-3 hover:bg-zinc-800 rounded-lg transition-colors">
-            {item.icon} {item.name}
-          </a>
-        ))}
-      </nav>
-
-      <div className="p-4 border-t border-zinc-800 mt-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="https://ui-avatars.com/api/?name=Chico+Diar&background=random" className="h-10 w-10 rounded-full border border-zinc-700" alt="Profile" />
-          <div className="flex flex-col text-xs">
-            <span className="font-medium">Chico Diar</span>
-            <span className="text-zinc-500 capitalize">{role}</span>
     // 🖨️ DITAMBAHKAN print:hidden DI SINI
     <aside 
       className={`fixed md:sticky top-0 bottom-0 left-0 z-50 h-screen bg-[#FEFEFA] text-zinc-500 flex flex-col justify-between transition-all duration-300 print:hidden ${
@@ -57,8 +36,61 @@ export default function Sidebar({ role, isOpen, setIsOpen }) {
               <X size={16} />
             </button>
           </div>
+
+          {/* Daftar Link Menu Navigasi */}
+          <nav className="space-y-1 flex-1">
+            {currentMenu.map((menu, idx) => {
+              const menuPath = menu.name.toLowerCase().replace(/\s+/g, '-');
+              const isActive = currentView === menuPath;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentView(menuPath)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer group ${
+                    isActive 
+                      ? 'bg-[#00664b] text-white shadow-sm shadow-emerald-900/10' 
+                      : 'hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800'
+                  }`}
+                >
+                  <span className={`${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-600'} transition-colors`}>
+                    {menu.icon}
+                  </span>
+                  <span>{menu.name}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
-        <Settings size={18} className="text-zinc-500 cursor-pointer hover:text-white" />
+
+        {/* ================= BAGIAN BAWAH: PANEL PROFIL TERKUNCI ================= */}
+        {/* Border atas diganti border-zinc-100 dan background menyatu bg-white */}
+        <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-2 px-1 bg-white shrink-0 mt-4">
+          <div className="flex items-center gap-3 overflow-hidden">
+            {/* Avatar Lingkaran - Tetap dengan aksen hijau estetik */}
+            <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center font-bold text-emerald-600 shrink-0 text-xs shadow-sm">
+              CD
+            </div>
+            {/* Label Informasi Pengguna - Teks diganti ke zinc gelap agar kontras */}
+            <div className="flex flex-col truncate">
+              <span className="text-xs font-bold text-zinc-800 truncate">Chico Diar</span>
+              <span className="text-[10px] capitalize tracking-wider font-bold text-emerald-600 mt-0.5">{role}</span>
+            </div>
+          </div>
+
+          {/* Tombol Settings Gear */}
+          <button 
+            onClick={() => setCurrentView('edit-profil')}
+            className="p-2 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 rounded-xl transition-all cursor-pointer group"
+            title="Pengaturan Profil"
+          >
+            <Settings 
+              size={16} 
+              className="transform group-hover:rotate-45 transition-transform duration-300 ease-out" 
+            />
+          </button>
+        </div>
+
       </div>
     </aside>
   );

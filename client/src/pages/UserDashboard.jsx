@@ -21,12 +21,12 @@ export default function UserDashboard({ setCurrentView }) {
       {/* 1. Area Greetings (Dibuat Rounded & Shadow) */}
       <div className="bg-gradient-to-r from-[#00664b] to-[#004d38] p-6 text-white rounded-xl shadow-md border border-[#00553e] transition-all hover:scale-[1.005]">
         <h2 className="text-2xl font-bold">Halo, Chico Diar 👋</h2>
-        <p className="text-green-100 text-sm mt-1">Mau pinjam atau cek inventaris barang apa hari ini? Tetap produktif ya!</p>
+        <p className="text-green-100 text-sm mt-1">Mau ambil atau cek inventaris barang apa hari ini? Semangat ya!</p>
       </div>
 
       {/* 2. Quick Actions Menu */}
       <div>
-        <h3 className="text-zinc-700 font-semibold mb-3 text-sm tracking-wide uppercase">Aksi Cepat</h3>
+        <h3 className="text-zinc-700 font-semibold mb-3 text-sm tracking-wide uppercase">Aksi</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
           {/* Action 1: Request Barang -> Ajukan Permintaan */}
@@ -40,7 +40,7 @@ export default function UserDashboard({ setCurrentView }) {
               </div>
               <div>
                 <p className="font-semibold text-zinc-900">Request Barang</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Buat formulir peminjaman baru</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Buat formulir Permintaan baru</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-zinc-400 group-hover:text-[#00664b] group-hover:translate-x-1 transition-all" />
@@ -87,8 +87,8 @@ export default function UserDashboard({ setCurrentView }) {
       <div className="bg-white p-6 border border-zinc-200 rounded-xl shadow-md">
         <div className="flex justify-between items-center border-b pb-4 mb-6">
           <div>
-            <h3 className="font-semibold text-zinc-900 text-lg">Permintaan Terakhir Anda</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Memonitor alur fisik logistik barang secara real-time</p>
+            <h3 className="font-bold text-zinc-900 text-lg">Permintaan Terakhir Anda</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Memonitor logistik barang secara real-time</p>
           </div>
           <span className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 font-medium rounded-md">
             {lastRequest.date}

@@ -31,17 +31,17 @@ export default function TambahUser({ onClose }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses (Role)</label>
+              <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses</label>
               <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Staff">Staff Gudang</option>
-                <option value="Admin">Admin Utama</option>
+                <option value="Staff">Staff</option>
+                <option value="Admin">Admin</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Awal</label>
               <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Aktif">Aktif (Bisa Login)</option>
-                <option value="Nonaktif">Nonaktif (Ditangguhkan)</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Nonaktif">Ditangguhkan</option>
               </select>
             </div>
           </div>

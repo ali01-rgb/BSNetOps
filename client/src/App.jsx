@@ -15,11 +15,11 @@ import UserDashboard from "./pages/UserDashboard.jsx";
 import StokBarang from './pages/admin/stokbarang/StokBarang';
 import UserManagement from './pages/admin/manajemenuser/UserManagement'; 
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
-import HistoryPeminjaman from './pages/admin/history/HistoryPeminjaman';
+import LogAktifitas from './pages/admin/log/LogAktifitas.jsx';
 import EditProfil from './pages/admin/user/EditProfil';
 
 import ApprovalRequest from './pages/manager/appreq/ApprovalRequest';
-import AsetKantor from './pages/manager/asetkantor/AsetKantor';
+import ActivityLog from './pages/manager/actlog/ActivityLog.jsx';
 
 import Aset from './pages/user/aset/Aset';
 import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
@@ -68,7 +68,7 @@ export default function App() {
             {currentView === 'stok-barang' && <StokBarang role="admin" />}
             {currentView === 'manajemen-user' && <UserManagement />}
             {currentView === 'kategori-barang' && <KategoriBarang />}
-            {currentView === 'history-peminjaman' && <HistoryPeminjaman />}
+            {currentView === 'log-aktifitas' && <LogAktifitas />}
             {currentView === 'edit-profil' && <EditProfil />}
           </DashboardLayout>
         } />
@@ -78,8 +78,8 @@ export default function App() {
           <DashboardLayout role="manager" currentView={currentView} setCurrentView={setCurrentView}>
             {currentView === 'dashboard' && <ManagerDashboard />}
             {currentView === 'approval-request' && <ApprovalRequest />}
-            {currentView === 'aset-kantor' && <AsetKantor />}
             {currentView === 'edit-profil' && <EditProfil />}
+            {currentView === 'activity-log' && <ActivityLog/>}
           </DashboardLayout>
         } />
 

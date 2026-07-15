@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle } from 'lucide-react';
 import TambahKategori from './TambahKategori';
-import EditKategori from './EditKategori.jsx';
+import EditKategori from './EditKategori';
 
 // Data Dummy Kategori dengan Flag Soft Delete (deleted_at)
 const initialCategoriesData = [
@@ -22,6 +22,13 @@ export default function KategoriBarang() {
     setIsEditOpen(true);
   };
 
+  // FUNGSI UPDATE DATA KATEGORI
+  const handleUpdateCategory = (updatedCategory) => {
+    setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
+    setIsEditOpen(false);
+    alert(`Sukses: Kategori "${updatedCategory.name}" berhasil diperbarui!`);
+  };
+
   // 1. FUNGSI SOFT DELETE (Pindahkan ke Trash)
   const handleSoftDeleteCategory = (id, name) => {
     if (window.confirm(`Apakah Anda yakin ingin memindahkan kategori "${name}" (${id}) ke Trash?`)) {
@@ -32,10 +39,19 @@ export default function KategoriBarang() {
   };
 
   // 2. FUNGSI RESTORE (Kembalikan dari Trash)
-  const handleRestoreCategory = (id) => {
-    setCategories(categories.map(cat => 
-      cat.id === id ? { ...cat, deleted_at: null } : cat
-    ));
+  const handleRestoreCategory = (id, name) => {
+    if (window.confirm(`Kembalikan kategori "${name}" ke daftar aktif?`)) {
+      setCategories(categories.map(cat => 
+        cat.id === id ? { ...cat, deleted_at: null } : cat
+      ));
+    }
+  };
+
+  // 3. FUNGSI HARD DELETE (Hapus Permanen)
+  const handleHardDeleteCategory = (id, name) => {
+    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus PERMANEN kategori "${name}" (${id})? Data tidak dapat dikembalikan.`)) {
+      setCategories(categories.filter(cat => cat.id !== id));
+    }
   };
 
   // LOGIKA FILTERING: Tampilkan data berdasarkan status Trash & Search Query
@@ -63,7 +79,7 @@ export default function KategoriBarang() {
           )}
           <div>
             <h2 className="text-xl font-bold text-white">Kategori Barang Inventaris</h2>
-            <p className="text-xs text-white-500 mt-0.5">
+            <p className="text-xs text-white/80 mt-0.5">
               {showTrash ? 'Daftar arsip kategori yang dihapus sementara (Trash)' : 'Kelola kelompok klasifikasi aset dan pengelompokan logistik BSN'}
             </p>
           </div>
@@ -71,7 +87,7 @@ export default function KategoriBarang() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 self-start md:self-auto">
-          {!showTrash ? (
+          {!showTrash && (
             <>
               {/* Tombol Buka Trash */}
               <button 
@@ -90,10 +106,6 @@ export default function KategoriBarang() {
                 <Plus size={16} /> Tambah Kategori
               </button>
             </>
-          ) : (
-            <span className="text-xs text-amber-300 font-semibold bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-500/30">
-              Mode Trash Kategori
-            </span>
           )}
         </div>
       </div>
@@ -121,7 +133,8 @@ export default function KategoriBarang() {
                 <th className="p-4 rounded-tl-xl w-32">Kode</th>
                 <th className="p-4 w-48">Nama Kategori</th>
                 <th className="p-4">Deskripsi Ruang Lingkup</th>
-                <th className="p-4 text-right rounded-tr-xl w-32">Aksi Kontrol</th>
+                {/* w-32 dihapus dan diganti whitespace-nowrap agar teks header tidak turun */}
+                <th className="p-4 text-right rounded-tr-xl whitespace-nowrap">Aksi Kontrol</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -139,15 +152,23 @@ export default function KategoriBarang() {
                     <td className="p-4 text-zinc-600 leading-relaxed">{cat.description}</td>
                     <td className="p-4 text-right space-x-1">
                       {showTrash ? (
-                        /* Tombol Restore jika sedang di Trash */
-                        <button 
-                          onClick={() => handleRestoreCategory(cat.id)}
-                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all inline-flex items-center gap-1 text-xs font-semibold border border-amber-200 cursor-pointer"
-                        >
-                          <RefreshCw size={14} /> Restore
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          {/* Ditambahkan whitespace-nowrap agar teks tidak terpotong ke bawah */}
+                          <button 
+                            onClick={() => handleRestoreCategory(cat.id, cat.name)} 
+                            className="px-2.5 py-1.5 text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-md flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap"
+                          >
+                            <RefreshCw size={14} /> Restore
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleHardDeleteCategory(cat.id, cat.name)} 
+                            className="px-2.5 py-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded-md flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap"
+                          >
+                            <XCircle size={14} /> Hapus Permanen
+                          </button>
+                        </div>
                       ) : (
-                        /* Tombol Edit & Soft Delete jika di Tampilan Aktif */
                         <>
                           <button 
                             onClick={() => handleEditClick(cat)}
@@ -173,7 +194,8 @@ export default function KategoriBarang() {
       </div>
 
       {isAddOpen && <TambahKategori onClose={() => setIsAddOpen(false)} />}
-      {isEditOpen && <EditKategori categoryData={selectedCategory} onClose={() => setIsEditOpen(false)} />}
+      
+      {isEditOpen && <EditKategori categoryData={selectedCategory} onSave={handleUpdateCategory} onClose={() => setIsEditOpen(false)} />}
 
     </div>
   );

@@ -36,11 +36,11 @@ export default function AdminDashboard({ role = 'admin' }) {
           <p className="text-3xl font-bold text-zinc-900 mt-2">1,284</p>
         </div>
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md transition-all hover:scale-[1.01]">
-          <h3 className="text-zinc-500 text-sm font-medium">Barang Keluar</h3>
+          <h3 className="text-zinc-500 text-sm font-medium">Barang Masuk</h3>
           <p className="text-3xl font-bold text-zinc-900 mt-2">452</p>
         </div>
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md transition-all hover:scale-[1.01]">
-          <h3 className="text-zinc-500 text-sm font-medium">Stok Rendah</h3>
+          <h3 className="text-zinc-500 text-sm font-medium">Barang Keluar</h3>
           <p className="text-3xl font-bold text-red-600 mt-2">12</p>
         </div>
       </div>
