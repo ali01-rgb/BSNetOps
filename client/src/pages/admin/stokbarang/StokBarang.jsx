@@ -88,6 +88,20 @@ export default function StokBarang({ role = 'admin' }) {
         </div>
       </div>
 
+      {/* Bar Pencarian */}
+      <div className="flex bg-white p-4 rounded-xl shadow-md border border-zinc-200/80">
+        <div className="flex-1 relative flex items-center">
+          <Search size={18} className="absolute left-3 text-zinc-400" />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari berdasarkan kode atau nama barang..." 
+            className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
+          />
+        </div>
+      </div>
+
       <div className="bg-white border border-zinc-200 rounded-xl shadow-md overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
