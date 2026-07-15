@@ -7,8 +7,8 @@ import {
   PlusCircle, 
   Boxes, 
   History,
-  Computer,
-  FileText 
+  FileText,
+  ActivityIcon
 } from 'lucide-react';
 
 export const menuConfig = {
@@ -17,12 +17,12 @@ export const menuConfig = {
     { name: 'Stok Barang', icon: <Package size={20}/> },
     { name: 'Manajemen User', icon: <Users size={20}/> },
     { name: 'Kategori Barang', icon: <Boxes size={20}/> },
-    { name: 'History Peminjaman', icon: <History size={20}/> },
+    { name: 'Log Aktifitas', icon: <ActivityIcon size={20}/> },
   ],
   manager: [
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },
     { name: 'Approval Request', icon: <CheckSquare size={20}/> },
-    { name: 'Aset Kantor', icon: <Computer size={20}/> },
+    { name: 'Activity Log', icon: <ActivityIcon size={20}/>},
   ],
   user: [
     { name: 'Dashboard', icon: <LayoutDashboard size={20}/> },
