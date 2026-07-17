@@ -183,13 +183,21 @@ export default function RegisterPage() {
 
               <div>
                 <label className="text-sm font-semibold">Unit</label>
-                <input
+                <select
                   name="unit"
                   value={form.unit}
                   onChange={handleChange}
-                  placeholder="Masukkan unit"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
-                />
+                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 cursor-pointer"
+                >
+                  <option value="" disabled hidden>Pilih Unit</option>
+                  <option value="KC Semarang">KC Semarang</option>
+                  <option value="KCP Majapahit">KCP Majapahit</option>
+                  <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                  <option value="KCP Ungaran">KCP Ungaran</option>
+                  <option value="KCP Kendal">KCP Kendal</option>
+                  <option value="KCP Kudus">KCP Kudus</option>
+                  <option value="KCP Magelang">KCP Magelang</option>
+                  </select>
                 {error.unit && (
                   <p className="text-xs text-red-500">{error.unit}</p>
                 )}

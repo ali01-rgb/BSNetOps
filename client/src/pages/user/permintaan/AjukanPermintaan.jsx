@@ -45,12 +45,14 @@ export default function AjukanPermintaan() {
         noTelepon: activeUser.noTelepon || activeUser.phone || ''
       }));
     } else {
+      // Nilai default jika tidak ada profil tersimpan.
+      // Divisi dan Jabatan dikosongkan agar pengguna wajib memilih dari dropdown.
       setFormData(prev => ({
         ...prev,
         namaLengkap: 'Chico Diar Ramadhan',
         nipPegawai: '21120124140150',
-        divisi: 'IT',
-        jabatan: 'Staff',
+        divisi: '', 
+        jabatan: '',
         email: 'chico.diar@example.com',
         noTelepon: '085157778659'
       }));
@@ -196,14 +198,48 @@ export default function AjukanPermintaan() {
                   <h2 className="text-xl font-bold mb-6">Informasi Pemohon</h2>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="namaLengkap" value={formData.namaLengkap} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">NIP/ ID pegawai</label><input type="text" name="nipPegawai" value={formData.nipPegawai} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                      <input type="text" name="namaLengkap" value={formData.namaLengkap} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">NIP/ ID pegawai</label>
+                      <input type="text" name="nipPegawai" value={formData.nipPegawai} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                    </div>
                     
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Unit</label><input type="text" name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
+                    {/* DROPDOWN UNIT */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
+                        <option value="" disabled hidden>Pilih Unit</option>
+                        <option value="KC Semarang">KC Semarang</option>
+                        <option value="KCP Majapahit">KCP Majapahit</option>
+                        <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                        <option value="KCP Ungaran">KCP Ungaran</option>
+                        <option value="KCP Kendal">KCP Kendal</option>
+                        <option value="KCP Kudus">KCP Kudus</option>
+                        <option value="KCP Magelang">KCP Magelang</option>
+                      </select>
+                    </div>
                     
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label><input type="text" name="jabatan" value={formData.jabatan} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">No Telephone</label><input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
+                    {/* DROPDOWN JABATAN */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label>
+                      <select name="jabatan" value={formData.jabatan} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
+                        <option value="" disabled hidden>Pilih Jabatan</option>
+                        <option value="Staff">Staff</option>
+                        <option value="Supervisor">Head Unit</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">No Telephone</label>
+                      <input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                    </div>
                   </div>
                   <div className="text-center text-xs text-gray-500 mt-8">1/3</div>
                 </>
@@ -253,7 +289,7 @@ export default function AjukanPermintaan() {
                         name="tanggalDibutuhkan" 
                         value={formData.tanggalDibutuhkan} 
                         onChange={handleChange} 
-                        min={getTodayDate()} // 🔥 KUNCI TANGGAL: Tidak bisa pilih tanggal lampau
+                        min={getTodayDate()} 
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg" 
                         required 
                       />
