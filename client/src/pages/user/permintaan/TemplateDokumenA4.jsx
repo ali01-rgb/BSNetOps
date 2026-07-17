@@ -72,7 +72,7 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [] }, ref
         <thead>
           <tr className="bg-gray-100">
             <td className="border-2 border-black py-2">GA</td>
-            <td className="border-2 border-black py-2">Dikeluarkan</td>
+            <td className="border-2 border-black py-2">Barang telah dikeluarkan oleh</td>
             <td className="border-2 border-black py-2">Atasan</td>
             <td className="border-2 border-black py-2">Pemohon</td>
           </tr>

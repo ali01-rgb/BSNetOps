@@ -64,10 +64,6 @@ export default function EditItem({ itemData, onClose }) {
           {/* Baris Input Lokasi & Tanggal Edit */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Lokasi Penyimpanan</label>
-              <input type="text" required value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Tanggal Masuk</label>
               <input 
                 type="date" 

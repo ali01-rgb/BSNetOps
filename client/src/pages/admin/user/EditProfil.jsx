@@ -31,8 +31,8 @@ export default function EditProfil() {
         namaLengkap: 'Chico Diar Ramadhan',
         nipPegawai: '21120124140150',
         email: 'chico.diar@example.com',
-        divisi: 'IT',
-        jabatan: 'Staff',
+        divisi: 'KC Semarang', 
+        jabatan: 'User', 
         noTelepon: '085157778659',
         avatar: null
       });
@@ -117,12 +117,26 @@ export default function EditProfil() {
               </div>
             </div>
 
-            {/* Mengubah Label menjadi Unit */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Unit</label>
               <div className="relative flex items-center">
                 <Building size={16} className="absolute left-3 text-zinc-400" />
-                <input type="text" name="divisi" value={profile.divisi} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors" required />
+                <select 
+                  name="divisi" 
+                  value={profile.divisi} 
+                  onChange={handleChange} 
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors cursor-pointer" 
+                  required
+                >
+                  <option value="" disabled hidden>Pilih Unit</option>
+                  <option value="KC Semarang">KC Semarang</option>
+                  <option value="KCP Majapahit">KCP Majapahit</option>
+                  <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                  <option value="KCP Ungaran">KCP Ungaran</option>
+                  <option value="KCP Kendal">KCP Kendal</option>
+                  <option value="KCP Kudus">KCP Kudus</option>
+                  <option value="KCP Magelang">KCP Magelang</option>
+                </select>
               </div>
             </div>
 
@@ -130,7 +144,17 @@ export default function EditProfil() {
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Jabatan</label>
               <div className="relative flex items-center">
                 <Briefcase size={16} className="absolute left-3 text-zinc-400" />
-                <input type="text" name="jabatan" value={profile.jabatan} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors" required />
+                <select 
+                  name="jabatan" 
+                  value={profile.jabatan} 
+                  onChange={handleChange} 
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors cursor-pointer" 
+                  required
+                >
+                  <option value="" disabled hidden>Pilih Jabatan</option>
+                  <option value="Head User">Head User</option>
+                  <option value="User">User</option>
+                </select>
               </div>
             </div>
 

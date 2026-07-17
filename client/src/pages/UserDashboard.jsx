@@ -26,7 +26,7 @@ export default function UserDashboard({ setCurrentView }) {
 
       {/* 2. Quick Actions Menu */}
       <div>
-        <h3 className="text-zinc-700 font-semibold mb-3 text-sm tracking-wide uppercase">Aksi</h3>
+        <h3 className="text-white font-semibold mb-3 text-sm tracking-wide uppercase">Aksi</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
           {/* Action 1: Request Barang -> Ajukan Permintaan */}

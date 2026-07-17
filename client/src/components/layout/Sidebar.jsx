@@ -7,7 +7,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
   const currentMenu = menuConfig[role] || [];
 
   return (
-    // 🖨️ DITAMBAHKAN print:hidden DI SINI
+    // DITAMBAHKAN print:hidden DI SINI
     <aside 
       className={`fixed md:sticky top-0 bottom-0 left-0 z-50 h-screen bg-[#FEFEFA] text-zinc-500 flex flex-col justify-between transition-all duration-300 print:hidden ${
         isOpen 
@@ -18,7 +18,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
       {/* INTERNAL WRAPPER: Membungkus seluruh konten agar flex-col bekerja sempurna */}
       <div className="flex flex-col h-full justify-between overflow-hidden">
         
-        {/* ================= BAGIAN ATAS: NAVIGASI MENU ================= */}
+        {/* BAGIAN ATAS: NAVIGASI MENU  */}
         <div className="flex flex-col space-y-4 flex-1 overflow-y-auto pr-1 select-none">
           
           {/* Header Kontrol dengan Label Teks MENU di Kiri & Tombol X di Kanan */}
@@ -63,15 +63,14 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
           </nav>
         </div>
 
-        {/* ================= BAGIAN BAWAH: PANEL PROFIL TERKUNCI ================= */}
-        {/* Border atas diganti border-zinc-100 dan background menyatu bg-white */}
+        {/* BAGIAN BAWAH: PANEL PROFIL TERKUNCI*/}
         <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-2 px-1 bg-white shrink-0 mt-4">
           <div className="flex items-center gap-3 overflow-hidden">
-            {/* Avatar Lingkaran - Tetap dengan aksen hijau estetik */}
+            {/* Avatar Lingkaran */}
             <div className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center font-bold text-emerald-600 shrink-0 text-xs shadow-sm">
               CD
             </div>
-            {/* Label Informasi Pengguna - Teks diganti ke zinc gelap agar kontras */}
+            {/* Label Informasi Pengguna */}
             <div className="flex flex-col truncate">
               <span className="text-xs font-bold text-zinc-800 truncate">Chico Diar</span>
               <span className="text-[10px] capitalize tracking-wider font-bold text-emerald-600 mt-0.5">{role}</span>

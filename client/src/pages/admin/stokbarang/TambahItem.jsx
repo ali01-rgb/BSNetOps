@@ -61,10 +61,6 @@ export default function TambahItem({ onClose }) {
           {/* Baris Input Lokasi & Tanggal */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Lokasi Rak/Gudang</label>
-              <input type="text" required placeholder="Contoh: Rak B-4" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b]" />
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Tanggal Masuk</label>
               <input 
                 type="date" 

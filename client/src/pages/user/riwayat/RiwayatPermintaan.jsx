@@ -13,14 +13,14 @@ export default function RiwayatPermintaan() {
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-zinc-800">
       <div>
         <h2 className="text-xl font-bold text-white tracking-tight">Riwayat Log Permintaan</h2>
-        <p className="text-xs text-white-100 font-normal mt-1">Pantau status persetujuan berkas permohonan inventaris Anda secara real-time.</p>
+        <p className="text-xs text-white font-normal mt-1">Pantau status persetujuan berkas permohonan inventaris Anda secara real-time.</p>
       </div>
 
       <div className="bg-white border border-zinc-200/80 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50/70 text-zinc-500 text-[11px] font-bold uppercase tracking-wider">
+              <tr className="border-b border-zinc-100 bg-[#58a27d] text-white text-[11px] font-bold uppercase tracking-wider">
                 <th className="py-3 px-4">Tanggal</th>
                 <th className="py-3 px-4">Nama Barang</th>
                 <th className="py-3 px-4">Jumlah</th>
@@ -31,10 +31,10 @@ export default function RiwayatPermintaan() {
             <tbody className="text-xs font-semibold text-zinc-700 divide-y divide-zinc-100">
               {logRiwayat.map((log) => (
                 <tr key={log.id} className="hover:bg-zinc-50/50 transition-colors">
-                  <td className="py-3.5 px-4 text-zinc-400 font-normal">{log.tgl}</td>
+                  <td className="py-3.5 px-4 text-zinc-600 font-normal">{log.tgl}</td>
                   <td className="py-3.5 px-4 text-zinc-900">{log.barang}</td>
                   <td className="py-3.5 px-4">{log.jumlah} Pcs</td>
-                  <td className="py-3.5 px-4 text-zinc-500 font-normal max-w-xs truncate">{log.ket}</td>
+                  <td className="py-3.5 px-4 text-zinc-600 font-normal max-w-xs truncate">{log.ket}</td>
                   <td className="py-3.5 px-4">
                     <div className="flex justify-center">
                       {log.status === 'Pending' && (
