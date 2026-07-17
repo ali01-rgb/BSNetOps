@@ -13,7 +13,7 @@ const data = [
 const COLORS = ['#00664b', '#3B82F6', '#FFBF00'];
 
 const activityLogs = [
-  { id: 1, item: 'Laptop Dell', unit: 'KCS Semarang', category: 'Elektronik', type: 'Keluar', date: '30/06/2026' },
+  { id: 1, item: 'Laptop Dell', unit: 'KC Semarang', category: 'Elektronik', type: 'Keluar', date: '30/06/2026' },
   { id: 2, item: 'Kertas A4', unit: 'KCP Ungaran', category: 'ATK', type: 'Masuk', date: '30/06/2026' },
   { id: 3, item: 'Proyektor Portable', unit: 'KCP Kendal', category: 'Lainnya', type: 'Keluar', date: '29/06/2026' },
 ];
