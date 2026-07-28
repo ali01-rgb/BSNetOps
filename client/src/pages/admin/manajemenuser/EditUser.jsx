@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 
-// Menambahkan onSave ke dalam parameter props
 export default function EditUser({ userData, onClose, onSave }) {
-  const [formData, setFormData] = useState({ id: '', name: '', email: '', role: '', status: '', isDeleted: false });
+  const [formData, setFormData] = useState({ 
+    id: '', 
+    originalId: '', 
+    name: '', 
+    email: '', 
+    role: 'Staff', 
+    unit: 'KC Semarang',
+    isSuspended: false,
+    isDeleted: false 
+  });
 
   useEffect(() => {
     if (userData) {
       setFormData({
         id: userData.id || '',
+        originalId: userData.originalId || '',
         name: userData.name || '',
         email: userData.email || '',
         role: userData.role || 'Staff',
-        status: userData.status || 'Aktif',
+        unit: userData.unit || 'KC Semarang',
+        isSuspended: userData.isSuspended || false,
         isDeleted: userData.isDeleted || false 
       });
     }
@@ -20,7 +30,6 @@ export default function EditUser({ userData, onClose, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Mengirimkan data yang sudah diedit kembali ke komponen induk
     onSave(formData);
   };
 
@@ -38,34 +47,73 @@ export default function EditUser({ userData, onClose, onSave }) {
           </button>
         </div>
 
-        {/* Menggunakan fungsi handleSubmit */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Nama Lengkap</label>
-            <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
+            <input 
+              type="text" 
+              required 
+              value={formData.name} 
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Email Resmi BSN</label>
-            <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
+            <input 
+              type="email" 
+              required 
+              value={formData.email} 
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses</label>
-              <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
+              <select 
+                value={formData.role} 
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+              >
                 <option value="Staff">Staff</option>
                 <option value="Admin">Admin</option>
+                <option value="Manager">Manager</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Akun</label>
-              {/* Value "Nonaktif" diubah jadi "Ditangguhkan" agar text di tabel selaras dengan pilihan */}
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Aktif">Aktif</option>
-                <option value="Ditangguhkan">Ditangguhkan</option>
+              <label className="block text-sm font-semibold text-zinc-700 mb-1">Unit / Cabang</label>
+              <select 
+                value={formData.unit} 
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })} 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+              >
+                <option value="KC Semarang">KC Semarang</option>
+                <option value="KCP Majapahit">KCP Majapahit</option>
+                <option value="KCP Ungaran">KCP Ungaran</option>
+                <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                <option value="KCP Kendal">KCP Kendal</option>
+                <option value="KCP Kudus">KCP Kudus</option>
+                <option value="KCP Magelang">KCP Magelang</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Keaktifan Akun</label>
+            <select 
+              value={formData.isSuspended ? "suspended" : "active"} 
+              onChange={(e) => setFormData({ ...formData, isSuspended: e.target.value === "suspended" })} 
+              className={`w-full px-4 py-2 border rounded-lg text-sm font-semibold focus:outline-none cursor-pointer ${
+                formData.isSuspended ? 'bg-red-50 border-red-300 text-red-600' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+              }`}
+            >
+              <option value="active">✅ Aktif (Diizinkan Login)</option>
+              <option value="suspended">⛔ Ditangguhkan / Suspended (Blokir Login)</option>
+            </select>
+            <p className="text-[11px] text-zinc-400 mt-1">Jika ditangguhkan, user tidak akan bisa masuk ke dalam sistem saat mencoba login.</p>
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">

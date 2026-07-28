@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { InventoryController } from './inventory.controller';
-import { JwtModule } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service'; // 👈 1. Ambil service database lo
+import { InventoryService } from './inventory.service';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module'; // 🔥 IMPORT INI
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
+    PrismaModule, 
+    NotificationsModule // 🔥 TAMBAHKAN KE DALAM ARRAY IMPORTS
+  ], 
   controllers: [InventoryController],
-  providers: [PrismaService], // 👈 2. Masukkan ke providers biar controller gak crash nyari DB
+  providers: [InventoryService],
 })
 export class InventoryModule {}

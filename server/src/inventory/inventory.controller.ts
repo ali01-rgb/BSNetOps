@@ -1,80 +1,184 @@
-import { Controller, Get, Post, Body, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Patch, 
+  Delete, 
+  Body, 
+  UseGuards, 
+  Request, 
+  HttpException, 
+  HttpStatus, 
+  Param 
+} from '@nestjs/common';
+import { InventoryService } from './inventory.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { PrismaService } from '../prisma/prisma.service'; 
 
 @Controller('inventory')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class InventoryController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly inventoryService: InventoryService) {}
 
-  // ==========================================
-  // 1. AMBIL SEMUA ASET
-  // ==========================================
+  // ================= ASSETS =================
   @Get('assets')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('USER', 'MANAGER', 'ADMIN', 'user', 'manager', 'admin') // 🔥 Amankan dua-duanya biar gak 403 lagi
+  @Roles('USER', 'MANAGER', 'ADMIN', 'user', 'manager', 'admin')
   async getAssets() {
     try {
-      const assets = await this.prisma.asset.findMany({
-        orderBy: {
-          kode_barang: 'asc',
-        },
-      });
+      const assets = await this.inventoryService.getAllAssets();
       return { status: 'success', data: assets };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // ==========================================
-  // 2. KIRIM FORM PERMINTAAN BARANG
-  // ==========================================
-  @Post('request')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('USER', 'user') // 🔥 Amankan dua-duanya
+  // ================= REQUESTS (USER) =================
+  @Post('requests')
+  @Roles('USER', 'user')
   async createRequest(@Body() body: any, @Request() req: any) {
-    const userId = req.user.sub; 
-
     try {
-      await this.prisma.request.create({
-        data: {
-          userId: userId,
-          nama_aset: body.nama_aset,
-          jumlah: parseInt(body.jumlah),
-          prioritas: body.prioritas,
-          tanggal_dibutuhkan: new Date(body.tanggal_dibutuhkan),
-          alasan: body.alasan,
-          status: 'Pending', 
-        },
-      });
+      await this.inventoryService.createRequest(req.user.sub, body);
       return { status: 'success', message: 'Permintaan berhasil diajukan!' };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // ==========================================
-  // 3. AMBIL RIWAYAT REQUEST SENDIRI
-  // ==========================================
-  @Get('my-requests') 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('USER', 'user') // 🔥 Amankan dua-duanya
+  @Get('my-requests')
+  @Roles('USER', 'user')
   async getMyRequests(@Request() req: any) {
-    const userId = req.user.sub;
-
     try {
-      const myRequests = await this.prisma.request.findMany({
-        where: {
-          userId: userId,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
+      const myRequests = await this.inventoryService.getMyRequests(req.user.sub);
       return { status: 'success', data: myRequests };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ================= REQUESTS (ADMIN & MANAGER) =================
+  @Get('admin/requests')
+  @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
+  async getAllRequestsForAdmin() {
+    try {
+      const data = await this.inventoryService.getAllRequestsForAdmin();
+      return { status: 'success', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('admin/requests/:id/status')
+  @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
+  async updateRequestStatus(@Param('id') id: string, @Body('status') status: string) {
+    try {
+      await this.inventoryService.updateRequestStatus(id, status);
+      return { status: 'success', message: `Status berhasil diubah menjadi ${status}` };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ================= TABEL KATEGORI BARANG (ADMIN) =================
+  @Get('categories')
+  @Roles('ADMIN', 'admin', 'MANAGER', 'manager', 'USER', 'user')
+  async getCategories() {
+    try {
+      const data = await this.inventoryService.getAllCategories();
+      return { status: 'success', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('categories')
+  @Roles('ADMIN', 'admin')
+  async createCategory(@Body() body: any) {
+    try {
+      const data = await this.inventoryService.createCategory(body);
+      return { status: 'success', message: 'Kategori berhasil ditambahkan', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Patch('categories/:id')
+  @Roles('ADMIN', 'admin')
+  async updateCategory(@Param('id') id: string, @Body() body: any) {
+    try {
+      const data = await this.inventoryService.updateCategory(id, body);
+      return { status: 'success', message: 'Kategori berhasil diperbarui', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Delete('categories/:id')
+  @Roles('ADMIN', 'admin')
+  async deleteCategory(@Param('id') id: string) {
+    try {
+      await this.inventoryService.deleteCategory(id);
+      return { status: 'success', message: 'Kategori berhasil dihapus secara permanen' };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ================= MANAJEMEN USER / STAF (ADMIN) =================
+  @Get('users')
+  @Roles('ADMIN', 'admin')
+  async getAllUsers() {
+    try {
+      const data = await this.inventoryService.getAllUsers();
+      return { status: 'success', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('users')
+  @Roles('ADMIN', 'admin')
+  async createUserByAdmin(@Body() body: any) {
+    try {
+      const data = await this.inventoryService.createUserByAdmin(body);
+      return { status: 'success', message: 'User/Staf baru berhasil ditambahkan', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Patch('users/:id')
+  @Roles('ADMIN', 'admin')
+  async updateUserByAdmin(@Param('id') id: string, @Body() body: any) {
+    try {
+      const data = await this.inventoryService.updateUserByAdmin(id, body);
+      return { status: 'success', message: 'Data user berhasil diperbarui', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Delete('users/:id')
+  @Roles('ADMIN', 'admin')
+  async deleteUserByAdmin(@Param('id') id: string) {
+    try {
+      await this.inventoryService.deleteUserByAdmin(id);
+      return { status: 'success', message: 'User berhasil dihapus' };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

@@ -7,14 +7,79 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  employeeId  String   @unique              // Sesuai form: ID Staff
-  username    String   @unique              // Sesuai form Register & Login
-  email       String   @unique              // Buat reset password & login
-  password    String?                        
-  fullName    String?                       // Tetap ada buat nama asli karyawan
-  role        String   @default("USER")     
-  hasSignedUp Boolean  @default(false)      
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String         @id @default(uuid())
+  employeeId    String         @unique                // Sesuai form: ID Staff
+  username      String         @unique                // Sesuai form Register & Login
+  email         String         @unique                // Buat reset password & login
+  password      String?                              
+  fullName      String?                               // Tetap ada buat nama asli karyawan
+  divisi        String?                               // Divisi Karyawan
+  phone         String?                               // Nomor Telepon Karyawan
+  avatar        String?
+  role          String         @default("USER")      
+  hasSignedUp   Boolean        @default(false)        
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  requests      Request[] 
+  notifications Notification[]
+}
+
+model Request {
+  id                 String   @id @default(uuid())
+  no_urut            Int      @default(autoincrement()) // Buat generate urutan RQ-001
+  nama_aset          String
+  jumlah             Int
+  prioritas          String
+  tanggal_dibutuhkan DateTime
+  alasan             String
+  status             String   @default("Pending")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt                // Yang bikin historis lengkap
+
+  // Jembatan Relasi ke User
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+// --- TABEL KATEGORI BARANG ---
+model Category {
+  id            String    @id @default(uuid())
+  category_code String?   @unique // Tanda (?) dipasang sementara biar push lolos & data aman!
+  name          String
+  description   String?
+  deleted_at    DateTime? // Untuk fitur Soft Delete (Tong Sampah)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  assets        Asset[]
+}
+
+// --- TABEL ASSET (Stok Barang Gabungan) ---
+model Asset {
+  id            String    @id @default(uuid())
+  kode_barang   String    @unique
+  nama_barang   String
+  stok          Int       @default(0)
+  location      String?   // Ditambahkan dari tabel Item
+  status        String    @default("Aman") // Ditambahkan dari tabel Item
+  image_url     String?   // Berfungsi sama seperti image di Item
+  deleted_at    DateTime? // Untuk fitur Soft Delete (Tong Sampah)
+  createdAt     DateTime  @default(now()) // Tanggal masuk barang otomatis
+  updatedAt     DateTime  @updatedAt
+
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String   // "Request Barang Baru"
+  message   String   // "Chico meminta 10 Kertas HVS"
+  type      String   @default("info") // approved, rejected, request, history, alert
+  target    String   // "penyetujuan-barang" (Nama path di Frontend)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relasi ke tabel User (Siapa yang nerima notif ini)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

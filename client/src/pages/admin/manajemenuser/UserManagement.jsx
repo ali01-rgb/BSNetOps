@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft } from 'lucide-react';
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
 
-const initialUsersData = [
-  { id: 'USR-001', name: 'Chico Diar Ramadhan', email: 'chico.diar@bsn.go.id', role: 'Admin', status: 'Aktif', isDeleted: false },
-  { id: 'USR-003', name: 'Ahmad Subarjo', email: 'ahmad.subarjo@bsn.go.id', role: 'Staff', status: 'Aktif', isDeleted: false },
-  { id: 'USR-004', name: 'Siti Rahmawati', email: 'siti.rahma@bsn.go.id', role: 'Admin', status: 'Aktif', isDeleted: false },
-];
-
 export default function UserManagement() {
-  const [users, setUsers] = useState(initialUsersData);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -19,36 +14,155 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('Semua');
 
+  // 🔥 FETCH DATA DARI NESTJS API (Route disesuaikan ke /inventory/users)
+  useEffect(() => {
+    fetchUsersFromAPI();
+  }, []);
+
+  const fetchUsersFromAPI = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const res = await fetch("http://localhost:3000/inventory/users", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Gagal mengambil data");
+      
+      const resJson = await res.json();
+      const data = resJson.data || resJson;
+
+      if (Array.isArray(data)) {
+        const formattedData = data.map(u => ({
+          id: u.employeeId || u.staff_id || u.id, 
+          originalId: u.id, 
+          name: u.fullName || u.username || 'Tanpa Nama',
+          email: u.email,
+          role: u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1).toLowerCase() : 'Staff',
+          unit: u.divisi || u.unit || 'KC Semarang',
+          isSuspended: u.is_suspended || false,
+          status: u.is_suspended ? 'Ditangguhkan' : 'Aktif', 
+          isDeleted: u.deleted_at ? true : false,
+          deleted_at: u.deleted_at
+        }));
+        
+        formattedData.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        setUsers(formattedData);
+      }
+    } catch (error) {
+      console.error('Gagal memuat data user:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEditClick = (user) => {
     setSelectedUser(user);
     setIsEditOpen(true);
   };
 
-  const handleUpdateUser = (updatedUser) => {
-    setUsers(users.map(user => user.id === updatedUser.id ? updatedUser : user));
-    setIsEditOpen(false);
-    alert(`Sukses: Data akun ${updatedUser.name} berhasil diperbarui menjadi status ${updatedUser.status}!`);
-  };
+  // 🔥 UPDATE USER (Route disesuaikan ke /inventory/users/:id)
+  const handleUpdateUser = async (updatedUser) => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const res = await fetch(`http://localhost:3000/inventory/users/${updatedUser.originalId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: updatedUser.name,
+          username: updatedUser.name.toLowerCase().replace(/\s+/g, ''), // Fallback format username
+          email: updatedUser.email,
+          role: updatedUser.role.toUpperCase(), // Sesuai dengan format backend
+          divisi: updatedUser.unit, // Sesuai dengan field backend
+          is_suspended: updatedUser.isSuspended
+        })
+      });
 
-  const handleSoftDelete = (id, name) => {
-    if (window.confirm(`Apakah Anda yakin ingin memindahkan akun ${name} (${id}) ke tempat sampah?`)) {
-      setUsers(users.map(user => 
-        user.id === id ? { ...user, isDeleted: true } : user
-      ));
+      if (!res.ok) throw new Error("Gagal memperbarui");
+
+      setIsEditOpen(false);
+      alert(`Sukses: Data akun ${updatedUser.name} berhasil diperbarui!`);
+      fetchUsersFromAPI(); 
+    } catch (error) {
+      console.error('Gagal memperbarui user:', error.message);
+      alert('Terjadi kesalahan saat memperbarui database.');
     }
   };
 
-  const handleRestore = (id, name) => {
-    if (window.confirm(`Kembalikan hak akses akun untuk ${name} (${id})?`)) {
-      setUsers(users.map(user => 
-        user.id === id ? { ...user, isDeleted: false } : user
-      ));
+  // 🔥 SOFT DELETE (Arsip Ke Trash)
+  const handleSoftDelete = async (originalId, name) => {
+    if (window.confirm(`Apakah Anda yakin ingin memindahkan akun ${name} ke tempat sampah?`)) {
+      try {
+        const timestamp = new Date().toISOString();
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        
+        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ deleted_at: timestamp })
+        });
+
+        if (!res.ok) throw new Error("Gagal menghapus sementara");
+
+        setUsers(users.map(user => 
+          user.originalId === originalId ? { ...user, isDeleted: true, deleted_at: timestamp } : user
+        ));
+      } catch (error) {
+        console.error('Gagal mengarsipkan akun:', error.message);
+        alert('Terjadi kesalahan pada database.');
+      }
     }
   };
 
-  const handleHardDelete = (id, name) => {
-    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus PERMANEN akun ${name} (${id})? Data tidak dapat dikembalikan.`)) {
-      setUsers(users.filter(user => user.id !== id));
+  // 🔥 RESTORE USER DARI TRASH
+  const handleRestore = async (originalId, name) => {
+    if (window.confirm(`Kembalikan hak akses akun untuk ${name}?`)) {
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ deleted_at: null })
+        });
+
+        if (!res.ok) throw new Error("Gagal merestore");
+
+        setUsers(users.map(user => 
+          user.originalId === originalId ? { ...user, isDeleted: false, deleted_at: null } : user
+        ));
+      } catch (error) {
+        console.error('Gagal memulihkan akun:', error.message);
+        alert('Terjadi kesalahan pada database.');
+      }
+    }
+  };
+
+  // 🔥 HARD DELETE (Hapus Permanen)
+  const handleHardDelete = async (originalId, name) => {
+    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus PERMANEN akun ${name}? Data tidak dapat dikembalikan.`)) {
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error("Gagal menghapus permanen");
+
+        setUsers(users.filter(user => user.originalId !== originalId));
+      } catch (error) {
+        console.error('Gagal menghapus permanen akun:', error.message);
+        alert('Terjadi kesalahan pada database.');
+      }
     }
   };
 
@@ -62,8 +176,7 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
-      
-      {/* Header Utama disamakan dengan layout Stok Barang */}
+      {/* Header Utama */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           {showTrash && (
@@ -95,7 +208,7 @@ export default function UserManagement() {
           {!showTrash && (
             <button 
               onClick={() => setIsAddOpen(true)}
-              className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95"
+              className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               <Plus size={16} /> Daftarkan User Baru
             </button>
@@ -122,7 +235,8 @@ export default function UserManagement() {
             onChange={(e) => setRoleFilter(e.target.value)}
             className="bg-transparent text-sm text-zinc-600 focus:outline-none cursor-pointer py-2 pr-2 font-medium"
           >
-            <option value="Semua">Hak Akses</option>
+            <option value="Semua">Semua</option>
+            <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
             <option value="Staff">Staff</option>
           </select>
@@ -143,7 +257,13 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {processedUsers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
+                    Memuat data dari database...
+                  </td>
+                </tr>
+              ) : processedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
                     {showTrash 
@@ -153,7 +273,7 @@ export default function UserManagement() {
                 </tr>
               ) : (
                 processedUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-zinc-50/40 transition-colors">
+                  <tr key={user.originalId} className="hover:bg-zinc-50/40 transition-colors">
                     <td className="p-4 font-mono text-xs font-bold text-zinc-900 bg-zinc-50/30">{user.id}</td>
                     <td className="p-4 font-semibold text-zinc-900">{user.name}</td>
                     <td className="p-4 text-zinc-900 font-medium">{user.email}</td>
@@ -172,8 +292,10 @@ export default function UserManagement() {
                         <span className="text-xs font-semibold text-red-500">Terhapus</span>
                       ) : (
                         <>
-                          <span className={`inline-block h-2 w-2 rounded-full mr-2 ${user.status === 'Aktif' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                          <span className={`text-xs font-semibold ${user.status === 'Aktif' ? 'text-zinc-800' : 'text-red-600'}`}>{user.status}</span>
+                          <span className={`inline-block h-2 w-2 rounded-full mr-2 ${!user.isSuspended ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                          <span className={`text-xs font-semibold ${!user.isSuspended ? 'text-zinc-800' : 'text-red-600'}`}>
+                            {!user.isSuspended ? 'Aktif' : 'Ditangguhkan'}
+                          </span>
                         </>
                       )}
                     </td>
@@ -181,13 +303,13 @@ export default function UserManagement() {
                       {showTrash ? (
                         <div className="flex justify-end gap-2">
                           <button 
-                            onClick={() => handleRestore(user.id, user.name)}
+                            onClick={() => handleRestore(user.originalId, user.name)}
                             className="p-1.5 text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
                           >
                             <RotateCcw size={14} /> Restore
                           </button>
                           <button 
-                            onClick={() => handleHardDelete(user.id, user.name)}
+                            onClick={() => handleHardDelete(user.originalId, user.name)}
                             className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
                           >
                             <XCircle size={14} /> Hapus Permanen
@@ -198,14 +320,14 @@ export default function UserManagement() {
                           <button 
                             onClick={() => handleEditClick(user)}
                             title="Edit Data"
-                            className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center"
+                            className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all inline-flex items-center cursor-pointer"
                           >
                             <Edit3 size={16} />
                           </button>
                           <button 
-                            onClick={() => handleSoftDelete(user.id, user.name)}
+                            onClick={() => handleSoftDelete(user.originalId, user.name)}
                             title="Pindah ke Tempat Sampah"
-                            className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center"
+                            className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center cursor-pointer"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -220,9 +342,23 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {isAddOpen && <TambahUser onClose={() => setIsAddOpen(false)} />}
-      {isEditOpen && <EditUser userData={selectedUser} onSave={handleUpdateUser} onClose={() => setIsEditOpen(false)} />}
-
+      {isAddOpen && (
+        <TambahUser 
+          onClose={() => setIsAddOpen(false)} 
+          onSuccess={() => {
+            setIsAddOpen(false);
+            fetchUsersFromAPI();
+          }} 
+        />
+      )}
+      
+      {isEditOpen && (
+        <EditUser 
+          userData={selectedUser} 
+          onSave={handleUpdateUser} 
+          onClose={() => setIsEditOpen(false)} 
+        />
+      )}
     </div>
   );
 }

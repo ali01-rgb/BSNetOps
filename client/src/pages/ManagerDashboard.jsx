@@ -1,26 +1,27 @@
 import React from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
-import { ClipboardList, AlertTriangle, Users2, ShieldAlert, Building2, Package } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList } from 'recharts';
+import { ClipboardList, AlertTriangle, CheckSquare, ShieldAlert, Building2, Package } from 'lucide-react';
 
-// Data Dummy untuk grafik utilisasi barang per divisi kerja
-const divisionData = [
-  { name: 'IT Ops', Pinjam: 45, Tersedia: 20 },
-  { name: 'HRD', Pinjam: 12, Tersedia: 15 },
-  { name: 'Finance', Pinjam: 8, Tersedia: 10 },
-  { name: 'PR / Humas', Pinjam: 25, Tersedia: 5 },
+// 🔥 DATA BARU: Berdasarkan Unit, membandingkan Barang Diminta vs Barang Keluar
+const unitData = [
+  { name: 'KC Semarang', Diminta: 45, Keluar: 35 },
+  { name: 'KCP Majapahit', Diminta: 25, Keluar: 20 },
+  { name: 'KCP Ngaliyan', Diminta: 18, Keluar: 15 },
+  { name: 'KCP Ungaran', Diminta: 30, Keluar: 28 },
+  { name: 'KCP Kendal', Diminta: 15, Keluar: 10 },
+  { name: 'KCP Kudus', Diminta: 20, Keluar: 18 },
+  { name: 'KCP Magelang', Diminta: 12, Keluar: 12 },
 ];
 
-// ================= CUSTOM LEGEND DENGAN DOUBLE BORDER (Sesuai image_6178c6.png) =================
 const CustomLegend = (props) => {
   const { payload } = props;
 
   return (
     <div className="flex items-center justify-center gap-6 mb-6 select-none">
       {payload.map((entry, index) => {
-        // Ambil warna asli dari entry Recharts
-        const isPinjam = entry.dataKey === 'Pinjam';
-        const baseColor = isPinjam ? '#58a27d' : '#3b82f6';
-        const borderColor = isPinjam ? 'rgba(88, 162, 125, 0.4)' : 'rgba(59, 130, 246, 0.4)';
+        const isKeluar = entry.dataKey === 'Keluar';
+        const baseColor = isKeluar ? '#58a27d' : '#3b82f6';
+        const borderColor = isKeluar ? 'rgba(88, 162, 125, 0.4)' : 'rgba(59, 130, 246, 0.4)';
 
         return (
           <div key={`item-${index}`} className="flex items-center gap-3 text-sm font-semibold">
@@ -36,7 +37,7 @@ const CustomLegend = (props) => {
               />
             </div>
             {/* Teks Label Legend */}
-            <span style={{ color: isPinjam ? '#1f2937' : '#1e3a8a' }}>
+            <span style={{ color: isKeluar ? '#1f2937' : '#1e3a8a' }}>
               {entry.value}
             </span>
           </div>
@@ -46,16 +47,16 @@ const CustomLegend = (props) => {
   );
 };
 
-// ================= CUSTOM TOOLTIP FIXED FULL WHITE SOLID =================
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const pinjamVal = payload.find(p => p.dataKey === 'Pinjam')?.value || 0;
-    const tersediaVal = payload.find(p => p.dataKey === 'Tersedia')?.value || 0;
+    //  AMBIL  KEY BARUDATA
+    const dimintaVal = payload.find(p => p.dataKey === 'Diminta')?.value || 0;
+    const keluarVal = payload.find(p => p.dataKey === 'Keluar')?.value || 0;
 
     return (
       <div className="bg-white border border-zinc-200 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-4 w-64 text-zinc-800 opacity-100 flex flex-col select-none pointer-events-none">
         
-        {/* Header Judul Nama Divisi + Ikon Gedung */}
+        {/* Header Judul Nama Unit + Ikon Gedung */}
         <div className="flex items-center gap-2.5 pb-2.5 border-b border-zinc-100 w-full">
           <div className="w-7 h-7 rounded-lg bg-[#004d38] text-white flex items-center justify-center shadow-sm shrink-0">
             <Building2 size={15} />
@@ -65,29 +66,31 @@ const CustomTooltip = ({ active, payload, label }) => {
 
         {/* Isi Indikator Data */}
         <div className="mt-3 space-y-2.5 text-xs font-semibold w-full">
-          {/* Baris Kategori: Sedang Dipinjam */}
+          
+          {/* Baris Kategori: Barang Diminta (Biru) */}
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58a27d' }}></span>
-              <span className="text-zinc-600 font-medium">Permintaan Selesai</span>
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></span>
+              <span className="text-zinc-600 font-medium">Barang Diminta</span>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-[#58a27d] border border-emerald-100/50 rounded-md shrink-0">
-              <span className="font-bold">{pinjamVal}</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100/50 rounded-md shrink-0">
+              <span className="font-bold">{dimintaVal}</span>
               <ClipboardList size={11} className="opacity-80" />
             </div>
           </div>
 
-          {/* Baris Kategori: Tersedia di Gudang */}
+          {/* Baris Kategori: Barang Keluar/Distribusi (Hijau) */}
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></span>
-              <span className="text-zinc-600 font-medium">Tersedia di Gudang</span>
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58a27d' }}></span>
+              <span className="text-zinc-600 font-medium">Telah Didistribusi</span>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100/50 rounded-md shrink-0">
-              <span className="font-bold">{tersediaVal}</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-[#58a27d] border border-emerald-100/50 rounded-md shrink-0">
+              <span className="font-bold">{keluarVal}</span>
               <Package size={11} className="opacity-80" />
             </div>
           </div>
+          
         </div>
 
       </div>
@@ -103,11 +106,12 @@ export default function ManagerDashboard() {
       {/* 1. Header Halaman */}
       <div>
         <h2 className="text-xl font-bold text-white tracking-tight">Manager Oversight Dashboard</h2>
-        <p className="text-xs text-white-100 font-normal mt-0.5">Ringkasan Analitik Distribusi Divisi dan Status Urgensi Inventaris Global</p>
+        <p className="text-xs text-white font-normal mt-0.5">Ringkasan Analitik Distribusi Unit dan Status Urgensi Inventaris Global</p>
       </div>
 
       {/* 2. Ringkasan Eksekutif */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
         {/* Antrean Approval Card */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm border-l-4 border-l-amber-500 transition-all hover:scale-[1.01]">
           <div className="flex justify-between items-start">
@@ -120,15 +124,15 @@ export default function ManagerDashboard() {
           </div>
         </div>
 
-        {/* Aset Aktif Card */}
+        {/* Barang Keluar Card (Menggantikan Aset Aktif Dipinjam) */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm border-l-4 border-l-[#00664b] transition-all hover:scale-[1.01]">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Aset Aktif Dipinjam</h3>
+              <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Barang Keluar</h3>
               <p className="text-3xl font-bold text-zinc-900 mt-2">92 Unit</p>
-              <p className="text-[11px] text-zinc-400 mt-2">Sedang digunakan oleh staf operasional</p>
+              <p className="text-[11px] text-zinc-400 mt-2">Total barang yang telah disetujui & didistribusikan</p>
             </div>
-            <div className="p-2.5 bg-green-50 text-[#00664b] rounded-lg"><Users2 size={20} /></div>
+            <div className="p-2.5 bg-green-50 text-[#00664b] rounded-lg"><CheckSquare size={20} /></div>
           </div>
         </div>
 
@@ -148,30 +152,29 @@ export default function ManagerDashboard() {
       {/* 3. Visual Analitik Konten: Grafik Batang Distribusi */}
       <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm">
         <div className="mb-4">
-          <h3 className="font-bold text-zinc-900 text-base">Statistik Distribusi Barang per Divisi</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">Memantau rasio perbandingan barang yang terpakai vs cadangan stok siap pakai</p>
+          <h3 className="font-bold text-zinc-900 text-base">Statistik Permintaan vs Distribusi per Unit</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">Memantau rasio perbandingan jumlah barang yang diminta dengan barang yang telah didistribusikan</p>
         </div>
-        <div className="h-80 w-full pt-4">
+        <div className="h-90 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={divisionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            {/* Gunakan unitData yang baru */}
+            <BarChart data={unitData} margin={{ top: 30, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-              <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} />
+              <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} dy={5} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} />
+
+              {/* Tooltip dihapus/di-comment */}
+              {/* <Tooltip ... /> */}
               
-              <Tooltip 
-                content={<CustomTooltip />} 
-                cursor={{ fill: '#f4f4f5', opacity: 0.6 }}
-                position={({ x, y }) => {
-                  const targetX = x > 250 ? x - 275 : x + 20;
-                  return { x: targetX, y: y - 40 };
-                }}
-              />
-              
-              {/* FIX TOTAL: Menyuntikkan komponen CustomLegend ganti bentuk bawaan */}
               <Legend verticalAlign="top" content={<CustomLegend />} />
               
-              <Bar dataKey="Pinjam" fill="#58a27d" name="Sedang Dipinjam" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="Tersedia" fill="#3b82f6" name="Tersedia di Gudang" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="Diminta" fill="#3b82f6" name="Barang Diminta" radius={[12, 12, 0, 0]}>
+                <LabelList dataKey="Diminta" position="top" fontSize={15} fill="#3b82f6" fontWeight="bold" />
+              </Bar>
+              
+              <Bar dataKey="Keluar" fill="#58a27d" name="Barang Keluar" radius={[12, 12, 0, 0]}>
+                <LabelList dataKey="Keluar" position="top" fontSize={15} fill="#58a27d" fontWeight="bold" />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -181,7 +184,7 @@ export default function ManagerDashboard() {
       <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 flex items-center gap-3">
         <div className="p-2 bg-zinc-200/60 text-zinc-600 rounded-md shrink-0"><ShieldAlert size={18} /></div>
         <p className="text-xs text-zinc-600 leading-relaxed">
-          <strong>Mode Akun: Manager (Read-Only Data Analitik).</strong> Anda tidak memiliki hak akses untuk memanipulasi, menambah, atau menghapus entri barang fisik di dalam sistem inventaris gudang. Otoritas penuh mutasi aset dipegang oleh Admin.
+          <strong>Mode Akun: Manager (Read-Only Data Analitik).</strong> Anda tidak memiliki hak akses untuk memanipulasi, menambah, atau menghapus entri barang fisik di dalam sistem inventaris gudang. Otoritas penuh mutasi aset dipegang oleh Admin Gudang.
         </p>
       </div>
 

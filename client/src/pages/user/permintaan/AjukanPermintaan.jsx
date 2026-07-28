@@ -5,18 +5,17 @@ import TemplateDokumenA4 from './TemplateDokumenA4';
 export default function AjukanPermintaan() {
   const printRef = useRef();
 
-  // 🛒 AMBIL DATA BANYAK BARANG DARI KERANJANG
+  // AMBIL DATA BANYAK BARANG DARI KERANJANG
   const savedAssets = JSON.parse(localStorage.getItem('selectedAssetData')) || [];
   const isMultiItem = Array.isArray(savedAssets) && savedAssets.length > 0;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
   
+  // 🔥 Prioritas dihapus dari global, sisa data pemohon & tanggal aja
   const [formData, setFormData] = useState({
     namaLengkap: '', nipPegawai: '', divisi: '', jabatan: '', email: '', noTelepon: '',
-    tanggalDibutuhkan: '', 
-    prioritas: '', 
-    alasanDibutuhkan: ''
+    tanggalDibutuhkan: ''
   });
 
   const [daftarBarang, setDaftarBarang] = useState([]);
@@ -26,7 +25,9 @@ export default function AjukanPermintaan() {
       const items = savedAssets.map(asset => ({
         namaAset: asset.namaAset,
         kodeAset: asset.kodeAset,
-        jumlah: asset.jumlah || 1
+        jumlah: asset.jumlah || 1,
+        keterangan: '', 
+        prioritas: '' // 🔥 Prioritas ditambahkan ke per-barang
       }));
       setDaftarBarang(items);
       localStorage.removeItem('selectedAssetData');
@@ -38,15 +39,13 @@ export default function AjukanPermintaan() {
       setFormData(prev => ({
         ...prev,
         namaLengkap: activeUser.namaLengkap || activeUser.name || '',
-        nipPegawai: activeUser.nipPegawai || activeUser.nip || '',
-        divisi: activeUser.divisi || '',
+        nipPegawai: activeUser.nipPegawai || activeUser.employeeId || '', // Sesuai DB NestJS
+        divisi: activeUser.divisi || activeUser.unit || '',
         jabatan: activeUser.jabatan || '',
         email: activeUser.email || '',
         noTelepon: activeUser.noTelepon || activeUser.phone || ''
       }));
     } else {
-      // Nilai default jika tidak ada profil tersimpan.
-      // Divisi dan Jabatan dikosongkan agar pengguna wajib memilih dari dropdown.
       setFormData(prev => ({
         ...prev,
         namaLengkap: 'Chico Diar Ramadhan',
@@ -57,23 +56,28 @@ export default function AjukanPermintaan() {
         noTelepon: '085157778659'
       }));
     }
-  }, []);
+  }, [isMultiItem]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "alasanDibutuhkan") {
-      const kata = value.trim().split(/\s+/);
-      if (kata.length > 40) {
-        alert("Batas maksimum pengisian keterangan adalah 40 kata agar muat dalam format cetak!");
-        return;
-      }
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleQtyChange = (index, val) => {
     const updated = [...daftarBarang];
     updated[index].jumlah = parseInt(val) || 1;
+    setDaftarBarang(updated);
+  };
+
+  const handleKeteranganItemChange = (index, val) => {
+    const updated = [...daftarBarang];
+    updated[index].keterangan = val;
+    setDaftarBarang(updated);
+  };
+
+  const handlePrioritasItemChange = (index, val) => {
+    const updated = [...daftarBarang];
+    updated[index].prioritas = val;
     setDaftarBarang(updated);
   };
 
@@ -85,6 +89,14 @@ export default function AjukanPermintaan() {
         alert("Belum ada barang yang diajukan. Silakan pilih kembali dari katalog.");
         return;
       }
+      
+      // Validasi: Pastikan semua barang sudah dipilih prioritasnya
+      const unprioritized = daftarBarang.find(b => !b.prioritas);
+      if (unprioritized) {
+        alert(`Silakan pilih prioritas untuk barang: ${unprioritized.namaAset}`);
+        return;
+      }
+      
       setCurrentStep(3);
     }
   };
@@ -94,9 +106,53 @@ export default function AjukanPermintaan() {
     else if (currentStep === 3) setCurrentStep(2);
   };
 
-  const handleSubmitFinal = () => {
-    console.log("Data Sent to Backend:", { ...formData, barang: daftarBarang });
-    setCurrentStep(4);
+  const handleSubmitFinal = async () => {
+    // ✅ PERBAIKAN: Deteksi dua kemungkinan nama kunci token
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    
+    if (!token) {
+      alert("Sesi Anda tidak valid atau telah habis. Silakan Logout dan Login kembali.");
+      return;
+    }
+
+    setIsExporting(true); 
+
+    try {
+      // Pastikan URL pakai 'requests' sesuai controller yang lu ubah terakhir ya
+      const res = await fetch("http://localhost:3000/inventory/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          namaLengkap: formData.namaLengkap,
+          nipPegawai: formData.nipPegawai,
+          divisi: formData.divisi,
+          jabatan: formData.jabatan,
+          tanggalDibutuhkan: formData.tanggalDibutuhkan,
+          items: daftarBarang.map(b => ({
+            kodeAset: b.kodeAset,
+            namaAset: b.namaAset,
+            jumlah: b.jumlah,
+            prioritas: b.prioritas,
+            keterangan: b.keterangan
+          }))
+        })
+      });
+
+      if (res.ok) {
+        // Lanjut ke Step 4 (Cetak PDF) kalau sukses
+        setCurrentStep(4);
+      } else {
+        const errorData = await res.json();
+        alert(`Gagal mengirim permohonan: ${errorData.message}`);
+      }
+    } catch (err) {
+      alert("Error: Gagal terhubung ke server NestJS.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -133,7 +189,6 @@ export default function AjukanPermintaan() {
     });
   };
 
-  // 🔥 FUNGSI BARU: Mendapatkan tanggal hari ini (Format YYYY-MM-DD)
   const getTodayDate = () => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -196,7 +251,6 @@ export default function AjukanPermintaan() {
               {currentStep === 1 && (
                 <>
                   <h2 className="text-xl font-bold mb-6">Informasi Pemohon</h2>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
@@ -206,8 +260,6 @@ export default function AjukanPermintaan() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">NIP/ ID pegawai</label>
                       <input type="text" name="nipPegawai" value={formData.nipPegawai} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
                     </div>
-                    
-                    {/* DROPDOWN UNIT */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
                       <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
@@ -221,25 +273,16 @@ export default function AjukanPermintaan() {
                         <option value="KCP Magelang">KCP Magelang</option>
                       </select>
                     </div>
-                    
-                    {/* DROPDOWN JABATAN */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label>
                       <select name="jabatan" value={formData.jabatan} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
                         <option value="" disabled hidden>Pilih Jabatan</option>
-                        <option value="Staff">Staff</option>
-                        <option value="Supervisor">Head Unit</option>
+                        <option value="Head User">Head Unit</option>
+                        <option value="User">User</option>
                       </select>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">No Telephone</label>
-                      <input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
-                    </div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">No Telephone</label><input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required /></div>
                   </div>
                   <div className="text-center text-xs text-gray-500 mt-8">1/3</div>
                 </>
@@ -249,65 +292,70 @@ export default function AjukanPermintaan() {
               {currentStep === 2 && (
                 <>
                   <h2 className="text-xl font-bold mb-4">Daftar Barang yang Diminta</h2>
-                  
-                  <div className="border border-zinc-200 rounded-xl p-4 bg-zinc-50/50 space-y-3 mb-6 max-h-[220px] overflow-y-auto">
+                  <span className="text-gray-400 text-sm select-none">
+                        Silakan isi prioritas, kuantitas, dan keterangan untuk setiap barang...
+                  </span>
+                  <div className="border border-zinc-200 rounded-xl p-4 bg-zinc-50/50 space-y-4 mb-6 max-h-[300px] overflow-y-auto">
                     {daftarBarang.map((barang, idx) => (
-                      <div key={barang.kodeAset} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-white border border-zinc-200 rounded-lg shadow-sm">
-                        <div>
-                          <div className="text-xs font-bold capitalize text-zinc-800">{barang.namaAset}</div>
-                          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{barang.kodeAset}</div>
+                      <div key={barang.kodeAset} className="flex flex-col gap-3 p-3 bg-white border border-zinc-200 rounded-lg shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="text-xs font-bold capitalize text-zinc-800">{barang.namaAset}</div>
+                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{barang.kodeAset}</div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-zinc-600 font-medium">Prioritas:</label>
+                              <select 
+                                value={barang.prioritas || ""} 
+                                onChange={(e) => handlePrioritasItemChange(idx, e.target.value)} 
+                                className="w-24 text-xs border border-zinc-300 rounded py-1 px-1.5 focus:outline-[#4d8c6b] cursor-pointer" 
+                                required
+                              >
+                                <option value="" disabled hidden>Pilih</option>
+                                <option value="Rendah">Rendah</option>
+                                <option value="Sedang">Sedang</option>
+                                <option value="Tinggi">Tinggi</option>
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-zinc-600 font-medium">Jumlah:</label>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                value={barang.jumlah} 
+                                onChange={(e) => handleQtyChange(idx, e.target.value)} 
+                                className="w-16 text-center text-xs border border-zinc-300 rounded py-1 px-1.5 focus:outline-[#4d8c6b]"
+                                required
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-[11px] text-zinc-600 font-medium">Jumlah:</label>
+                        <div className="w-full">
                           <input 
-                            type="number" 
-                            min="1" 
-                            value={barang.jumlah} 
-                            onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                            className="w-16 text-center text-xs border border-zinc-300 rounded py-1 px-1.5 focus:outline-[#4d8c6b]"
-                            required
+                            type="text" 
+                            placeholder="Keterangan (Opsional, max 40 kata)..." 
+                            value={barang.keterangan || ''}
+                            onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
+                            className="w-full text-xs border border-gray-300 rounded bg-gray-50 py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#4d8c6b]"
                           />
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prioritas</label>
-                      <select name="prioritas" value={formData.prioritas} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer" required>
-                        <option value="" disabled hidden>Pilih Prioritas</option>
-                        <option value="Rendah">Rendah (🔵)</option>
-                        <option value="Sedang">Sedang (🟡)</option>
-                        <option value="Tinggi">Tinggi (🔴)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Dibutuhkan</label>
-                      <input 
-                        type="date" 
-                        name="tanggalDibutuhkan" 
-                        value={formData.tanggalDibutuhkan} 
-                        onChange={handleChange} 
-                        min={getTodayDate()} 
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg" 
-                        required 
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Keterangan <span className="text-gray-400 text-xs font-normal">(Opsional)</span>
-                      </label>
-                      <textarea 
-                        name="alasanDibutuhkan" 
-                        value={formData.alasanDibutuhkan} 
-                        onChange={handleChange} 
-                        rows="3" 
-                        placeholder="Tambahkan keterangan jika ada..." 
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none" 
-                      ></textarea>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Dibutuhkan</label>
+                    <input 
+                      type="date" 
+                      name="tanggalDibutuhkan" 
+                      value={formData.tanggalDibutuhkan} 
+                      onChange={handleChange} 
+                      min={getTodayDate()} 
+                      className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg" 
+                      required 
+                    />
                   </div>
                   <div className="text-center text-xs text-gray-500 mt-8">2/3</div>
                 </>
@@ -326,7 +374,7 @@ export default function AjukanPermintaan() {
                 <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-y-2 text-sm">
                   <span className="font-medium">Nama Lengkap</span><span>: {formData.namaLengkap}</span>
                   <span className="font-medium">Unit</span><span>: {formData.divisi}</span>
-                  <span className="font-medium">Prioritas & Tanggal</span><span>: {formData.prioritas} | {formData.tanggalDibutuhkan}</span>
+                  <span className="font-medium">Tanggal Dibutuhkan</span><span>: {formData.tanggalDibutuhkan}</span>
                 </div>
               </div>
               <hr className="border-gray-300 my-4" />
@@ -335,16 +383,28 @@ export default function AjukanPermintaan() {
                 <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
                   <div className="bg-zinc-100 font-bold p-2.5 grid grid-cols-[1fr_100px]"><span>Nama Barang</span><span>Kuantitas</span></div>
                   {daftarBarang.map((b) => (
-                    <div key={b.kodeAset} className="border-t border-zinc-200 p-2.5 grid grid-cols-[1fr_100px] capitalize">
-                      <span>{b.namaAset} ({b.kodeAset})</span>
-                      <span className="font-bold">{b.jumlah} Item</span>
+                    <div key={b.kodeAset} className="border-t border-zinc-200 p-2.5 flex justify-between items-center capitalize">
+                      <div>
+                        <span className="block font-medium">{b.namaAset} ({b.kodeAset})</span>
+                        <span className="text-[10px] text-gray-500 block mt-1">
+                          <span className="font-bold text-[#4d8c6b]">[{b.prioritas}]</span> {b.keterangan ? `- Ket: ${b.keterangan}` : ''}
+                        </span>
+                      </div>
+                      <span className="font-bold whitespace-nowrap">{b.jumlah} Item</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="flex justify-end space-x-4 mt-8">
-                <button type="button" onClick={handleBack} className="px-6 py-2 border border-gray-400 text-gray-700 rounded-lg text-sm font-medium">Ubah</button>
-                <button type="button" onClick={handleSubmitFinal} className="px-6 py-2 bg-[#045936] text-white rounded-lg text-sm font-medium">Ajukan Permintaan</button>
+                <button type="button" onClick={handleBack} className="px-6 py-2 border border-gray-400 text-gray-700 rounded-lg text-sm font-medium cursor-pointer">Ubah</button>
+                <button 
+                  type="button" 
+                  onClick={handleSubmitFinal} 
+                  disabled={isExporting}
+                  className="px-6 py-2 bg-[#045936] text-white rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+                >
+                  {isExporting ? 'Mengirim...' : 'Ajukan Permintaan'}
+                </button>
               </div>
             </div>
           )}

@@ -4,30 +4,27 @@ import { Request } from 'express';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  // Kita inject JwtService bawaan NestJS untuk memverifikasi token
   constructor(private jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    
-    // 1. Ekstrak token Bearer dari header request
+    const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
     
     if (!token) {
-      throw new UnauthorizedException('Token tidak ditemukan. Silakan login terlebih dahulu.');
+      throw new UnauthorizedException('Akses ditolak: Token tidak ditemukan.');
     }
     
     try {
-      // 2. Verifikasi token menggunakan secret key dari file .env kamu
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET, 
-      });
+      // 🔥 KITA KEMBALIKAN KE VERSI SIMPEL: Cukup verifyAsync(token)
+      // Karena JwtModule udah global, dia otomatis pakai kunci dari auth.module.ts
+      const payload = await this.jwtService.verifyAsync(token);
       
-      // 3. Simpan payload (id, username, role) ke dalam object request
-      // Ini WAJIB supaya RolesGuard bisa membaca: request.user.role
-      request['user'] = payload;
-    } catch {
-      throw new UnauthorizedException('Token tidak valid atau sudah kadaluarsa.');
+      request['user'] = payload; 
+    } catch (error) {
+      const err = error as Error;
+      // 🔥 RADAR ERROR: Biar ketahuan apa yang bikin JWT nolak
+      console.log("🚨 ALASAN TOKEN DITOLAK:", err.message);
+      throw new UnauthorizedException('Akses ditolak: Token tidak valid atau sudah kedaluwarsa.');
     }
     
     return true;

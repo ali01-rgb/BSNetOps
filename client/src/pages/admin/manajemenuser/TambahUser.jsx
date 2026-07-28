@@ -1,8 +1,57 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 
-export default function TambahUser({ onClose }) {
-  const [formData, setFormData] = useState({ name: '', email: '', role: 'Staff', status: 'Aktif' });
+export default function TambahUser({ onClose, onSuccess }) {
+  const [formData, setFormData] = useState({ 
+    employeeId: '', // ID Staff resmi dari Admin
+    name: '', 
+    email: '', 
+    role: 'Staff', 
+    unit: 'KC Semarang' 
+  });
+  
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+      const res = await fetch("http://localhost:3000/inventory/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          employeeId: formData.employeeId, // ID Staff dari input Admin
+          fullName: formData.name,
+          username: formData.email.split('@')[0], 
+          email: formData.email,
+          role: formData.role.toUpperCase(), 
+          divisi: formData.unit,
+          hasSignedUp: false // Penanda bahwa akun belum diaktifkan user
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Gagal menyimpan ke database");
+      }
+
+      alert(`Sukses! Pre-registrasi berhasil untuk ID Staff: ${formData.employeeId}`);
+      if (onSuccess) onSuccess(); 
+      onClose(); 
+
+    } catch (error) {
+      console.error('Gagal mendaftarkan user baru:', error.message);
+      alert('Terjadi kesalahan saat menyimpan: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -11,45 +60,86 @@ export default function TambahUser({ onClose }) {
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
             <h3 className="text-lg font-bold text-zinc-900">Daftarkan User Baru</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Berikan otorisasi masuk sistem logistik kepada pegawai baru</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Otorisasi ID Staff pegawai untuk pembuatan akun logistik BSN</p>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onClose(); }} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          
+          <div>
+            <label className="block text-sm font-semibold text-zinc-700 mb-1">ID Staff / NIP Pegawai</label>
+            <input 
+              type="text" 
+              required 
+              value={formData.employeeId}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              placeholder="Contoh: BSN-001" 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white font-mono uppercase" 
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Nama Lengkap</label>
-            <input type="text" required placeholder="Contoh: Budi Setiawan" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
+            <input 
+              type="text" 
+              required 
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Contoh: Budi Setiawan" 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+            />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Email Resmi BSN</label>
-            <input type="email" required placeholder="budi.s@bsn.go.id" className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" />
+            <input 
+              type="email" 
+              required 
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="budi.s@bsn.go.id" 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Hak Akses</label>
-              <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Staff">Staff</option>
+              <select 
+                value={formData.role} 
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+              >
+                <option value="Staff">Staff (User)</option>
                 <option value="Admin">Admin</option>
+                <option value="Manager">Manager</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Awal</label>
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer">
-                <option value="Aktif">Aktif</option>
-                <option value="Nonaktif">Ditangguhkan</option>
+              <label className="block text-sm font-semibold text-zinc-700 mb-1">Unit / Cabang</label>
+              <select 
+                value={formData.unit} 
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })} 
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+              >
+                <option value="KC Semarang">KC Semarang</option>
+                <option value="KCP Majapahit">KCP Majapahit</option>
+                <option value="KCP Ungaran">KCP Ungaran</option>
+                <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                <option value="KCP Kendal">KCP Kendal</option>
+                <option value="KCP Kudus">KCP Kudus</option>
+                <option value="KCP Magelang">KCP Magelang</option>
               </select>
             </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
-            <button type="submit" className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer">
-              <Save size={16} /> Simpan User
+            <button type="submit" disabled={loading} className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50">
+              <Save size={16} /> {loading ? 'Menyimpan...' : 'Simpan Pre-Registrasi'}
             </button>
           </div>
         </form>
