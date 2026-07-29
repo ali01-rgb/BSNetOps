@@ -182,8 +182,14 @@ export default function KategoriBarang() {
         </table>
       </div>
 
-      {isAddOpen && <TambahKategori onClose={() => setIsAddOpen(false)} onSuccess={fetchCategories} />}
+      {isAddOpen && (
+        <TambahKategori 
+         onClose={() => setIsAddOpen(false)} 
+         onSuccess={fetchCategories} 
+        existingCategoriesCount={categories.length} // Mengirimkan total data kategori aktif
+      />)}
       {isEditOpen && <EditKategori categoryData={selectedCategory} onClose={() => setIsEditOpen(false)} onSuccess={fetchCategories} />}
+       
     </div>
   );
 }

@@ -1,40 +1,39 @@
-import { Controller, Get, Patch, Param, Headers, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, UseGuards, Request } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('notifications')
+@UseGuards(JwtAuthGuard)
 export class NotificationsController {
-  constructor(
-    private readonly notifsService: NotificationsService,
-    private jwtService: JwtService
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
-  // Fungsi internal untuk ekstrak ID dari Token
-  private getUserId(authHeader: string): string {
-    if (!authHeader) throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = this.jwtService.verify(token);
-      return decoded.sub; // ID user
-    } catch {
-      throw new HttpException('Token Invalid', HttpStatus.UNAUTHORIZED);
-    }
-  }
-
+  // 1. Get notifications for current user
   @Get()
-  getNotifs(@Headers('authorization') authHeader: string) {
-    const userId = this.getUserId(authHeader);
-    return this.notifsService.getUserNotifications(userId);
+  async getUserNotifications(@Request() req) {
+    return this.notificationsService.findByUser(req.user);
   }
 
-  @Patch(':id/read')
-  markRead(@Param('id') id: string) {
-    return this.notifsService.markAsRead(id);
-  }
-
+  // 2. Read all notifications
   @Patch('read-all')
-  markAllRead(@Headers('authorization') authHeader: string) {
-    const userId = this.getUserId(authHeader);
-    return this.notifsService.markAllAsRead(userId);
+  async markAllAsRead(@Request() req) {
+    return this.notificationsService.markAllAsRead(req.user);
+  }
+
+  // 3. Read single notification
+  @Patch(':id/read')
+  async markAsRead(@Param('id') id: string) {
+    return this.notificationsService.markAsRead(id);
+  }
+
+  // 4. Delete all notifications
+  @Delete()
+  async deleteAllNotifications(@Request() req) {
+    return this.notificationsService.deleteAllNotifications(req.user);
+  }
+
+  // 5. Delete single notification
+  @Delete(':id')
+  async deleteNotification(@Param('id') id: string) {
+    return this.notificationsService.deleteNotification(id);
   }
 }

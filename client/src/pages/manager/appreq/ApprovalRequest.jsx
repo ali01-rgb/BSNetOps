@@ -29,7 +29,7 @@ export default function ApprovalRequest() {
     fetchRequestsFromAPI();
   }, []);
 
-  // 🔥 FETCH DATA DARI NESTJS API
+  // 🔥 FETCH DATA DARI NESTJS API & GROUPING SINKRON DENGAN ADMIN
   const fetchRequestsFromAPI = async () => {
     setLoading(true);
     try {
@@ -41,33 +41,60 @@ export default function ApprovalRequest() {
       if (!res.ok) throw new Error("Gagal mengambil data permintaan");
 
       const resJson = await res.json();
-      const data = resJson.data || resJson;
+      const rawRequests = resJson.data || resJson;
 
-      if (Array.isArray(data)) {
-        // Mapping data dari backend NestJS agar sesuai dengan format UI tabel yang butuh array 'items'
-        const formattedData = data.map(req => {
-          return {
-            id: req.id,
-            namaPemohon: req.user?.fullName || req.user?.username || 'Tanpa Nama',
-            unit: req.user?.divisi || 'KC Semarang',
-            prioritas: req.prioritas || 'Rendah',
-            tanggal: new Date(req.createdAt).toLocaleDateString('id-ID'),
-            jam: new Date(req.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            status: req.status || 'Menunggu Manager',
-            keperluan: req.alasan || '-',
-            // Karena backend memecah request per item, kita bungkus kembali ke array agar UI modal tetap jalan
-            items: [{
-              idItem: req.id,
-              kodeBarang: '-', 
-              namaBarang: req.nama_aset,
-              jumlahDiminta: req.jumlah,
-              jumlahDisetujui: req.jumlah, 
-              prioritas: req.prioritas || 'Rendah', 
-              remark: req.alasan || ''
-            }]
-          };
-        });
-        setRequests(formattedData);
+      if (Array.isArray(rawRequests)) {
+        // 🔥 LOGIKA GROUPING DAN GENERATE KODE UNIK PRETTY ID (SINKRON DENGAN ADMIN)
+        const groupedData = rawRequests.reduce((acc, curr) => {
+          const rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
+          const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+          const pemohonName = curr.user?.fullName || curr.user?.username || 'Pemohon BSN';
+          const divisiPemohon = curr.user?.divisi || 'KC Semarang';
+
+          const groupKey = `${tglStr}-${curr.userId}`;
+
+          // Format penerjemah status untuk Tab UI Manager
+          let currentStatus = curr.status || 'Pending';
+          if (currentStatus === 'Pending' || currentStatus === 'Diteruskan' || currentStatus === 'menunggu') {
+            currentStatus = 'Menunggu Manager';
+          } else if (currentStatus === 'Disetujui' || currentStatus === 'Selesai') {
+            currentStatus = 'Selesai';
+          }
+
+          if (!acc[groupKey]) {
+            const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
+            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const prettyId = `REQ-${tglFormatId}-${padId}`; // Contoh: REQ-20260729-001
+
+            acc[groupKey] = {
+              id: prettyId, // ID Cantik
+              namaPemohon: pemohonName,
+              unit: divisiPemohon,
+              prioritas: curr.prioritas || 'Rendah',
+              tanggal: tglStr,
+              jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              status: currentStatus,
+              keperluan: curr.alasan || '-',
+              items: []
+            };
+          }
+
+          acc[groupKey].items.push({
+            idItem: curr.id, // Menyimpan UUID asli backend untuk request PATCH status
+            kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-', 
+            namaBarang: curr.nama_aset || 'Barang Logistik',
+            jumlahDiminta: curr.jumlah || 1,
+            jumlahDisetujui: curr.jumlah || 1, 
+            prioritas: curr.prioritas || 'Rendah', 
+            remark: curr.alasan || ''
+          });
+
+          return acc;
+        }, {});
+
+        const formattedList = Object.values(groupedData);
+        formattedList.sort((a, b) => b.id.localeCompare(a.id));
+        setRequests(formattedList);
       }
     } catch (error) {
       console.error('Gagal memuat data permintaan:', error.message);
@@ -120,21 +147,30 @@ export default function ApprovalRequest() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Proses semua target yang dipilih secara berurutan
-      for (const reqId of confirmTargets) {
+      // Ambil seluruh idItem (UUID database) dari target grup yang dipilih
+      const targetItemIds = [];
+      confirmTargets.forEach(prettyId => {
+        const foundGroup = requests.find(r => r.id === prettyId);
+        if (foundGroup) {
+          foundGroup.items.forEach(item => targetItemIds.push(item.idItem));
+        }
+      });
+
+      // Update status ke NestJS untuk setiap item
+      for (const reqId of targetItemIds) {
         const res = await fetch(`http://localhost:3000/inventory/admin/requests/${reqId}/status`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ status: confirmType }) // 'Selesai' atau 'Ditolak'
+          body: JSON.stringify({ status: confirmType === 'Selesai' ? 'Disetujui' : 'Ditolak' })
         });
 
         if (!res.ok) throw new Error(`Gagal memproses request ${reqId}`);
       }
 
-      alert(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC & diteruskan' : 'ditolak'}!`);
+      alert(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
 
       setSelectedRows([]);
       setIsConfirmOpen(false);
@@ -313,7 +349,8 @@ export default function ApprovalRequest() {
                           />
                         )}
                       </td>
-                      <td className="py-4 px-2 font-mono font-bold text-zinc-900">{item.id.substring(0,8)}...</td>
+                      {/* 🔥 MENAMPILKAN ID UNIK CANTIK UTUH (SINKRON DENGAN ADMIN) */}
+                      <td className="py-4 px-2 font-mono font-bold text-zinc-900">{item.id}</td>
                       <td className="py-4 px-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-zinc-800">{item.namaPemohon}</span>

@@ -10,13 +10,96 @@ export class InventoryService {
     private notificationsService: NotificationsService
   ) {}
 
-  // ================= ASSETS =================
+  // ================= ASSETS (BARANG / INVENTARIS) =================
   async getAllAssets() {
     return await this.prisma.asset.findMany({
       orderBy: { kode_barang: 'asc' },
       include: {
         category: true, 
       },
+    });
+  }
+
+  async createAsset(data: any) {
+    const kodeBarang = data.kode_barang || data.id || `BRG-${Date.now()}`;
+    const namaBarang = data.nama_barang || data.nama_aset || data.name;
+    const stok = parseInt(data.stok ?? data.stock ?? 0, 10);
+
+    return await this.prisma.asset.create({
+      data: {
+        kode_barang: kodeBarang,
+        nama_barang: namaBarang,
+        stok: stok,
+        location: data.location || null,
+        status: data.status || (stok <= 3 ? 'Kritis' : 'Aman'),
+        image_url: data.image_url || data.image || null,
+        categoryId: data.categoryId || null,
+      },
+      include: { category: true }
+    });
+  }
+
+  async updateAsset(idParam: string, data: any) {
+    const existingAsset = await this.prisma.asset.findFirst({
+      where: {
+        OR: [
+          { id: idParam },
+          { kode_barang: idParam }
+        ]
+      }
+    });
+
+    if (!existingAsset) {
+      throw new NotFoundException(`Asset dengan ID atau Kode '${idParam}' tidak ditemukan.`);
+    }
+
+    const updatePayload: any = {};
+
+    if (data.nama_barang !== undefined || data.nama_aset !== undefined || data.name !== undefined) {
+      updatePayload.nama_barang = data.nama_barang || data.nama_aset || data.name;
+    }
+    if (data.stok !== undefined || data.stock !== undefined) {
+      updatePayload.stok = parseInt(data.stok ?? data.stock, 10);
+    }
+    if (data.location !== undefined) {
+      updatePayload.location = data.location;
+    }
+    if (data.status !== undefined) {
+      updatePayload.status = data.status;
+    }
+    if (data.image_url !== undefined || data.image !== undefined) {
+      updatePayload.image_url = data.image_url || data.image;
+    }
+    if (data.categoryId !== undefined) {
+      updatePayload.categoryId = data.categoryId || null;
+    }
+    if (data.deleted_at !== undefined) {
+      updatePayload.deleted_at = data.deleted_at ? new Date(data.deleted_at) : null;
+    }
+
+    return await this.prisma.asset.update({
+      where: { id: existingAsset.id },
+      data: updatePayload,
+      include: { category: true }
+    });
+  }
+
+  async deleteAsset(idParam: string) {
+    const existingAsset = await this.prisma.asset.findFirst({
+      where: {
+        OR: [
+          { id: idParam },
+          { kode_barang: idParam }
+        ]
+      }
+    });
+
+    if (!existingAsset) {
+      throw new NotFoundException(`Asset dengan ID atau Kode '${idParam}' tidak ditemukan.`);
+    }
+
+    return await this.prisma.asset.delete({
+      where: { id: existingAsset.id },
     });
   }
 
@@ -38,18 +121,19 @@ export class InventoryService {
 
     try {
       const userYangRequest = await this.prisma.user.findUnique({ where: { id: userId } });
+      // 🔥 FIX: Array Role yang lebih kuat
       const adminUsers = await this.prisma.user.findMany({ 
-        where: { role: { in: ['ADMIN', 'admin'] } } 
+        where: { role: { in: ['ADMIN', 'admin', 'Admin'] } } 
       });
       
       for (const admin of adminUsers) {
-        await this.notificationsService.createNotification(
-          admin.id,
-          'Request Barang Baru',
-          `${userYangRequest?.fullName || userYangRequest?.username || 'User'} mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
-          'request',
-          'penyetujuan-barang'
-        );
+        await this.notificationsService.createNotification({
+          userId: admin.id,
+          title: 'Request Barang Baru',
+          message: `${userYangRequest?.fullName || userYangRequest?.username || 'User'} mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
+          type: 'request',
+          target: 'penyetujuan-barang'
+        });
       }
     } catch (error) {
       console.log("Gagal mengirim notif ke Admin", error);
@@ -80,37 +164,39 @@ export class InventoryService {
     });
 
     try {
-      if (status === 'Diteruskan') {
+      if (status === 'Diteruskan' || status.toLowerCase() === 'diteruskan') {
+        // 🔥 FIX: Array Role Manager yang lebih kuat
         const managerUsers = await this.prisma.user.findMany({ 
-          where: { role: { in: ['MANAGER', 'manager'] } } 
+          where: { role: { in: ['MANAGER', 'manager', 'Manager'] } } 
         });
+        
         for (const manager of managerUsers) {
-          await this.notificationsService.createNotification(
-            manager.id,
-            'Menunggu Approval (ACC)',
-            `Admin telah meneruskan request ${updatedRequest.jumlah} ${updatedRequest.nama_aset}. Butuh ACC Anda.`,
-            'request',
-            'approval-request'
-          );
+          await this.notificationsService.createNotification({
+            userId: manager.id,
+            title: 'Menunggu Approval (ACC)',
+            message: `Admin telah meneruskan request ${updatedRequest.jumlah} ${updatedRequest.nama_aset}. Butuh ACC Anda.`,
+            type: 'request',
+            target: 'approval-request'
+          });
         }
       } 
-      else if (status === 'Disetujui') {
-        await this.notificationsService.createNotification(
-          updatedRequest.userId,
-          'Permintaan Disetujui',
-          `Yeay! Pengajuan ${updatedRequest.jumlah} ${updatedRequest.nama_aset} telah disetujui.`,
-          'approved',
-          'riwayat-permintaan'
-        );
+      else if (status === 'Disetujui' || status.toLowerCase() === 'disetujui') {
+        await this.notificationsService.createNotification({
+          userId: updatedRequest.userId,
+          title: 'Permintaan Disetujui',
+          message: `Yeay! Pengajuan ${updatedRequest.jumlah} ${updatedRequest.nama_aset} telah disetujui.`,
+          type: 'approved',
+          target: 'riwayat-permintaan'
+        });
       } 
-      else if (status === 'Ditolak') {
-        await this.notificationsService.createNotification(
-          updatedRequest.userId,
-          'Permintaan Ditolak',
-          `Maaf, pengajuan ${updatedRequest.jumlah} ${updatedRequest.nama_aset} ditolak.`,
-          'rejected',
-          'riwayat-permintaan'
-        );
+      else if (status === 'Ditolak' || status.toLowerCase() === 'ditolak') {
+        await this.notificationsService.createNotification({
+          userId: updatedRequest.userId,
+          title: 'Permintaan Ditolak',
+          message: `Maaf, pengajuan ${updatedRequest.jumlah} ${updatedRequest.nama_aset} ditolak.`,
+          type: 'rejected',
+          target: 'riwayat-permintaan'
+        });
       }
     } catch (error) {
       console.log("Gagal mengirim notif update status", error);

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient'; 
 
-export default function TambahItem({ onClose, onSuccess }) {
+export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 }) {
   const today = new Date().toISOString().split('T')[0];
 
-  const [categories, setCategories] = useState([]); // 🔥 State untuk daftar kategori dinamis
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ 
     name: '', 
-    categoryId: '', // 🔥 Ubah 'category' jadi 'categoryId' untuk nyambung ke database
+    categoryId: '', 
     stock: '', 
     location: '',
     date: today,
@@ -17,16 +17,18 @@ export default function TambahItem({ onClose, onSuccess }) {
 
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
-  // 🔥 FETCH DAFTAR KATEGORI SAAT MODAL DIBUKA
+  // Fetch daftar kategori
   useEffect(() => {
+    let isMounted = true;
     const fetchCategories = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         const res = await fetch("http://localhost:3000/inventory/categories", {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const resJson = await res.json();
           setCategories(resJson.data || resJson || []);
         }
@@ -35,16 +37,19 @@ export default function TambahItem({ onClose, onSuccess }) {
       }
     };
     fetchCategories();
+    return () => { isMounted = false; };
   }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Peringatan jika ukuran file lebih dari 2MB
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Ukuran gambar cukup besar (>2MB), proses simpan mungkin memerlukan beberapa detik ekstra.");
+      }
       setFormData({ ...formData, image: file });
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-      };
+      reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -54,79 +59,81 @@ export default function TambahItem({ onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      const dateCode = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const randomCode = Math.floor(100 + Math.random() * 900);
-      const generatedId = `BRG-${dateCode}-${randomCode}`;
-      const jumlahStok = parseInt(formData.stock) || 0;
+      // 1. Generate Kode Unik Instan (BRG-YYYYMMDD-001)
+      const dateString = formData.date || today;
+      const formattedDate = dateString.replace(/-/g, '');
+      const nextNumber = String(existingItemsCount + 1).padStart(3, '0');
+      const generatedKodeBarang = `BRG-${formattedDate}-${nextNumber}`;
 
       let imageUrl = null;
 
+      // 2. Upload Gambar Ke Supabase (Jika Ada)
       if (formData.image) {
+        setLoadingStatus('Mengunggah foto...');
         const file = formData.image;
         const fileExt = file.name.split('.').pop();
-        const fileName = `${generatedId}-${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const fileName = `${generatedKodeBarang}-${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('items-bucket') 
-          .upload(filePath, file);
+          .upload(fileName, file, { cacheControl: '3600', upsert: true });
 
-        if (uploadError) throw uploadError;
-
-        const { data: publicURLData } = supabase.storage
-          .from('items-bucket')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicURLData.publicUrl;
+        if (!uploadError) {
+          const { data: publicURLData } = supabase.storage
+            .from('items-bucket')
+            .getPublicUrl(fileName);
+          imageUrl = publicURLData.publicUrl;
+        }
       }
 
+      // 3. Simpan Ke Database Server NestJS
+      setLoadingStatus('Menyimpan ke database...');
+      const jumlahStok = parseInt(formData.stock, 10) || 0;
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/items", {
+      
+      const res = await fetch("http://localhost:3000/inventory/assets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          id: generatedId,
-          name: formData.name,
-          categoryId: formData.categoryId, // 🔥 Kirim ID Kategori ke backend
-          stock: jumlahStok,
+          kode_barang: generatedKodeBarang,
+          nama_barang: formData.name,
+          categoryId: formData.categoryId,
+          stok: jumlahStok,
           location: formData.location || '-',
-          date: formData.date,
           status: jumlahStok <= 3 ? 'Kritis' : 'Aman',
-          image: imageUrl,
-          deleted_at: null,
-          log_type: 'Masuk', 
-          requester: 'Admin Gudang'
+          image_url: imageUrl,
+          createdAt: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString()
         })
       });
 
-      if (!res.ok) throw new Error("Gagal menyimpan data ke database server");
+      if (!res.ok) throw new Error("Gagal menyimpan data ke server");
 
-      alert(`Sukses! Barang baru "${formData.name}" berhasil ditambahkan.`);
-      
+      // 4. Tutup Modal & Trigger Success Lebih Cepat
       if (onSuccess) onSuccess();
       onClose();
 
     } catch (error) {
       console.error('Gagal menyimpan:', error.message);
-      alert('Terjadi kesalahan saat upload/menyimpan: ' + error.message);
+      alert('Terjadi kesalahan saat menyimpan: ' + error.message);
     } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl border border-zinc-200 overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl border border-zinc-200 overflow-hidden animate-in zoom-in-95 duration-150">
         
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
             <h3 className="text-lg font-bold text-zinc-900">Tambah Item Baru</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Masukkan unit aset fisik logistik ke sistem gudang</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Kode otomatis: BRG-YYYYMMDD-001</p>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
+          <button onClick={onClose} disabled={loading} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
             <X size={18} />
           </button>
         </div>
@@ -148,7 +155,6 @@ export default function TambahItem({ onClose, onSuccess }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Kategori</label>
-              {/* 🔥 DROPDOWN KATEGORI DINAMIS */}
               <select 
                 required
                 value={formData.categoryId}
@@ -203,23 +209,23 @@ export default function TambahItem({ onClose, onSuccess }) {
 
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Foto Barang <span className="text-xs text-zinc-400 font-normal">(Opsional)</span></label>
-            <div className="relative mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-300 border-dashed rounded-xl hover:border-[#00664b] transition-colors bg-zinc-50 hover:bg-zinc-100/50 group cursor-pointer overflow-hidden">
+            <div className="relative mt-1 flex justify-center px-6 pt-4 pb-5 border-2 border-zinc-300 border-dashed rounded-xl hover:border-[#00664b] transition-colors bg-zinc-50 hover:bg-zinc-100/50 group cursor-pointer overflow-hidden">
               <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-              <div className="space-y-2 text-center relative z-0">
+              <div className="space-y-1 text-center relative z-0">
                 {preview ? (
                   <div className="flex flex-col items-center">
-                    <img src={preview} alt="Preview" className="h-32 object-contain rounded-lg shadow-sm mb-2" />
+                    <img src={preview} alt="Preview" className="h-28 object-contain rounded-lg shadow-sm mb-1" />
                     <p className="text-xs font-medium text-[#00664b]">Klik untuk ganti foto</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <div className="p-3 bg-zinc-200 rounded-full group-hover:bg-[#00664b]/10 transition-colors mb-2">
-                      <ImageIcon className="w-6 h-6 text-zinc-500 group-hover:text-[#00664b]" />
+                    <div className="p-2.5 bg-zinc-200 rounded-full group-hover:bg-[#00664b]/10 transition-colors mb-1">
+                      <ImageIcon className="w-5 h-5 text-zinc-500 group-hover:text-[#00664b]" />
                     </div>
-                    <div className="text-sm text-zinc-600">
-                      <span className="font-semibold text-[#00664b]">Klik untuk upload</span> atau drag and drop
+                    <div className="text-xs text-zinc-600">
+                      <span className="font-semibold text-[#00664b]">Klik untuk upload</span>
                     </div>
-                    <p className="text-xs text-zinc-500">PNG, JPG, JPEG (Max. 2MB)</p>
+                    <p className="text-[10px] text-zinc-400">PNG, JPG, JPEG (Max. 2MB)</p>
                   </div>
                 )}
               </div>
@@ -227,9 +233,9 @@ export default function TambahItem({ onClose, onSuccess }) {
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100 mt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
+            <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
             <button type="submit" disabled={loading} className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50">
-              <Save size={16} /> {loading ? 'Mengunggah & Menyimpan...' : 'Simpan Data'}
+              <Save size={16} /> {loading ? (loadingStatus || 'Menyimpan...') : 'Simpan Data'}
             </button>
           </div>
           

@@ -59,11 +59,11 @@ model Asset {
   kode_barang   String    @unique
   nama_barang   String
   stok          Int       @default(0)
-  location      String?   // Ditambahkan dari tabel Item
-  status        String    @default("Aman") // Ditambahkan dari tabel Item
-  image_url     String?   // Berfungsi sama seperti image di Item
-  deleted_at    DateTime? // Untuk fitur Soft Delete (Tong Sampah)
-  createdAt     DateTime  @default(now()) // Tanggal masuk barang otomatis
+  location      String?
+  status        String    @default("Aman")
+  image_url     String?
+  deleted_at    DateTime?
+  createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   categoryId    String?

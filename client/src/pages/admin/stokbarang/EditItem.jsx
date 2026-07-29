@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 
 export default function EditItem({ itemData, onClose, onSuccess }) {
-  const [categories, setCategories] = useState([]); // 🔥 State untuk daftar kategori dinamis
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ 
-    id: '', 
+    id: '',
+    kodeBarang: '',
     name: '', 
-    categoryId: '', // 🔥 Menyimpan ID kategori
+    categoryId: '', 
     stock: '', 
     location: '', 
     date: '' 
@@ -14,7 +15,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
   
   const [loading, setLoading] = useState(false);
 
-  // 🔥 FETCH DAFTAR KATEGORI
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -37,9 +37,10 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
     if (itemData) {
       setFormData({
         id: itemData.id || itemData.kode_barang || '',
-        name: itemData.name || itemData.nama_barang || '',
-        categoryId: itemData.categoryId || '', // 🔥 Menerima ID kategori bawaan item
-        stock: itemData.stock || itemData.stok || 0,
+        kodeBarang: itemData.kode_barang || itemData.id || '',
+        name: itemData.nama_barang || itemData.name || '',
+        categoryId: itemData.categoryId || '',
+        stock: itemData.stok ?? itemData.stock ?? 0,
         location: itemData.location || '',
         date: itemData.date || '' 
       });
@@ -52,18 +53,18 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:3000/inventory/items/${formData.id}`, {
+      // 🔥 FIX: Arahkan ke endpoint /inventory/assets/
+      const res = await fetch(`http://localhost:3000/inventory/assets/${formData.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: formData.name,
-          categoryId: formData.categoryId, // 🔥 Kirim ID kategori ke server
-          stock: parseInt(formData.stock) || 0,
+          nama_barang: formData.name,
+          categoryId: formData.categoryId,
+          stok: parseInt(formData.stock) || 0,
           location: formData.location || '-',
-          date: formData.date,
           status: parseInt(formData.stock) <= 3 ? 'Kritis' : 'Aman'
         })
       });
@@ -90,7 +91,7 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
             <h3 className="text-lg font-bold text-zinc-900">Ubah Data Barang</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Mengubah info aset dengan kode unik <span className="font-mono font-bold text-zinc-700">{formData.id}</span></p>
+            <p className="text-xs text-zinc-500 mt-0.5">Mengubah info aset dengan kode unik <span className="font-mono font-bold text-zinc-700">{formData.kodeBarang}</span></p>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
             <X size={18} />
@@ -112,7 +113,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Kategori</label>
-              {/* 🔥 DROPDOWN KATEGORI DINAMIS */}
               <select 
                 required
                 value={formData.categoryId} 
@@ -155,7 +155,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Tanggal Masuk</label>
               <input 
                 type="date" 
-                required 
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white text-zinc-700" 

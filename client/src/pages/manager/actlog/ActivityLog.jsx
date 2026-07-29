@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, CheckCircle2, XCircle, Activity, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar } from 'lucide-react';
+import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function ActivityLog() {
-  // 🔥 PASTIKAN STATE AWALNYA [] (KOSONG), BUKAN INITIAL DATA DUMMY
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State Filters bawaan UI lu
+  // State Filters bawaan UI
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
@@ -26,7 +25,6 @@ export default function ActivityLog() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Karena NestJS lu gak punya tabel Log khusus, kita ambil history dari tabel Requests
       const res = await fetch("http://localhost:3000/inventory/admin/requests", {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -38,14 +36,14 @@ export default function ActivityLog() {
         if (Array.isArray(data)) {
           // Mapping data Prisma Request ke format UI LogAktifitas
           const formatted = data.map(req => ({
-            id: req.no_urut ? `RQ-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
-            requester: req.user?.fullName || req.user?.username || 'User BSN',
+            id: req.no_urut ? `REQ-${new Date(req.createdAt || Date.now()).toISOString().slice(0,10).replace(/-/g, '')}-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
+            requester: req.user?.fullName || req.user?.username || 'user',
+            unit: req.user?.divisi || req.unit || 'KC Semarang', // 🔥 AMBIL DATA RELASI KC / DIVISI USER
             itemName: req.nama_aset || 'Barang',
             qty: req.jumlah || 1,
             date: req.createdAt || req.tanggal_dibutuhkan || new Date().toISOString(),
             managerStatus: req.status || 'Pending',
             adminStatus: req.status || 'Pending',
-            // Karena ini dari tabel request, otomatis kita anggap sbg barang 'Keluar'
             type: 'Keluar' 
           }));
           setHistory(formatted);
@@ -58,7 +56,7 @@ export default function ActivityLog() {
     }
   };
 
-  // 🔥 FILTERING JALAN DI CLIENT-SIDE
+  // 🔥 FILTERING CLIENT-SIDE
   const filteredHistory = history
     .filter(item => (statusFilter === 'Semua' ? true : item.managerStatus.toLowerCase() === statusFilter.toLowerCase()))
     .filter(item => (typeFilter === 'Semua' ? true : item.type === typeFilter))
@@ -78,6 +76,7 @@ export default function ActivityLog() {
     })
     .filter(item =>
       item.requester.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.unit.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.id.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -88,6 +87,7 @@ export default function ActivityLog() {
       "ID Transaksi": item.id,
       "Tipe Transaksi": item.type,
       "Nama Pemohon": item.requester,
+      "Unit / KC": item.unit,
       "Nama Barang / Logistik": item.itemName,
       "Jumlah (Unit)": item.qty,
       "Tanggal Transaksi": new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -97,7 +97,7 @@ export default function ActivityLog() {
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const columnWidths = [
-      { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 30 }, 
+      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 30 }, 
       { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
     ];
     worksheet['!cols'] = columnWidths;
@@ -110,32 +110,27 @@ export default function ActivityLog() {
   const getStatusBadge = (status) => {
     const statLower = String(status).toLowerCase();
     if (statLower === 'approved' || statLower === 'disetujui' || statLower === 'selesai') {
-      return <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 size={14} /> Approved</span>;
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20"><CheckCircle2 size={13} /> Selesai</span>;
     } else if (statLower === 'rejected' || statLower === 'ditolak') {
-      return <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200"><XCircle size={14} /> Rejected</span>;
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200"><XCircle size={13} /> Ditolak</span>;
     }
-    return <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200"><Clock size={14} /> {status}</span>;
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200"><Clock size={13} /> {status}</span>;
   };
 
   const getTypeIcon = (type) => {
     if (type === 'Masuk') {
       return <div className="p-2 bg-emerald-100 text-emerald-600 rounded-full ring-4 ring-white shadow-sm"><ArrowDownRight size={20} /></div>;
     }
-    return <div className="p-2 bg-red-100 text-[#FF0000] rounded-full ring-4 ring-white shadow-sm"><ArrowUpRight size={20} /></div>;
+    return <div className="p-2 bg-red-100 text-red-600 rounded-full ring-4 ring-white shadow-sm"><ArrowUpRight size={20} /></div>;
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-white border border-zinc-200 text-[#00664b] rounded-xl shadow-md">
-            <Activity size={24} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-zinc-900">Activity Log & Laporan</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Pantau arus barang masuk/keluar dan rekapitulasi data logistik BSN</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Activity Log & Laporan</h2>
+          <p className="text-xs text-white mt-0.5">Pantau arus barang masuk/keluar dan rekapitulasi data logistik BSN</p>
         </div>
 
         <button 
@@ -155,7 +150,7 @@ export default function ActivityLog() {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari ID request, nama pemohon, atau nama barang..." 
+              placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
@@ -177,9 +172,9 @@ export default function ActivityLog() {
               className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Status</option>
-              <option value="Approved">Approved</option>
+              <option value="Approved">Approved / Selesai</option>
               <option value="Pending">Pending</option>
-              <option value="Rejected">Rejected</option>
+              <option value="Rejected">Rejected / Ditolak</option>
             </select>
           </div>
         </div>
@@ -252,25 +247,38 @@ export default function ActivityLog() {
             <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
+                  {/* 🔥 SESUAI GAMBAR: "user melakukan pengambilan barang untuk dikirim ke KC Semarang berupa 15 Unit Pulpen." */}
                   <p className="text-sm text-zinc-700">
                     <span className="font-bold text-zinc-900">{item.requester}</span> 
-                    {item.type === 'Masuk' ? ' mendaftarkan barang masuk/restock ke dalam inventaris berupa ' : ' mengajukan permohonan peminjaman inventaris berupa '}
-                    <span className="font-semibold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
+                    {item.type === 'Masuk' 
+                      ? ' mendaftarkan barang masuk/restock berupa ' 
+                      : ' melakukan pengambilan barang untuk dikirim ke '}
+                    {item.type !== 'Masuk' && (
+                      <span className="font-bold text-zinc-900 underline decoration-zinc-300 underline-offset-2 mr-1">
+                        {item.unit}
+                      </span>
+                    )}
+                    berupa <span className="font-bold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
                   </p>
-                  <div className="flex gap-4 text-xs text-zinc-400">
-                    <span><Hash size={12} className="inline mr-1" />{item.id}</span>
-                    <span><Clock size={12} className="inline mr-1" />{new Date(item.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+
+                  {/* 🔥 META INFO: # ID | TANGGAL | BADGE KC DENGAN IKON LOKASI */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
+                    <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
+                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
+                    <span className="text-[#00664b] font-bold flex items-center gap-1 bg-[#e7f0ec] px-2 py-0.5 rounded-md">
+                      <MapPin size={12} /> {item.unit}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex flex-row items-center gap-2 sm:self-start">
-                  <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border ${
+                <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
+                  <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
                     item.type === 'Masuk' 
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                      : 'bg-red-50 text-red-700 border-red-200'
+                      : 'bg-red-50 text-red-600 border-red-100'
                   }`}>
-                    <Package size={14} /> {item.type}
+                    <Package size={13} /> {item.type}
                   </div>
                   {getStatusBadge(item.managerStatus)}
                 </div>

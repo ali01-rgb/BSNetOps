@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, LogOut, ChevronDown, CheckCircle2, XCircle, PackagePlus, Clock, TriangleAlert } from 'lucide-react';
+import { Menu, Bell, LogOut, ChevronDown, CheckCircle2, XCircle, PackagePlus, Clock, TriangleAlert, Trash2, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentView }) {
@@ -15,7 +15,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
-  // 🔥 1. FUNGSI NARIK NOTIFIKASI DARI BACKEND (UDAH DIPERBAIKI)
+  // 🔥 1. FETCH NOTIFIKASI DARI BACKEND
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -27,19 +27,16 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
 
       if (res.ok) {
         const resJson = await res.json();
-        // FIX: Tangkap array-nya, entah dibungkus di dalam "data" atau langsung array
         const dataList = resJson.data || resJson; 
         
         if (Array.isArray(dataList)) {
-          // Sortir notifikasi dari yang paling baru
           dataList.sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
           
-          // Mapping data dari DB supaya selalu cocok sama UI (jaga-jaga beda nama kolom)
           const formattedNotifs = dataList.map(n => ({
             id: n.id,
             title: n.title || n.judul || 'Pemberitahuan',
             message: n.message || n.pesan || '',
-            type: n.type || n.tipe || 'info',
+            type: n.type || n.tipe || 'request', // 'alert' atau 'request'
             isRead: n.isRead || n.is_read || false,
             createdAt: n.createdAt || n.created_at || new Date().toISOString(),
             target: n.target || 'dashboard'
@@ -53,11 +50,11 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 2. FUNGSI KLIK NOTIF (UPDATE KE DB LALU PINDAH HALAMAN)
+  // 🔥 2. FUNGSI KLIK NOTIF (BACA & PINDAH HALAMAN)
   const handleNotifClick = async (id, target) => {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     
-    // Update UI instan (Biar ngga nunggu loading)
+    // Update UI Instan
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
     
     if (target && setCurrentView) {
@@ -65,7 +62,6 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
       setNotifOpen(false);
     }
 
-    // Tembak API buat ngerubah isRead: true di Database
     try {
       await fetch(`http://localhost:3000/notifications/${id}/read`, {
         method: 'PATCH',
@@ -76,7 +72,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 3. FUNGSI READ ALL
+  // 🔥 3. FUNGSI TANDAI SEMUA DIBACA
   const markAllAsRead = async () => {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     
@@ -89,6 +85,40 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
       });
     } catch (error) {
       console.error("Gagal tandai semua dibaca:", error);
+    }
+  };
+
+  // 🔥 4. FUNGSI HAPUS SATU NOTIFIKASI
+  const handleDeleteNotif = async (e, id) => {
+    e.stopPropagation(); // Mencegah pemicu klik item
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+    setNotifications(prev => prev.filter(n => n.id !== id));
+
+    try {
+      await fetch(`http://localhost:3000/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error("Gagal menghapus notifikasi:", error);
+    }
+  };
+
+  // 🔥 5. FUNGSI HAPUS SEMUA NOTIFIKASI
+  const handleDeleteAllNotifs = async () => {
+    if (!window.confirm("Hapus semua notifikasi?")) return;
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+    setNotifications([]);
+
+    try {
+      await fetch("http://localhost:3000/notifications", {
+        method: 'DELETE',
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error("Gagal menghapus semua notifikasi:", error);
     }
   };
 
@@ -116,14 +146,12 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     };
 
     fetchUserData();
-    fetchNotifications(); // 🔥 Panggil notif saat Header pertama kali dirender
+    fetchNotifications();
 
-    // Polling tiap 30 detik buat ngecek notif baru otomatis
-    const interval = setInterval(fetchNotifications, 30000); 
+    const interval = setInterval(fetchNotifications, 15000); 
     return () => clearInterval(interval);
   }, [role]);
 
-  // Listener untuk ganti foto real-time
   useEffect(() => {
     const handleProfileUpdate = (event) => {
       setUserData(prev => ({
@@ -156,20 +184,19 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
 
   const renderNotifIcon = (type) => {
     switch (type) {
-      case 'approved': return <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />;
-      case 'rejected': return <XCircle size={16} className="text-red-600 shrink-0 mt-0.5" />;
-      case 'request': return <PackagePlus size={16} className="text-blue-600 shrink-0 mt-0.5" />;
-      case 'history': return <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />;
-      case 'alert': return <TriangleAlert size={16} className="text-red-600 shrink-0 mt-0.5" />;
-      default: return <Bell size={16} className="text-blue-600 shrink-0 mt-0.5" />;
+      case 'alert': 
+        return <TriangleAlert size={16} className="text-red-600 shrink-0 mt-0.5" />;
+      case 'request': 
+        return <PackagePlus size={16} className="text-blue-600 shrink-0 mt-0.5" />;
+      default: 
+        return <Bell size={16} className="text-blue-600 shrink-0 mt-0.5" />;
     }
   };
 
-  // FUNGSI HITUNG WAKTU MUNDUR MANUAL
   const formatTime = (dateString) => {
     const notifDate = new Date(dateString);
     const now = new Date();
-    const diff = Math.floor((now - notifDate) / 60000); // dalam menit
+    const diff = Math.floor((now - notifDate) / 60000);
     if (diff < 1) return 'Baru saja';
     if (diff < 60) return `${diff} menit lalu`;
     if (diff < 1440) return `${Math.floor(diff/60)} jam lalu`;
@@ -202,53 +229,102 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-zinc-200 shadow-xl rounded-xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
+            <div className="absolute right-0 mt-2 w-84 bg-white border border-zinc-200 shadow-2xl rounded-2xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
+              
+              {/* HEADER DROPDOWN NOTIFIKASI */}
               <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-zinc-900">Notifikasi</span>
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 bg-[#dcfce7] text-[#00664b] rounded-md capitalize tracking-wide border border-[#bbf7d0]">
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#00664b] rounded-md capitalize tracking-wide border border-emerald-200">
                     {userData.role}
                   </span>
                 </div>
-                {unreadCount > 0 && (
-                  <button onClick={markAllAsRead} className="text-[10px] font-bold text-[#00664b] hover:underline cursor-pointer">
-                    Tandai dibaca
-                  </button>
+                
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={markAllAsRead} 
+                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                      title="Tandai Semua Dibaca"
+                    >
+                      <CheckCheck size={13} /> Dibaca
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={handleDeleteAllNotifs} 
+                      className="text-[10px] font-bold text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer ml-1"
+                      title="Hapus Semua"
+                    >
+                      <Trash2 size={12} /> Hapus
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* LIST NOTIFIKASI */}
+              <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100">
+                {notifications.length === 0 ? (
+                  <div className="p-8 text-center text-zinc-400 text-xs font-medium flex flex-col items-center gap-2">
+                    <Bell size={28} className="text-zinc-300 opacity-50" />
+                    Belum ada pemberitahuan baru
+                  </div>
+                ) : (
+                  notifications.map((notif) => {
+                    const isAlert = notif.type === 'alert'; // Notif Stok Menipis (Merah)
+                    const isUnread = !notif.isRead;
+
+                    // 🔥 PEMILIHAN WARNA BACKGROUND SESUAI DESAIN PERMINTAAN
+                    let bgStyle = "bg-white hover:bg-zinc-50/80";
+                    if (isUnread) {
+                      bgStyle = isAlert 
+                        ? "bg-red-50/80 hover:bg-red-100/60"   // Merah Sedang (Unread Alert)
+                        : "bg-blue-50/80 hover:bg-blue-100/60"; // Biru Sedang (Unread Request)
+                    } else {
+                      bgStyle = isAlert 
+                        ? "bg-red-50/20 hover:bg-red-50/40"    // Merah Transparan (Read Alert)
+                        : "bg-blue-50/20 hover:bg-blue-50/40";  // Biru Transparan (Read Request)
+                    }
+
+                    return (
+                      <div 
+                        key={notif.id}
+                        onClick={() => handleNotifClick(notif.id, notif.target)}
+                        className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer relative group ${bgStyle}`}
+                      >
+                        {/* 🔥 DOT INDIKATOR BULAT (HILANG JIKA SUDAH DIBACA) */}
+                        {isUnread && (
+                          <span className={`absolute left-1.5 top-5 w-2 h-2 rounded-full ${isAlert ? 'bg-red-500' : 'bg-blue-500'}`} />
+                        )}
+
+                        {renderNotifIcon(notif.type)}
+
+                        <div className="flex-1 space-y-0.5 pr-5">
+                          <div className="flex items-center justify-between">
+                            <p className={`text-xs font-bold ${isAlert ? 'text-red-700' : (isUnread ? 'text-zinc-900' : 'text-zinc-600')}`}>
+                              {notif.title}
+                            </p>
+                            <span className="text-[9px] text-zinc-400 font-medium">{formatTime(notif.createdAt)}</span>
+                          </div>
+                          <p className={`text-[11px] leading-snug ${isAlert ? 'text-red-600 font-medium' : (isUnread ? 'text-zinc-700 font-medium' : 'text-zinc-400')}`}>
+                            {notif.message}
+                          </p>
+                        </div>
+
+                        {/* 🔥 TOMBOL HAPUS PER PESAN (MUNCUL SAAT HOVER / SELALU ADA) */}
+                        <button
+                          onClick={(e) => handleDeleteNotif(e, notif.id)}
+                          className="absolute right-2 top-3.5 p-1 text-zinc-300 hover:text-red-600 hover:bg-red-100 rounded-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                          title="Hapus Notifikasi Ini"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
-              <div className="max-h-72 overflow-y-auto divide-y divide-zinc-100">
-                {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-zinc-400 text-xs font-medium flex flex-col items-center gap-2">
-                    <Bell size={24} className="text-zinc-300 opacity-50" />
-                    Belum ada notifikasi
-                  </div>
-                ) : (
-                  notifications.map((notif) => (
-                    <div 
-                      key={notif.id}
-                      onClick={() => handleNotifClick(notif.id, notif.target)}
-                      className={`p-3.5 flex gap-3 hover:bg-zinc-50 transition-colors cursor-pointer relative ${
-                        !notif.isRead ? (notif.type === 'alert' ? 'bg-red-50/60' : 'bg-emerald-50/30') : 'bg-white'
-                      }`}
-                    >
-                      {!notif.isRead && <div className="absolute left-1 top-5 w-1.5 h-1.5 bg-blue-500 rounded-full" />}
-                      {renderNotifIcon(notif.type)}
-                      <div className="flex-1 space-y-0.5">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-xs font-bold ${notif.type === 'alert' ? 'text-red-700' : (!notif.isRead ? 'text-zinc-900' : 'text-zinc-400')}`}>
-                            {notif.title}
-                          </p>
-                          <span className="text-[9px] text-zinc-400 font-medium">{formatTime(notif.createdAt)}</span>
-                        </div>
-                        <p className={`text-[11px] leading-snug ${notif.type === 'alert' ? 'text-red-600 font-medium' : (!notif.isRead ? 'text-zinc-600' : 'text-zinc-400')}`}>
-                          {notif.message}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
           )}
         </div>

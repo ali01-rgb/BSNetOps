@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Search, ArrowLeft, RefreshCw, XCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle } from 'lucide-react';
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
 
@@ -19,7 +19,7 @@ export default function StokBarang({ role = 'admin' }) {
     fetchItems();
   }, []);
 
-  // 🔥 FETCH DATA ASSET
+  // 🔥 FETCH DATA ASSET LENGKAP
   const fetchItems = async () => {
     setLoading(true);
     try {
@@ -30,10 +30,8 @@ export default function StokBarang({ role = 'admin' }) {
 
       if (res.ok) {
         const resJson = await res.json();
-        const data = resJson.data || [];
-        // Urutkan berdasarkan yang terbaru dimasukkan
-        const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setItems(sortedData);
+        const data = resJson.data || resJson || [];
+        setItems(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Gagal mengambil data aset:', error.message);
@@ -47,9 +45,9 @@ export default function StokBarang({ role = 'admin' }) {
     setIsEditOpen(true);
   };
 
-  // 🔥 ACTION: SOFT DELETE (Masuk ke Trash)
+  // 🔥 SOFT DELETE (Arsip ke Trash)
   const handleSoftDelete = async (id) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus item ini? (Data akan dipindahkan ke Trash)`)) {
+    if (window.confirm(`Apakah Anda yakin ingin memindahkan barang ini ke Trash?`)) {
       try {
         const timestamp = new Date().toISOString();
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -65,6 +63,8 @@ export default function StokBarang({ role = 'admin' }) {
 
         if (res.ok) {
           setItems(items.map(item => item.id === id ? { ...item, deleted_at: timestamp } : item));
+        } else {
+          setItems(items.filter(item => item.id !== id));
         }
       } catch (error) {
         console.error('Gagal arsip item:', error.message);
@@ -72,7 +72,7 @@ export default function StokBarang({ role = 'admin' }) {
     }
   };
 
-  // 🔥 ACTION: RESTORE DARI TRASH
+  // 🔥 RESTORE FROM TRASH
   const handleRestore = async (id) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -93,9 +93,9 @@ export default function StokBarang({ role = 'admin' }) {
     }
   };
 
-  // 🔥 ACTION: HARD DELETE (Hapus Permanen)
+  // 🔥 HARD DELETE (Hapus Permanen)
   const handleHardDelete = async (id) => {
-    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus item ini secara PERMANEN?`)) {
+    if (window.confirm(`PERINGATAN: Hapus item ini secara PERMANEN?`)) {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         const res = await fetch(`http://localhost:3000/inventory/assets/${id}`, {
@@ -117,17 +117,17 @@ export default function StokBarang({ role = 'admin' }) {
     return new Date(dateString).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // 🔥 FILTERING DATA & TRASH
+  // 🔥 FILTER DATA PENCARIAN & TRASH
   const processedItems = items
     .filter(item => {
       if (showTrash) return item.deleted_at !== null && item.deleted_at !== undefined;
-      return item.deleted_at === null || item.deleted_at === undefined;
+      return !item.deleted_at;
     })
     .filter(item => {
-      const name = item.nama_barang || '';
-      const kode = item.kode_barang || '';
+      const name = item.nama_barang || item.nama_aset || item.name || '';
+      const kode = item.kode_barang || item.id || '';
       return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-             kode.toLowerCase().includes(searchQuery.toLowerCase());
+             kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
     });
 
   return (
@@ -150,7 +150,7 @@ export default function StokBarang({ role = 'admin' }) {
         <div className="flex items-center gap-3">
           {!showTrash && (
             <button onClick={() => setShowTrash(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md">
-              <Trash2 size={16} /> Trash
+              <Trash2 size={16} /> 
             </button>
           )}
           {isAdmin && !showTrash && (
@@ -183,6 +183,7 @@ export default function StokBarang({ role = 'admin' }) {
                 <th className="p-4">Nama Barang</th>
                 <th className="p-4">Kategori</th>
                 <th className="p-4">Stok</th>
+                <th className="p-4">Lokasi</th>
                 <th className="p-4">Tanggal Masuk</th>
                 {isAdmin && <th className="p-4 text-right">Aksi</th>}
               </tr>
@@ -190,22 +191,23 @@ export default function StokBarang({ role = 'admin' }) {
             <tbody className="divide-y divide-zinc-100">
               {loading ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="p-8 text-center text-zinc-400">Memuat data dari database...</td>
+                  <td colSpan={isAdmin ? 7 : 6} className="p-8 text-center text-zinc-400">Memuat data dari database...</td>
                 </tr>
               ) : processedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="p-8 text-center text-zinc-500">
+                  <td colSpan={isAdmin ? 7 : 6} className="p-8 text-center text-zinc-500">
                     {showTrash ? 'Tidak ada data di Trash.' : 'Tidak ditemukan data barang.'}
                   </td>
                 </tr>
               ) : (
                 processedItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-zinc-50/40 transition-colors">
-                    <td className="p-4 font-mono font-bold text-zinc-900">{item.kode_barang}</td>
-                    <td className="p-4 font-semibold text-zinc-900">{item.nama_barang}</td>
-                    <td className="p-4 text-zinc-600">{item.category?.name || '-'}</td>
-                    <td className="p-4 font-bold text-[#00664b]">{item.stok} Unit</td>
-                    <td className="p-4 text-zinc-500 text-xs">{formatDate(item.createdAt)}</td>
+                  <tr key={item.id || item.kode_barang} className="hover:bg-zinc-50/40 transition-colors">
+                    <td className="p-4 font-mono font-bold text-zinc-900">{item.kode_barang || '-'}</td>
+                    <td className="p-4 font-semibold text-zinc-900">{item.nama_barang || item.nama_aset || item.name}</td>
+                    <td className="p-4 text-zinc-600">{item.category?.name || item.category || '-'}</td>
+                    <td className="p-4 font-bold text-[#00664b]">{item.stok ?? item.stock ?? 0} Unit</td>
+                    <td className="p-4 text-zinc-600">{item.location || '-'}</td>
+                    <td className="p-4 text-zinc-500 text-xs">{formatDate(item.createdAt || item.date)}</td>
                     
                     {isAdmin && (
                       <td className="p-4 text-right space-x-2">
@@ -238,8 +240,25 @@ export default function StokBarang({ role = 'admin' }) {
         </div>
       </div>
 
-      {isAddOpen && <TambahItem onClose={() => setIsAddOpen(false)} onSuccess={() => { setIsAddOpen(false); fetchItems(); }} />}
-      {isEditOpen && <EditItem itemData={selectedItem} onClose={() => setIsEditOpen(false)} onSuccess={() => { setIsEditOpen(false); fetchItems(); }} />}
+      {/* 🔥 KONTROL PENAMBAHAN ITEM (TERUSKAN PASSED ITEMS COUNT AGAR SINKRON BRG-YYYYMMDD-001) */}
+      {isAddOpen && (
+        <TambahItem 
+         onClose={() => setIsAddOpen(false)} 
+         onSuccess={() => {
+         setIsAddOpen(false);
+         fetchItems(); // Dipanggil secara asynchronous tanpa memblokir UI
+        }} 
+          existingItemsCount={items.length} 
+        />
+    )}
+
+      {isEditOpen && (
+        <EditItem 
+          itemData={selectedItem} 
+          onClose={() => setIsEditOpen(false)} 
+          onSuccess={() => { setIsEditOpen(false); fetchItems(); }} 
+        />
+      )}
     </div>
   );
 }

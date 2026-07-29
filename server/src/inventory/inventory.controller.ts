@@ -21,13 +21,49 @@ import { Roles } from '../auth/roles.decorator';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  // ================= ASSETS =================
+  // ================= ASSETS (CRUD BARANG) =================
   @Get('assets')
   @Roles('USER', 'MANAGER', 'ADMIN', 'user', 'manager', 'admin')
   async getAssets() {
     try {
       const assets = await this.inventoryService.getAllAssets();
       return { status: 'success', data: assets };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('assets')
+  @Roles('ADMIN', 'admin')
+  async createAsset(@Body() body: any) {
+    try {
+      const data = await this.inventoryService.createAsset(body);
+      return { status: 'success', message: 'Aset/Barang berhasil ditambahkan', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Patch('assets/:id')
+  @Roles('ADMIN', 'admin')
+  async updateAsset(@Param('id') id: string, @Body() body: any) {
+    try {
+      const data = await this.inventoryService.updateAsset(id, body);
+      return { status: 'success', message: 'Aset/Barang berhasil diperbarui', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Delete('assets/:id')
+  @Roles('ADMIN', 'admin')
+  async deleteAsset(@Param('id') id: string) {
+    try {
+      await this.inventoryService.deleteAsset(id);
+      return { status: 'success', message: 'Aset/Barang berhasil dihapus secara permanen' };
     } catch (error) {
       const err = error as Error;
       throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);

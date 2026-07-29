@@ -1,17 +1,6 @@
-import React from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, CartesianGrid, LabelList } from 'recharts';
 import { ClipboardList, AlertTriangle, CheckSquare, ShieldAlert, Building2, Package } from 'lucide-react';
-
-// 🔥 DATA BARU: Berdasarkan Unit, membandingkan Barang Diminta vs Barang Keluar
-const unitData = [
-  { name: 'KC Semarang', Diminta: 45, Keluar: 35 },
-  { name: 'KCP Majapahit', Diminta: 25, Keluar: 20 },
-  { name: 'KCP Ngaliyan', Diminta: 18, Keluar: 15 },
-  { name: 'KCP Ungaran', Diminta: 30, Keluar: 28 },
-  { name: 'KCP Kendal', Diminta: 15, Keluar: 10 },
-  { name: 'KCP Kudus', Diminta: 20, Keluar: 18 },
-  { name: 'KCP Magelang', Diminta: 12, Keluar: 12 },
-];
 
 const CustomLegend = (props) => {
   const { payload } = props;
@@ -47,59 +36,113 @@ const CustomLegend = (props) => {
   );
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    //  AMBIL  KEY BARUDATA
-    const dimintaVal = payload.find(p => p.dataKey === 'Diminta')?.value || 0;
-    const keluarVal = payload.find(p => p.dataKey === 'Keluar')?.value || 0;
-
-    return (
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.15)] p-4 w-64 text-zinc-800 opacity-100 flex flex-col select-none pointer-events-none">
-        
-        {/* Header Judul Nama Unit + Ikon Gedung */}
-        <div className="flex items-center gap-2.5 pb-2.5 border-b border-zinc-100 w-full">
-          <div className="w-7 h-7 rounded-lg bg-[#004d38] text-white flex items-center justify-center shadow-sm shrink-0">
-            <Building2 size={15} />
-          </div>
-          <span className="font-bold text-sm tracking-tight text-zinc-900 truncate">{label}</span>
-        </div>
-
-        {/* Isi Indikator Data */}
-        <div className="mt-3 space-y-2.5 text-xs font-semibold w-full">
-          
-          {/* Baris Kategori: Barang Diminta (Biru) */}
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></span>
-              <span className="text-zinc-600 font-medium">Barang Diminta</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100/50 rounded-md shrink-0">
-              <span className="font-bold">{dimintaVal}</span>
-              <ClipboardList size={11} className="opacity-80" />
-            </div>
-          </div>
-
-          {/* Baris Kategori: Barang Keluar/Distribusi (Hijau) */}
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58a27d' }}></span>
-              <span className="text-zinc-600 font-medium">Telah Didistribusi</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-[#58a27d] border border-emerald-100/50 rounded-md shrink-0">
-              <span className="font-bold">{keluarVal}</span>
-              <Package size={11} className="opacity-80" />
-            </div>
-          </div>
-          
-        </div>
-
-      </div>
-    );
-  }
-  return null;
-};
-
 export default function ManagerDashboard() {
+  // 🔥 DAFTAR TEMPLATE UNIT Tetap Sama Seperti UI Asli
+  const [unitData, setUnitData] = useState([
+    { name: 'KC Semarang', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Majapahit', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Ngaliyan', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Ungaran', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Kendal', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Kudus', Diminta: 0, Keluar: 0 },
+    { name: 'KCP Magelang', Diminta: 0, Keluar: 0 },
+  ]);
+
+  const [stats, setStats] = useState({
+    antreanApproval: 0,
+    barangKeluar: 0,
+    restockSegera: 0
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // 🔥 AMBIL DATA DARI BACKEND DENGAN TRACKING PER KC/UNIT
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const headers = { "Authorization": `Bearer ${token}` };
+
+      const [reqRes, assetsRes] = await Promise.all([
+        fetch("http://localhost:3000/inventory/admin/requests", { headers }),
+        fetch("http://localhost:3000/inventory/assets", { headers })
+      ]);
+
+      let rawRequests = [];
+      let rawAssets = [];
+
+      if (reqRes.ok) {
+        const reqJson = await reqRes.json();
+        rawRequests = reqJson.data || reqJson || [];
+      }
+
+      if (assetsRes.ok) {
+        const assetsJson = await assetsRes.json();
+        rawAssets = assetsJson.data || assetsJson || [];
+      }
+
+      // 1. HITUNG STATISTIK 3 CARD ATAS
+      const pendingCount = rawRequests.filter(r => 
+        ['PENDING', 'DITERUSKAN', 'MENUNGGU', 'MENUNGGU MANAGER'].includes((r.status || '').toUpperCase())
+      ).length;
+
+      const approvedRequests = rawRequests.filter(r => 
+        ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
+      );
+      const totalBarangKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
+
+      const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) <= 3).length;
+
+      setStats({
+        antreanApproval: pendingCount,
+        barangKeluar: totalBarangKeluar,
+        restockSegera: restockCount
+      });
+
+      // 2. PETAKAN DATA REAL DARI DATABASE KE MASING-MASING KC/KCP
+      // Template awal agar semua KC di UI tetap muncul
+      const baseUnits = [
+        { name: 'KC Semarang', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Majapahit', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Ngaliyan', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Ungaran', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Kendal', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Kudus', Diminta: 0, Keluar: 0 },
+        { name: 'KCP Magelang', Diminta: 0, Keluar: 0 },
+      ];
+
+      // Akumulasi data dari tabel Request berdasarkan divisi user pemohon
+      rawRequests.forEach(req => {
+        const userDivisi = (req.user?.divisi || req.unit || 'KC Semarang').trim();
+        const jumlahBarang = parseInt(req.jumlah) || 0;
+        const statusUpper = (req.status || '').toUpperCase();
+
+        // Cari KC yang cocok di array template
+        let targetUnit = baseUnits.find(u => u.name.toLowerCase() === userDivisi.toLowerCase());
+
+        // Jika user punya divisi baru di luar template, buatkan entri baru
+        if (!targetUnit) {
+          targetUnit = { name: userDivisi, Diminta: 0, Keluar: 0 };
+          baseUnits.push(targetUnit);
+        }
+
+        // Tambahkan jumlah ke "Diminta"
+        targetUnit.Diminta += jumlahBarang;
+
+        // Tambahkan jumlah ke "Keluar" jika statusnya sudah disetujui / diteruskan
+        if (['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes(statusUpper)) {
+          targetUnit.Keluar += jumlahBarang;
+        }
+      });
+
+      setUnitData(baseUnits);
+
+    } catch (error) {
+      console.error("Gagal menyambungkan data Manager Dashboard:", error);
+    }
+  };
+
   return (
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-zinc-800">
       
@@ -117,19 +160,19 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Antrean Approval</h3>
-              <p className="text-3xl font-bold text-zinc-900 mt-2">2 Pengajuan</p>
+              <p className="text-3xl font-bold text-zinc-900 mt-2">{stats.antreanApproval} Pengajuan</p>
               <p className="text-[11px] text-amber-600 mt-2 font-medium">Buka menu Approval Request untuk memproses</p>
             </div>
             <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><ClipboardList size={20} /></div>
           </div>
         </div>
 
-        {/* Barang Keluar Card (Menggantikan Aset Aktif Dipinjam) */}
+        {/* Barang Keluar Card */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm border-l-4 border-l-[#00664b] transition-all hover:scale-[1.01]">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Barang Keluar</h3>
-              <p className="text-3xl font-bold text-zinc-900 mt-2">92 Unit</p>
+              <p className="text-3xl font-bold text-zinc-900 mt-2">{stats.barangKeluar} Unit</p>
               <p className="text-[11px] text-zinc-400 mt-2">Total barang yang telah disetujui & didistribusikan</p>
             </div>
             <div className="p-2.5 bg-green-50 text-[#00664b] rounded-lg"><CheckSquare size={20} /></div>
@@ -141,7 +184,7 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Restock Segera</h3>
-              <p className="text-3xl font-bold text-red-600 mt-2">4 Kategori</p>
+              <p className="text-3xl font-bold text-red-600 mt-2">{stats.restockSegera} Kategori</p>
               <p className="text-[11px] text-red-500 mt-2 font-medium">Stok kritis di bawah batas minimum</p>
             </div>
             <div className="p-2.5 bg-red-50 text-red-600 rounded-lg"><AlertTriangle size={20} /></div>
@@ -157,15 +200,11 @@ export default function ManagerDashboard() {
         </div>
         <div className="h-90 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
-            {/* Gunakan unitData yang baru */}
             <BarChart data={unitData} margin={{ top: 30, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
               <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} dy={5} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} />
 
-              {/* Tooltip dihapus/di-comment */}
-              {/* <Tooltip ... /> */}
-              
               <Legend verticalAlign="top" content={<CustomLegend />} />
               
               <Bar dataKey="Diminta" fill="#3b82f6" name="Barang Diminta" radius={[12, 12, 0, 0]}>
