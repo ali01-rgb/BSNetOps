@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function TambahKategori({ onClose, onSuccess, existingCategoriesCount = 0 }) {
   const [formData, setFormData] = useState({ name: '', description: '' });
@@ -18,7 +19,7 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
       const formattedCode = `KAT-${String(nextNumber).padStart(3, '0')}`;
 
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/categories", {
+      const res = await fetch(`${API_URL}/inventory/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

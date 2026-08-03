@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient'; 
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 }) {
   const today = new Date().toISOString().split('T')[0];
@@ -26,7 +27,7 @@ export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 
     const fetchCategories = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const res = await fetch("http://localhost:3000/inventory/categories", {
+        const res = await fetch(`${API_URL}/inventory/categories`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (res.ok && isMounted) {
@@ -91,7 +92,7 @@ export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 
       const jumlahStok = parseInt(formData.stock, 10) || 0;
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      const res = await fetch("http://localhost:3000/inventory/assets", {
+      const res = await fetch(`${API_URL}/inventory/assets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

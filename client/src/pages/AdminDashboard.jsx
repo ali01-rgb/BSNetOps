@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 // Warna acak dinamis untuk Chart
 const generateRandomColor = (index) => {
@@ -44,8 +45,8 @@ export default function AdminDashboard({ role = 'admin' }) {
 
         // 1. Fetch data murni dari API
         const [reqRes, assetsRes] = await Promise.all([
-          fetch("http://localhost:3000/inventory/admin/requests", { headers }),
-          fetch("http://localhost:3000/inventory/assets", { headers })
+          fetch(`${API_URL}/inventory/admin/requests`, { headers }),
+          fetch(`${API_URL}/inventory/assets`, { headers })
         ]);
 
         let requests = [];

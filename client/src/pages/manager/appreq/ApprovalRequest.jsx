@@ -3,6 +3,7 @@ import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertica
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4'; 
 import toast from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path ke file api.js kamu
 
 export default function ApprovalRequest() {
   const printRef = useRef();
@@ -34,7 +35,7 @@ export default function ApprovalRequest() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/manager/requests", {
+      const res = await fetch(`${API_URL}/inventory/manager/requests`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -171,7 +172,7 @@ export default function ApprovalRequest() {
       });
 
       for (const reqId of targetItemIds) {
-        const res = await fetch(`http://localhost:3000/inventory/admin/requests/${reqId}/status`, {
+        const res = await fetch(`${API_URL}/inventory/admin/requests/${reqId}/status`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

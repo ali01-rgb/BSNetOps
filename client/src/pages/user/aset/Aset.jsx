@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Calendar, Package, X, Check, ShoppingCart, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../api'; // Sesuaikan path jika perlu
 
 export default function Aset({ setCurrentView }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +48,7 @@ export default function Aset({ setCurrentView }) {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         
-        const res = await fetch("http://localhost:3000/inventory/assets", {
+        const res = await fetch(`${API_URL}/inventory/assets`, {
           headers: { 
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -286,8 +287,8 @@ export default function Aset({ setCurrentView }) {
                   isHabis 
                     ? 'opacity-60 grayscale cursor-not-allowed border-zinc-200' 
                     : isAddedInCart 
-                        ? 'border-emerald-500 ring-1 ring-emerald-500/20 cursor-pointer hover:shadow-md hover:scale-[1.01]' 
-                        : 'border-zinc-200/80 cursor-pointer hover:shadow-md hover:scale-[1.01]'
+                      ? 'border-emerald-500 ring-1 ring-emerald-500/20 cursor-pointer hover:shadow-md hover:scale-[1.01]' 
+                      : 'border-zinc-200/80 cursor-pointer hover:shadow-md hover:scale-[1.01]'
                 }`}
               >
                 {isHabis ? (

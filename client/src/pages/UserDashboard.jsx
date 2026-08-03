@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Hourglass, Package, CheckCircle2, Circle, ArrowRight, XCircle } from 'lucide-react';
+import { API_URL } from '../api'; // Sesuaikan path jika perlu
 
 export default function UserDashboard({ setCurrentView }) {
   const [lastRequest, setLastRequest] = useState(null);
@@ -13,10 +14,10 @@ export default function UserDashboard({ setCurrentView }) {
         
         // Fetch dua endpoint sekaligus untuk cross-check Kategori
         const [reqRes, assetsRes] = await Promise.all([
-          fetch("http://localhost:3000/inventory/my-requests", {
+          fetch(`${API_URL}/inventory/my-requests`, {
             headers: { "Authorization": `Bearer ${token}` }
           }),
-          fetch("http://localhost:3000/inventory/assets", {
+          fetch(`${API_URL}/inventory/assets`, {
             headers: { "Authorization": `Bearer ${token}` }
           })
         ]);

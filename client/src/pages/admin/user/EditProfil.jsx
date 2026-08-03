@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Shield, Camera, Save, Building, Briefcase, Phone, Loader2 } from 'lucide-react';
 import { motion, useAnimation } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function EditProfil() {
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +46,7 @@ export default function EditProfil() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const res = await fetch("http://localhost:3000/auth/profile", {
+        const res = await fetch(`${API_URL}/auth/profile`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -101,7 +102,7 @@ export default function EditProfil() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      const res = await fetch("http://localhost:3000/auth/profile", {
+      const res = await fetch(`${API_URL}/auth/profile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

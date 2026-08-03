@@ -3,6 +3,7 @@ import { Plus, Edit3, Trash2, Search, ArrowLeft, RefreshCw, XCircle, AlertTriang
 import TambahKategori from './TambahKategori';
 import EditKategori from './EditKategori';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function KategoriBarang() {
   const [categories, setCategories] = useState([]);
@@ -17,7 +18,7 @@ export default function KategoriBarang() {
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/categories", {
+      const res = await fetch(`${API_URL}/inventory/categories`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -55,7 +56,7 @@ export default function KategoriBarang() {
     try {
       if (deleteModal.type === 'soft') {
         const timestamp = new Date().toISOString();
-        const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+        const res = await fetch(`${API_URL}/inventory/categories/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -66,7 +67,7 @@ export default function KategoriBarang() {
         if (res.ok) toast.success("Kategori dipindahkan ke Trash."); // 🔥 UX MANIS
       } 
       else if (deleteModal.type === 'hard') {
-        const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+        const res = await fetch(`${API_URL}/inventory/categories/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -84,7 +85,7 @@ export default function KategoriBarang() {
   const handleRestoreCategory = async (id) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+      const res = await fetch(`${API_URL}/inventory/categories/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

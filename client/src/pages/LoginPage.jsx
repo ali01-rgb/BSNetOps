@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { API_URL } from '../api'; // Sesuaikan path jika perlu
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function LoginPage() {
     if (newError.username || newError.password) return;
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: form.username, password: form.password }),
@@ -103,7 +104,7 @@ export default function LoginPage() {
     const loadingToast = toast.loading("Mencari email di database...");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/forgot-password", {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail }),
@@ -140,7 +141,7 @@ export default function LoginPage() {
     const loadingToast = toast.loading("Menyimpan password baru...");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/reset-password", {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

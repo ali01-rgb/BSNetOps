@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function TambahUser({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({ 
@@ -30,7 +31,7 @@ export default function TambahUser({ onClose, onSuccess }) {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
-      const res = await fetch("http://localhost:3000/inventory/users", {
+      const res = await fetch(`${API_URL}/inventory/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

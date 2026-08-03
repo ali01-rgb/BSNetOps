@@ -3,6 +3,7 @@ import { Clock, CheckCircle2, XCircle, PackageCheck, Eye, ArrowLeft, FileText, D
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../permintaan/TemplateDokumenA4'; 
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu (pakai ../api atau ../../api)
 
 export default function RiwayatPermintaan() {
   const printRef = useRef();
@@ -22,7 +23,7 @@ export default function RiwayatPermintaan() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/my-requests", {
+      const res = await fetch(`${API_URL}/inventory/my-requests`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -112,7 +113,7 @@ export default function RiwayatPermintaan() {
   const handleTerimaBarang = async (laporanId, itemId) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      await fetch(`http://localhost:3000/inventory/requests/${itemId}/receive`, {
+      await fetch(`${API_URL}/inventory/requests/${itemId}/receive`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` }
       });

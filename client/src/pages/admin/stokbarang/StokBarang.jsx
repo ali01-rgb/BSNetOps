@@ -3,6 +3,7 @@ import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriang
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function StokBarang({ role = 'admin' }) {
   const isAdmin = role === 'admin' || role === 'ADMIN';
@@ -26,7 +27,7 @@ export default function StokBarang({ role = 'admin' }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/assets", {
+      const res = await fetch(`${API_URL}/inventory/assets`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -64,7 +65,7 @@ export default function StokBarang({ role = 'admin' }) {
     try {
       if (deleteModal.type === 'soft') {
         const timestamp = new Date().toISOString();
-        const res = await fetch(`http://localhost:3000/inventory/assets/${id}`, {
+        const res = await fetch(`${API_URL}/inventory/assets/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -81,7 +82,7 @@ export default function StokBarang({ role = 'admin' }) {
         }
       } 
       else if (deleteModal.type === 'hard') {
-        const res = await fetch(`http://localhost:3000/inventory/assets/${id}`, {
+        const res = await fetch(`${API_URL}/inventory/assets/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -102,7 +103,7 @@ export default function StokBarang({ role = 'admin' }) {
   const handleRestore = async (id) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:3000/inventory/assets/${id}`, {
+      const res = await fetch(`${API_URL}/inventory/assets/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

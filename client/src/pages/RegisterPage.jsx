@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FaXmark } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast"; // 🔥 IMPORT TOASTER
+import { API_URL } from '../api'; // Sesuaikan path jika perlu
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function RegisterPage() {
     setServerError("");
 
     try {
-      const response = await fetch("http://localhost:3000/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

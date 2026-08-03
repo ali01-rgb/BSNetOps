@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from './TemplateDokumenA4';
 import toast from 'react-hot-toast';
+import { API_URL } from '../api'; // Sesuaikan path jika perlu
 
 export default function AjukanPermintaan() {
   const printRef = useRef();
@@ -32,7 +33,7 @@ export default function AjukanPermintaan() {
         const token = localStorage.getItem("token") || localStorage.getItem("access_token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/inventory/my-requests", {
+        const res = await fetch(`${API_URL}/inventory/my-requests`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -76,7 +77,7 @@ export default function AjukanPermintaan() {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/profile", {
+        const res = await fetch(`${API_URL}/auth/profile`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -181,7 +182,7 @@ export default function AjukanPermintaan() {
     setIsExporting(true); 
 
     try {
-      const res = await fetch("http://localhost:3000/inventory/requests", {
+      const res = await fetch(`${API_URL}/inventory/requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

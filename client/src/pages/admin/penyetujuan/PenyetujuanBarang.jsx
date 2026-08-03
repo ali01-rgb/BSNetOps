@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, CheckSquare, X, Check, MoreVertical, Download } from 'lucide-react';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function PenyetujuanBarang() {
   const printRef = useRef();
@@ -26,8 +27,8 @@ export default function PenyetujuanBarang() {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
       const [reqRes, assetsRes] = await Promise.all([
-        fetch("http://localhost:3000/inventory/admin/requests", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://localhost:3000/inventory/assets", { headers: { "Authorization": `Bearer ${token}` } })
+        fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } })
       ]);
 
       if (!reqRes.ok) throw new Error("Gagal mengambil data permintaan dari server");
@@ -157,7 +158,7 @@ export default function PenyetujuanBarang() {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
       for (const item of selectedRequest.items) {
-        await fetch(`http://localhost:3000/inventory/admin/requests/${item.idItem}/status`, {
+        await fetch(`${API_URL}/inventory/admin/requests/${item.idItem}/status`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

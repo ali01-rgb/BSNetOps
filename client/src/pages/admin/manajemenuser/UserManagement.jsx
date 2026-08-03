@@ -3,6 +3,7 @@ import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCir
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER DI SINI
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -25,7 +26,7 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/users", {
+      const res = await fetch(`${API_URL}/inventory/users`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -66,7 +67,7 @@ export default function UserManagement() {
   const handleUpdateUser = async (updatedUser) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:3000/inventory/users/${updatedUser.originalId}`, {
+      const res = await fetch(`${API_URL}/inventory/users/${updatedUser.originalId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -112,7 +113,7 @@ export default function UserManagement() {
     try {
       if (deleteModal.type === 'soft') {
         const timestamp = new Date().toISOString();
-        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+        const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -130,7 +131,7 @@ export default function UserManagement() {
         toast.success(`Akun ${name} berhasil dipindahkan ke Trash.`);
       } 
       else if (deleteModal.type === 'hard') {
-        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+        const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -154,7 +155,7 @@ export default function UserManagement() {
     if (window.confirm(`Kembalikan hak akses akun untuk ${name}?`)) {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+        const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",

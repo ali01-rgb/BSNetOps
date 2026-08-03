@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function LogAktifitasAdmin() {
   const [history, setHistory] = useState([]);
@@ -34,7 +35,7 @@ export default function LogAktifitasAdmin() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      const res = await fetch("http://localhost:3000/inventory/admin/requests", {
+      const res = await fetch(`${API_URL}/inventory/admin/requests`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -136,7 +137,7 @@ export default function LogAktifitasAdmin() {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const idsToDelete = filteredHistory.map(item => item.originalId);
 
-      const res = await fetch("http://localhost:3000/inventory/requests/bulk-delete", {
+      const res = await fetch(`${API_URL}/inventory/requests/bulk-delete`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

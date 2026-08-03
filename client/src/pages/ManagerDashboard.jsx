@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, CartesianGrid, LabelList } from 'recharts';
 import { ClipboardList, AlertTriangle, CheckSquare, ShieldAlert, Building2, Package } from 'lucide-react';
+import { API_URL } from '../../api'; // Sesuaikan path titik-titiknya dengan lokasi api.js kamu
 
 const CustomLegend = (props) => {
   const { payload } = props;
@@ -66,8 +67,8 @@ export default function ManagerDashboard() {
 
       const [reqRes, assetsRes] = await Promise.all([
         // Gunakan endpoint admin agar bisa menarik semua data untuk analitik chart
-        fetch("http://localhost:3000/inventory/admin/requests", { headers }),
-        fetch("http://localhost:3000/inventory/assets", { headers })
+        fetch(`${API_URL}/inventory/admin/requests`, { headers }),
+        fetch(`${API_URL}/inventory/assets`, { headers })
       ]);
 
       let rawRequests = [];

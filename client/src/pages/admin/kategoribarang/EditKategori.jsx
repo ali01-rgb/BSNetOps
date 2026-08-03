@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
+import { API_URL } from '../../api'; // Sesuaikan path jika perlu
 
 export default function EditKategori({ categoryData, onClose, onSuccess }) {
   const [formData, setFormData] = useState({ name: '', description: '' });
@@ -22,7 +23,7 @@ export default function EditKategori({ categoryData, onClose, onSuccess }) {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`http://localhost:3000/inventory/categories/${categoryData.id}`, {
+      const res = await fetch(`${API_URL}/inventory/categories/${categoryData.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
