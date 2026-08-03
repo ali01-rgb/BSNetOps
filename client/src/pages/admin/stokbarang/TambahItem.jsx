@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient'; 
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 }) {
   const today = new Date().toISOString().split('T')[0];
@@ -43,9 +44,8 @@ export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Peringatan jika ukuran file lebih dari 2MB
       if (file.size > 2 * 1024 * 1024) {
-        alert("Ukuran gambar cukup besar (>2MB), proses simpan mungkin memerlukan beberapa detik ekstra.");
+        toast.error("Ukuran gambar cukup besar (>2MB), proses simpan mungkin memerlukan waktu ekstra."); // 🔥 GANTI ALERT
       }
       setFormData({ ...formData, image: file });
       const reader = new FileReader();
@@ -111,13 +111,15 @@ export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 
 
       if (!res.ok) throw new Error("Gagal menyimpan data ke server");
 
+      toast.success("Sukses! Item berhasil ditambahkan."); // 🔥 TAMBAHAN UX MANIS
+
       // 4. Tutup Modal & Trigger Success Lebih Cepat
       if (onSuccess) onSuccess();
       onClose();
 
     } catch (error) {
       console.error('Gagal menyimpan:', error.message);
-      alert('Terjadi kesalahan saat menyimpan: ' + error.message);
+      toast.error('Terjadi kesalahan saat menyimpan: ' + error.message); // 🔥 GANTI ALERT
     } finally {
       setLoading(false);
       setLoadingStatus('');
@@ -207,6 +209,7 @@ export default function TambahItem({ onClose, onSuccess, existingItemsCount = 0 
             </div>
           </div>
 
+          {/* DRAG & DROP / UPLOAD FOTO BARANG */}
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Foto Barang <span className="text-xs text-zinc-400 font-normal">(Opsional)</span></label>
             <div className="relative mt-1 flex justify-center px-6 pt-4 pb-5 border-2 border-zinc-300 border-dashed rounded-xl hover:border-[#00664b] transition-colors bg-zinc-50 hover:bg-zinc-100/50 group cursor-pointer overflow-hidden">

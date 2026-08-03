@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, AlertCircle } from 'lucide-react';
 
 export default function TambahKategori({ onClose, onSuccess, existingCategoriesCount = 0 }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: ''
-  });
+  const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(false);
+  
+  // 🔥 STATE BARU UNTUK ERROR BANNER
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(''); // Reset error
 
     try {
-      // 🔥 OTOMATIS GENERATE KODE KATEGORI (Contoh: KAT-001, KAT-002)
       const nextNumber = existingCategoriesCount + 1;
       const formattedCode = `KAT-${String(nextNumber).padStart(3, '0')}`;
 
@@ -25,7 +25,7 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          category_code: formattedCode, // Kode otomatis
+          category_code: formattedCode,
           name: formData.name,
           description: formData.description
         })
@@ -35,11 +35,13 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        alert("Gagal menambahkan kategori baru.");
+        // 🔥 TANGKAP ERROR DARI BACKEND
+        const errData = await res.json();
+        setErrorMsg(errData.message || "Gagal menambahkan kategori baru.");
       }
     } catch (error) {
       console.error("Error menambah kategori:", error);
-      alert("Terjadi kesalahan sistem saat menyimpan kategori.");
+      setErrorMsg("Terjadi kesalahan sistem saat menyimpan kategori. Cek koneksi server.");
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,6 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
         
-        {/* Header Modal */}
         <div className="px-6 py-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50">
           <div>
             <h3 className="text-base font-bold text-zinc-800">Tambah Kategori Baru</h3>
@@ -60,8 +61,15 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
           </button>
         </div>
 
-        {/* Form Input (Tanpa Kolom Kode Kategori) */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* 🔥 ERROR BANNER (Muncul kalau ada duplikat / ada di trash) */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm font-medium">
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">
               Nama Kategori <span className="text-red-500">*</span>
@@ -87,20 +95,11 @@ export default function TambahKategori({ onClose, onSuccess, existingCategoriesC
             />
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-xl text-sm font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
-            >
+            <button type="button" onClick={onClose} className="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-xl text-sm font-semibold hover:bg-zinc-50 transition-colors cursor-pointer">
               Batal
             </button>
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="flex items-center gap-2 px-5 py-2 bg-[#00664b] hover:bg-[#00553e] text-white rounded-xl text-sm font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="flex items-center gap-2 px-5 py-2 bg-[#00664b] hover:bg-[#00553e] text-white rounded-xl text-sm font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50">
               <Save size={16} />
               {loading ? 'Menyimpan...' : 'Simpan Kategori'}
             </button>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Search, ArrowLeft, RefreshCw, XCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, ArrowLeft, RefreshCw, XCircle, AlertTriangle } from 'lucide-react';
 import TambahKategori from './TambahKategori';
 import EditKategori from './EditKategori';
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function KategoriBarang() {
   const [categories, setCategories] = useState([]);
@@ -11,16 +12,14 @@ export default function KategoriBarang() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTrash, setShowTrash] = useState(false);
 
-  // 🔥 Mengarahkan fetch ke jalur inventory yang sudah pasti aktif di backend-mu
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, category: null });
+
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      
-      // Coba tembak ke /inventory/categories (atau sesuaikan jika foldermu di backend pakai prefix lain)
       const res = await fetch("http://localhost:3000/inventory/categories", {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      
       if (res.ok) {
         const resJson = await res.json();
         const dataList = resJson.data || resJson;
@@ -40,12 +39,23 @@ export default function KategoriBarang() {
     setIsEditOpen(true);
   };
 
-  const handleSoftDeleteCategory = async (id, name) => {
-    if (window.confirm(`Pindahkan "${name}" ke Trash?`)) {
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  const handleSoftDeleteClick = (category) => {
+    setDeleteModal({ isOpen: true, type: 'soft', category });
+  };
+
+  const handleHardDeleteClick = (category) => {
+    setDeleteModal({ isOpen: true, type: 'hard', category });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.category) return;
+    const id = deleteModal.category.id;
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+    try {
+      if (deleteModal.type === 'soft') {
         const timestamp = new Date().toISOString();
-        await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+        const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -53,17 +63,28 @@ export default function KategoriBarang() {
           },
           body: JSON.stringify({ deleted_at: timestamp, deletedAt: timestamp })
         });
-        fetchCategories();
-      } catch (error) {
-        console.error("Gagal soft delete:", error);
+        if (res.ok) toast.success("Kategori dipindahkan ke Trash."); // 🔥 UX MANIS
+      } 
+      else if (deleteModal.type === 'hard') {
+        const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) toast.success("Kategori dihapus permanen."); // 🔥 UX MANIS
       }
+      fetchCategories();
+    } catch (error) {
+      console.error("Gagal memproses penghapusan:", error);
+      toast.error("Gagal memproses penghapusan.");
+    } finally {
+      setDeleteModal({ isOpen: false, type: null, category: null });
     }
   };
 
   const handleRestoreCategory = async (id) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      await fetch(`http://localhost:3000/inventory/categories/${id}`, {
+      const res = await fetch(`http://localhost:3000/inventory/categories/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -71,24 +92,11 @@ export default function KategoriBarang() {
         },
         body: JSON.stringify({ deleted_at: null, deletedAt: null })
       });
+      if (res.ok) toast.success("Kategori berhasil dipulihkan."); // 🔥 UX MANIS
       fetchCategories();
     } catch (error) {
       console.error("Gagal restore:", error);
-    }
-  };
-
-  const handleHardDeleteCategory = async (id, name) => {
-    if (window.confirm(`Hapus PERMANEN "${name}"?`)) {
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        await fetch(`http://localhost:3000/inventory/categories/${id}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        fetchCategories();
-      } catch (error) {
-        console.error("Gagal hard delete:", error);
-      }
+      toast.error("Gagal memulihkan kategori.");
     }
   };
 
@@ -154,7 +162,7 @@ export default function KategoriBarang() {
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {filteredCategories.length === 0 ? (
-              <tr><td colSpan="4" className="p-10 text-center text-zinc-500 font-medium">Data kategori kosong. (Pastikan tabel database kategori sudah terisi data).</td></tr>
+              <tr><td colSpan="4" className="p-10 text-center text-zinc-500 font-medium">Data kategori kosong.</td></tr>
             ) : (
               filteredCategories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-zinc-50/40">
@@ -166,12 +174,12 @@ export default function KategoriBarang() {
                      {showTrash ? (
                       <div className="flex justify-end gap-2">
                         <button onClick={() => handleRestoreCategory(cat.id)} className="text-amber-600 border border-amber-200 px-2 py-1 rounded-md text-xs cursor-pointer hover:bg-amber-50 flex items-center gap-1"><RefreshCw size={12}/> Restore</button>
-                        <button onClick={() => handleHardDeleteCategory(cat.id, cat.name)} className="text-red-600 border border-red-200 px-2 py-1 rounded-md text-xs cursor-pointer hover:bg-red-50 flex items-center gap-1"><XCircle size={12}/> Hapus</button>
+                        <button onClick={() => handleHardDeleteClick(cat)} className="text-red-600 border border-red-200 px-2 py-1 rounded-md text-xs cursor-pointer hover:bg-red-50 flex items-center gap-1"><XCircle size={12}/> Hapus</button>
                       </div>
                      ) : (
                       <>
                         <button onClick={() => handleEditClick(cat)} className="p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"><Edit3 size={16}/></button>
-                        <button onClick={() => handleSoftDeleteCategory(cat.id, cat.name)} className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"><Trash2 size={16}/></button>
+                        <button onClick={() => handleSoftDeleteClick(cat)} className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"><Trash2 size={16}/></button>
                       </>
                      )}
                   </td>
@@ -182,13 +190,44 @@ export default function KategoriBarang() {
         </table>
       </div>
 
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200">
+            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${deleteModal.type === 'soft' ? 'bg-amber-100' : 'bg-red-100'}`}>
+              <AlertTriangle className={`w-8 h-8 ${deleteModal.type === 'soft' ? 'text-amber-500' : 'text-red-500'}`} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-zinc-900 mb-3">
+              {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Kategori?'}
+            </h3>
+            
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              {deleteModal.type === 'soft' ? (
+                <>Apakah Anda yakin ingin memindahkan "{deleteModal.category?.name || deleteModal.category?.namaKategori}" ke Trash? Barang dengan kategori ini akan sementara berubah menjadi "-".</>
+              ) : (
+                <>PERINGATAN: Hapus PERMANEN "{deleteModal.category?.name || deleteModal.category?.namaKategori}"? Data ini tidak dapat dibatalkan, dan memori kategori barang akan dihapus selamanya.</>
+              )}
+            </p>
+            
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setDeleteModal({ isOpen: false, type: null, category: null })} className="px-6 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer">
+                Batal
+              </button>
+              <button onClick={confirmDelete} className={`px-6 py-2.5 text-sm font-semibold text-white rounded-full shadow-md transition-all active:scale-95 cursor-pointer ${deleteModal.type === 'soft' ? 'bg-[#00664b] hover:bg-[#00553e]' : 'bg-red-600 hover:bg-red-700'}`}>
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAddOpen && (
         <TambahKategori 
          onClose={() => setIsAddOpen(false)} 
-         onSuccess={fetchCategories} 
-        existingCategoriesCount={categories.length} // Mengirimkan total data kategori aktif
+         onSuccess={() => { toast.success("Kategori berhasil ditambahkan!"); fetchCategories(); }} 
+         existingCategoriesCount={categories.length}
       />)}
-      {isEditOpen && <EditKategori categoryData={selectedCategory} onClose={() => setIsEditOpen(false)} onSuccess={fetchCategories} />}
+      {isEditOpen && <EditKategori categoryData={selectedCategory} onClose={() => setIsEditOpen(false)} onSuccess={() => { toast.success("Kategori berhasil diperbarui!"); fetchCategories(); }} />}
        
     </div>
   );

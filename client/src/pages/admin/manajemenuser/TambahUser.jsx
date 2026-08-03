@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function TambahUser({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({ 
-    employeeId: '', // ID Staff resmi dari Admin
     name: '', 
     email: '', 
+    password: '', 
     role: 'Staff', 
     unit: 'KC Semarang' 
   });
@@ -14,6 +15,16 @@ export default function TambahUser({ onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🔥 VALIDASI DOMAIN EMAIL BSN
+    const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id"];
+    const isDomainValid = allowedDomains.some(domain => formData.email.toLowerCase().endsWith(domain));
+    
+    if (!isDomainValid) {
+      toast.error("Gagal: Harus menggunakan email resmi BSN (@btn.co.id, @bankbsn.co.id, @bsn.co.id)");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -26,13 +37,13 @@ export default function TambahUser({ onClose, onSuccess }) {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          employeeId: formData.employeeId, // ID Staff dari input Admin
           fullName: formData.name,
           username: formData.email.split('@')[0], 
           email: formData.email,
+          password: formData.password, 
           role: formData.role.toUpperCase(), 
           divisi: formData.unit,
-          hasSignedUp: false // Penanda bahwa akun belum diaktifkan user
+          hasSignedUp: true 
         })
       });
 
@@ -41,13 +52,13 @@ export default function TambahUser({ onClose, onSuccess }) {
         throw new Error(errorData.message || "Gagal menyimpan ke database");
       }
 
-      alert(`Sukses! Pre-registrasi berhasil untuk ID Staff: ${formData.employeeId}`);
+      toast.success(`Sukses! Akun untuk ${formData.name} berhasil dibuat.`); // 🔥 GANTI ALERT
       if (onSuccess) onSuccess(); 
       onClose(); 
 
     } catch (error) {
       console.error('Gagal mendaftarkan user baru:', error.message);
-      alert('Terjadi kesalahan saat menyimpan: ' + error.message);
+      toast.error('Terjadi kesalahan saat menyimpan: ' + error.message); // 🔥 GANTI ALERT
     } finally {
       setLoading(false);
     }
@@ -59,8 +70,8 @@ export default function TambahUser({ onClose, onSuccess }) {
         
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
-            <h3 className="text-lg font-bold text-zinc-900">Daftarkan User Baru</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Otorisasi ID Staff pegawai untuk pembuatan akun logistik BSN</p>
+            <h3 className="text-lg font-bold text-zinc-900">Buat Akun Baru</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Pembuatan kredensial akses sistem logistik BSN</p>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
             <X size={18} />
@@ -68,19 +79,6 @@ export default function TambahUser({ onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          
-          <div>
-            <label className="block text-sm font-semibold text-zinc-700 mb-1">ID Staff / NIP Pegawai</label>
-            <input 
-              type="text" 
-              required 
-              value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-              placeholder="Contoh: BSN-001" 
-              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white font-mono uppercase" 
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Nama Lengkap</label>
             <input 
@@ -100,7 +98,19 @@ export default function TambahUser({ onClose, onSuccess }) {
               required 
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="budi.s@bsn.go.id" 
+              placeholder="budi.s@bsn.co.id" 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-zinc-700 mb-1">Password</label>
+            <input 
+              type="text" 
+              required 
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Masukkan password awal" 
               className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
             />
           </div>
@@ -139,7 +149,7 @@ export default function TambahUser({ onClose, onSuccess }) {
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
             <button type="submit" disabled={loading} className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50">
-              <Save size={16} /> {loading ? 'Menyimpan...' : 'Simpan Pre-Registrasi'}
+              <Save size={16} /> {loading ? 'Menyimpan...' : 'Buat Akun'}
             </button>
           </div>
         </form>

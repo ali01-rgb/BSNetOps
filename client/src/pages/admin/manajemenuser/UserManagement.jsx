@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER DI SINI
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -14,7 +15,8 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('Semua');
 
-  // 🔥 FETCH DATA DARI NESTJS API (Route disesuaikan ke /inventory/users)
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, user: null });
+
   useEffect(() => {
     fetchUsersFromAPI();
   }, []);
@@ -61,7 +63,6 @@ export default function UserManagement() {
     setIsEditOpen(true);
   };
 
-  // 🔥 UPDATE USER (Route disesuaikan ke /inventory/users/:id)
   const handleUpdateUser = async (updatedUser) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -73,10 +74,10 @@ export default function UserManagement() {
         },
         body: JSON.stringify({
           fullName: updatedUser.name,
-          username: updatedUser.name.toLowerCase().replace(/\s+/g, ''), // Fallback format username
+          username: updatedUser.name.toLowerCase().replace(/\s+/g, ''),
           email: updatedUser.email,
-          role: updatedUser.role.toUpperCase(), // Sesuai dengan format backend
-          divisi: updatedUser.unit, // Sesuai dengan field backend
+          role: updatedUser.role.toUpperCase(),
+          divisi: updatedUser.unit,
           is_suspended: updatedUser.isSuspended
         })
       });
@@ -84,21 +85,33 @@ export default function UserManagement() {
       if (!res.ok) throw new Error("Gagal memperbarui");
 
       setIsEditOpen(false);
-      alert(`Sukses: Data akun ${updatedUser.name} berhasil diperbarui!`);
+      // 🔥 GANTI ALERT JADI TOAST SUCCESS
+      toast.success(`Data akun ${updatedUser.name} berhasil diperbarui!`);
       fetchUsersFromAPI(); 
     } catch (error) {
       console.error('Gagal memperbarui user:', error.message);
-      alert('Terjadi kesalahan saat memperbarui database.');
+      // 🔥 GANTI ALERT JADI TOAST ERROR
+      toast.error('Terjadi kesalahan saat memperbarui database.');
     }
   };
 
-  // 🔥 SOFT DELETE (Arsip Ke Trash)
-  const handleSoftDelete = async (originalId, name) => {
-    if (window.confirm(`Apakah Anda yakin ingin memindahkan akun ${name} ke tempat sampah?`)) {
-      try {
+  const handleSoftDeleteClick = (user) => {
+    setDeleteModal({ isOpen: true, type: 'soft', user });
+  };
+
+  const handleHardDeleteClick = (user) => {
+    setDeleteModal({ isOpen: true, type: 'hard', user });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.user) return;
+    
+    const { originalId, name } = deleteModal.user;
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+    try {
+      if (deleteModal.type === 'soft') {
         const timestamp = new Date().toISOString();
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        
         const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
           method: "PATCH",
           headers: {
@@ -113,14 +126,30 @@ export default function UserManagement() {
         setUsers(users.map(user => 
           user.originalId === originalId ? { ...user, isDeleted: true, deleted_at: timestamp } : user
         ));
-      } catch (error) {
-        console.error('Gagal mengarsipkan akun:', error.message);
-        alert('Terjadi kesalahan pada database.');
+        // 🔥 TAMBAH TOAST SUCCESS
+        toast.success(`Akun ${name} berhasil dipindahkan ke Trash.`);
+      } 
+      else if (deleteModal.type === 'hard') {
+        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error("Gagal menghapus permanen");
+
+        setUsers(users.filter(user => user.originalId !== originalId));
+        // 🔥 TAMBAH TOAST SUCCESS
+        toast.success(`Akun ${name} berhasil dihapus permanen.`);
       }
+    } catch (error) {
+      console.error('Gagal memproses penghapusan akun:', error.message);
+      // 🔥 GANTI ALERT JADI TOAST ERROR
+      toast.error('Terjadi kesalahan pada database.');
+    } finally {
+      setDeleteModal({ isOpen: false, type: null, user: null });
     }
   };
 
-  // 🔥 RESTORE USER DARI TRASH
   const handleRestore = async (originalId, name) => {
     if (window.confirm(`Kembalikan hak akses akun untuk ${name}?`)) {
       try {
@@ -139,29 +168,12 @@ export default function UserManagement() {
         setUsers(users.map(user => 
           user.originalId === originalId ? { ...user, isDeleted: false, deleted_at: null } : user
         ));
+        // 🔥 TAMBAH TOAST SUCCESS
+        toast.success(`Akun ${name} berhasil dipulihkan dari Trash.`);
       } catch (error) {
         console.error('Gagal memulihkan akun:', error.message);
-        alert('Terjadi kesalahan pada database.');
-      }
-    }
-  };
-
-  // 🔥 HARD DELETE (Hapus Permanen)
-  const handleHardDelete = async (originalId, name) => {
-    if (window.confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus PERMANEN akun ${name}? Data tidak dapat dikembalikan.`)) {
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const res = await fetch(`http://localhost:3000/inventory/users/${originalId}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!res.ok) throw new Error("Gagal menghapus permanen");
-
-        setUsers(users.filter(user => user.originalId !== originalId));
-      } catch (error) {
-        console.error('Gagal menghapus permanen akun:', error.message);
-        alert('Terjadi kesalahan pada database.');
+        // 🔥 GANTI ALERT JADI TOAST ERROR
+        toast.error('Terjadi kesalahan pada database.');
       }
     }
   };
@@ -176,7 +188,6 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
-      {/* Header Utama */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           {showTrash && (
@@ -309,7 +320,7 @@ export default function UserManagement() {
                             <RotateCcw size={14} /> Restore
                           </button>
                           <button 
-                            onClick={() => handleHardDelete(user.originalId, user.name)}
+                            onClick={() => handleHardDeleteClick(user)}
                             className="p-1.5 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
                           >
                             <XCircle size={14} /> Hapus Permanen
@@ -325,7 +336,7 @@ export default function UserManagement() {
                             <Edit3 size={16} />
                           </button>
                           <button 
-                            onClick={() => handleSoftDelete(user.originalId, user.name)}
+                            onClick={() => handleSoftDeleteClick(user)}
                             title="Pindah ke Tempat Sampah"
                             className="p-1.5 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all inline-flex items-center cursor-pointer"
                           >
@@ -341,6 +352,45 @@ export default function UserManagement() {
           </table>
         </div>
       </div>
+
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200">
+            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${deleteModal.type === 'soft' ? 'bg-amber-100' : 'bg-red-100'}`}>
+              <AlertTriangle className={`w-8 h-8 ${deleteModal.type === 'soft' ? 'text-amber-500' : 'text-red-500'}`} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-zinc-900 mb-3">
+              {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Akun?'}
+            </h3>
+            
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              {deleteModal.type === 'soft' ? (
+                <>Apakah Anda yakin ingin menonaktifkan dan memindahkan akun <b>"{deleteModal.user?.name}"</b> ({deleteModal.user?.id}) ke tempat sampah?</>
+              ) : (
+                <>PERINGATAN: Hapus PERMANEN akun <b>"{deleteModal.user?.name}"</b>? Data dan riwayat akses pengguna ini tidak dapat dibatalkan dan akan hilang selamanya dari sistem.</>
+              )}
+            </p>
+            
+            <div className="flex justify-center gap-3">
+              <button 
+                onClick={() => setDeleteModal({ isOpen: false, type: null, user: null })} 
+                className="px-6 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                className={`px-6 py-2.5 text-sm font-semibold text-white rounded-full shadow-md transition-all active:scale-95 cursor-pointer ${
+                  deleteModal.type === 'soft' ? 'bg-[#00664b] hover:bg-[#00553e]' : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isAddOpen && (
         <TambahUser 

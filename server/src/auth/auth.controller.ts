@@ -1,7 +1,5 @@
 import { Controller, Post, Body, Get, Patch, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-// Sesuaikan import JwtAuthGuard dengan letak file lu!
-// (Karena di terminal lu sebelumnya ada tulisan JwtAuthGuard/RolesGuard, pastikan path ini benar)
 import { JwtAuthGuard } from './jwt-auth.guard'; 
 
 @Controller('auth')
@@ -18,15 +16,24 @@ export class AuthController {
     return this.authService.login(body.username, body.password);
   }
 
-  // 🔥 1. ENDPOINT UNTUK AMBIL DATA PROFIL (Dipanggil pas halaman di-load)
+  // 🔥 RUTE 1: REQUEST FORGOT PASSWORD
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  // 🔥 RUTE 2: EXECUTE RESET PASSWORD BARU (DITAMBAH PARAMETER TOKEN)
+  @Post('reset-password')
+  async resetPassword(@Body() body: { email: string; newPassword: string; token: string }) {
+    return this.authService.resetPassword(body.email, body.newPassword, body.token);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Req() req) {
-    // req.user.sub biasanya berisi ID user dari token JWT
     return this.authService.getProfile(req.user.sub || req.user.id);
   }
 
-  // 🔥 2. ENDPOINT UNTUK SIMPAN EDIT PROFIL (Dipanggil pas klik tombol Simpan)
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
   async updateProfile(@Req() req, @Body() body: any) {

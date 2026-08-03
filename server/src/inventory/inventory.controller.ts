@@ -96,8 +96,9 @@ export class InventoryController {
   }
 
   // ================= REQUESTS (ADMIN & MANAGER) =================
+  
   @Get('admin/requests')
-  @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
+  @Roles('ADMIN', 'admin', 'MANAGER', 'manager') 
   async getAllRequestsForAdmin() {
     try {
       const data = await this.inventoryService.getAllRequestsForAdmin();
@@ -108,12 +109,37 @@ export class InventoryController {
     }
   }
 
+  @Get('manager/requests')
+  @Roles('MANAGER', 'manager', 'ADMIN', 'admin')
+  async getRequestsForManager() {
+    try {
+      const data = await this.inventoryService.getRequestsForManager();
+      return { status: 'success', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Post('admin/requests/:id/status')
   @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
-  async updateRequestStatus(@Param('id') id: string, @Body('status') status: string) {
+  async updateRequestStatus(@Param('id') id: string, @Body() body: any, @Request() req: any) {
     try {
-      await this.inventoryService.updateRequestStatus(id, status);
-      return { status: 'success', message: `Status berhasil diubah menjadi ${status}` };
+      await this.inventoryService.updateRequestStatus(id, body, req.user);
+      return { status: 'success', message: `Status berhasil diperbarui` };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // 🔥 TAMBAHAN ENDPOINT BULK DELETE
+  @Delete('requests/bulk-delete')
+  @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
+  async bulkDeleteRequests(@Body('ids') ids: string[]) {
+    try {
+      const data = await this.inventoryService.bulkDeleteRequests(ids);
+      return { status: 'success', message: 'Riwayat berhasil dihapus dari database', data: data };
     } catch (error) {
       const err = error as Error;
       throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);

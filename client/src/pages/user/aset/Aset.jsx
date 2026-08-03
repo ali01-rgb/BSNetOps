@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Calendar, Package, X, Check, ShoppingCart, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function Aset({ setCurrentView }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState(null);
   
-  // STATE DARI DATABASE
   const [katalogAset, setKatalogAset] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // STATE KERANJANG (MULTI-ITEMS)
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem('selectedAssetData');
     if (savedCart) {
@@ -23,14 +22,12 @@ export default function Aset({ setCurrentView }) {
     return [];
   });
 
-  // STATE FILTER
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Semua'); 
   const [filterType, setFilterType] = useState('Default'); 
   
   const filterMenuRef = useRef(null);
 
-  // Auto close dropdown saat klik di luar
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
@@ -41,12 +38,10 @@ export default function Aset({ setCurrentView }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sinkronisasi Cart ke LocalStorage
   useEffect(() => {
     localStorage.setItem('selectedAssetData', JSON.stringify(cart));
   }, [cart]);
 
-  // 🔥 FUNGSI TARIK DATA DENGAN MAPPING KOLOM SUPABASE YANG AKURAT
   useEffect(() => {
     const fetchAset = async () => {
       try {
@@ -64,25 +59,43 @@ export default function Aset({ setCurrentView }) {
           const assets = response.data || []; 
           
           if (Array.isArray(assets)) {
-            // 🔥 MAPPING KOLOM: nama_barang, kode_barang, stok, image_url
-            const formattedAset = assets.map(item => ({
-              id: item.id,
-              nama: item.nama_barang || item.name || 'Tanpa Nama', 
-              kode: item.kode_barang || item.kode || 'N/A',
-              kategori: item.category || item.kategori || 'Umum',
-              stok: `${item.stok ?? item.stock ?? 0} Pcs`, 
-              tglUpdate: item.createdAt 
-                ? new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                : 'Terbaru',
-              // FIX: image_url dari Supabase
-              gambar: item.image_url || item.imageUrl || 'https://via.placeholder.com/150?text=No+Image' 
-            }));
+            const formattedAset = assets
+              .filter(item => !item.deleted_at) 
+              .map(item => {
+                let catName = 'Umum';
+                if (item.category) {
+                  if (item.category.deleted_at || item.category.deletedAt) {
+                    catName = '-';
+                  } else if (item.category.name) {
+                    catName = item.category.name;
+                  }
+                } else if (typeof item.category === 'string') {
+                  catName = item.category;
+                } else if (typeof item.kategori === 'string') {
+                  catName = item.kategori;
+                }
+
+                const rawStok = parseInt(item.stok ?? item.stock ?? 0, 10);
+
+                return {
+                  id: item.id,
+                  nama: item.nama_barang || item.name || 'Tanpa Nama', 
+                  kode: item.kode_barang || item.kode || 'N/A',
+                  kategori: catName, 
+                  rawStok: rawStok,
+                  stok: `${rawStok} Pcs`, 
+                  tglUpdate: item.createdAt 
+                    ? new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'Terbaru',
+                  gambar: item.image_url || item.imageUrl || 'https://via.placeholder.com/150?text=No+Image' 
+                };
+              });
             setKatalogAset(formattedAset);
           }
         } else {
           console.error("Gagal ambil data aset. HTTP Status:", res.status);
           if (res.status === 401) {
-            alert("Sesi Anda telah berakhir atau Token tidak valid. Silakan relogin.");
+            toast.error("Sesi Anda telah berakhir atau Token tidak valid. Silakan relogin."); // 🔥 GANTI ALERT
           }
         }
       } catch (error) {
@@ -95,7 +108,6 @@ export default function Aset({ setCurrentView }) {
     fetchAset();
   }, []);
 
-  // LOGIKA FILTERING
   const filteredAset = katalogAset.filter(aset => {
     const matchesSearch = aset.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           aset.kode.toLowerCase().includes(searchQuery.toLowerCase());
@@ -107,10 +119,12 @@ export default function Aset({ setCurrentView }) {
     }
   });
 
-  const uniqueCategories = [...new Set(katalogAset.map(item => item.kategori))];
+  const uniqueCategories = [...new Set(katalogAset.map(item => item.kategori))].filter(kat => kat && kat !== '-');
 
   const handleOpenModal = (aset) => {
-    setSelectedAsset(aset);
+    if (aset.rawStok > 0) {
+      setSelectedAsset(aset);
+    }
   };
 
   const handleAddToCart = () => {
@@ -124,6 +138,7 @@ export default function Aset({ setCurrentView }) {
           jumlah: 1
         }];
         setCart(updatedCart);
+        toast.success(`${selectedAsset.nama} dimasukkan ke permintaan.`); // 🔥 TAMBAHAN UX MANIS
       }
       setSelectedAsset(null);
     }
@@ -138,14 +153,13 @@ export default function Aset({ setCurrentView }) {
     if (cart.length > 0) {
       setCurrentView('ajukan-permintaan');
     } else {
-      alert("Keranjang belanja Anda masih kosong. Silakan pilih aset terlebih dahulu!");
+      toast.error("Keranjang belanja Anda masih kosong. Silakan pilih aset terlebih dahulu!"); // 🔥 GANTI ALERT
     }
   };
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-400 min-h-screen text-zinc-800 pb-12">
       
-      {/* SEKSI NOTIFIKASI LAYOUT KERANJANG ATAS */}
       {cart.length > 0 && (
         <div className="w-full bg-emerald-50 border border-emerald-600/30 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
@@ -173,7 +187,6 @@ export default function Aset({ setCurrentView }) {
         </div>
       )}
 
-      {/* KONTROL ATAS: Search Bar & Filter */}
       <div className="flex items-center justify-between gap-4 w-full pt-2">
         <div className="relative w-full max-w-xs">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
@@ -250,7 +263,6 @@ export default function Aset({ setCurrentView }) {
         </div>
       </div>
 
-      {/* AREA GRID KATALOG / LOADING / EMPTY STATE */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
           <Loader2 className="animate-spin mb-2" size={24} />
@@ -264,21 +276,31 @@ export default function Aset({ setCurrentView }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {filteredAset.map((aset) => {
             const isAddedInCart = cart.some(item => item.kodeAset === aset.kode);
+            const isHabis = aset.rawStok <= 0; 
+
             return (
               <div 
                 key={aset.id}
                 onClick={() => handleOpenModal(aset)}
-                className={`bg-white border rounded-3xl p-4 flex gap-4 cursor-pointer hover:shadow-md transition-all duration-300 hover:scale-[1.01] select-none relative overflow-hidden ${
-                  isAddedInCart ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-zinc-200/80'
+                className={`bg-white border rounded-3xl p-4 flex gap-4 transition-all duration-300 select-none relative overflow-hidden ${
+                  isHabis 
+                    ? 'opacity-60 grayscale cursor-not-allowed border-zinc-200' 
+                    : isAddedInCart 
+                        ? 'border-emerald-500 ring-1 ring-emerald-500/20 cursor-pointer hover:shadow-md hover:scale-[1.01]' 
+                        : 'border-zinc-200/80 cursor-pointer hover:shadow-md hover:scale-[1.01]'
                 }`}
               >
-                {isAddedInCart && (
-                  <div className="absolute top-0 right-0 bg-emerald-500 text-white pl-3 pr-2 py-1 rounded-bl-xl text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                {isHabis ? (
+                  <div className="absolute top-0 right-0 bg-red-600 text-white px-3 py-1.5 rounded-bl-xl text-[10px] font-bold tracking-wide shadow-sm z-10">
+                    STOK HABIS
+                  </div>
+                ) : isAddedInCart && (
+                  <div className="absolute top-0 right-0 bg-emerald-500 text-white pl-3 pr-2 py-1 rounded-bl-xl text-[9px] font-bold flex items-center gap-1 shadow-sm z-10">
                     <Check size={10} strokeWidth={3} /> DIPILIH
                   </div>
                 )}
 
-                <div className="w-28 h-28 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center p-2 shrink-0 overflow-hidden">
+                <div className="w-28 h-28 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center p-2 shrink-0 overflow-hidden relative">
                   <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-contain mix-blend-multiply" />
                 </div>
 
@@ -296,7 +318,7 @@ export default function Aset({ setCurrentView }) {
                       <div className="flex items-center gap-2.5">
                         <Package size={13} className="text-zinc-500" />
                         <span className="text-zinc-400 font-normal">|</span>
-                        <span>{aset.stok}</span>
+                        <span className={isHabis ? 'text-red-500' : ''}>{aset.stok}</span>
                       </div>
                     </div>
                   </div>
@@ -310,7 +332,6 @@ export default function Aset({ setCurrentView }) {
         </div>
       )}
 
-      {/* MODAL DETAIL POP-UP */}
       {selectedAsset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/30 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl border border-zinc-100 shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-xl w-full p-6 relative flex gap-6 animate-in zoom-in-95 duration-200">

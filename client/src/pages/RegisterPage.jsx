@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { FaXmark } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast"; // 🔥 IMPORT TOASTER
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false); 
 
   const [form, setForm] = useState({
+    fullName: "", 
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    staffId: "",
     unit: "",
   });
 
@@ -35,11 +36,11 @@ export default function RegisterPage() {
     e.preventDefault();
     let newError = {};
 
+    if (!form.fullName) newError.fullName = "Nama Lengkap wajib diisi";
     if (!form.username) newError.username = "Username wajib diisi";
     if (!form.email) newError.email = "Email wajib diisi";
     if (!form.password) newError.password = "Password wajib diisi";
     if (!form.confirmPassword) newError.confirmPassword = "Konfirmasi password wajib diisi";
-    if (!form.staffId) newError.staffId = "ID Staff wajib diisi";
     if (!form.unit) newError.unit = "Unit wajib diisi";
 
     if (form.password && form.confirmPassword) {
@@ -48,8 +49,13 @@ export default function RegisterPage() {
       }
     }
 
-    if (form.staffId && !form.staffId.toUpperCase().startsWith("BSN")) {
-      newError.staffId = "ID Staff tidak valid (harus diawali BSN)";
+    if (form.email) {
+      const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id"];
+      const isDomainValid = allowedDomains.some(domain => form.email.toLowerCase().endsWith(domain));
+      
+      if (!isDomainValid) {
+        newError.email = "Gunakan email resmi BSN (@btn.co.id, @bankbsn.co.id, @bsn.co.id)";
+      }
     }
 
     setError(newError);
@@ -65,11 +71,10 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          employeeId: form.staffId.toUpperCase(), 
+          fullName: form.fullName, 
           username: form.username,
           email: form.email,
           password: form.password,
-          // Unit/Divisi dan Role tidak dikirim karena backend akan pakai data asli dari inputan Admin
         }),
       });
 
@@ -79,7 +84,7 @@ export default function RegisterPage() {
         throw new Error(data.message || "Gagal melakukan registrasi");
       }
 
-      alert("Aktivasi akun berhasil! Silakan login dengan akun Anda.");
+      toast.success("Aktivasi akun berhasil! Silakan login dengan akun Anda."); // 🔥 GANTI ALERT
       navigate("/login"); 
 
     } catch (err) {
@@ -111,7 +116,7 @@ export default function RegisterPage() {
               Buat Akun Baru
             </h1>
             <p className="text-sm text-[#4a9b7c]">
-              Aktivasi data untuk akses sistem BSN
+              Lengkapi data untuk akses sistem BSN
             </p>
           </div>
 
@@ -122,6 +127,21 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            
+            <div>
+              <label className="text-sm font-semibold">Nama Lengkap</label>
+              <input
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                placeholder="Masukkan nama lengkap"
+                className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+              />
+              {error.fullName && (
+                <p className="text-xs text-red-500 mt-1">{error.fullName}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-semibold">Username</label>
@@ -158,7 +178,7 @@ export default function RegisterPage() {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="Masukkan email resmi"
+                  placeholder="Contoh: budi@bsn.go.id"
                   className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
                 />
                 {error.email && (
@@ -184,43 +204,28 @@ export default function RegisterPage() {
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="text-sm font-semibold">
-                <label className="text-sm font-semibold">ID Staff</label>
-                <input
-                  name="staffId"
-                  value={form.staffId}
-                  onChange={handleChange}
-                  placeholder="Contoh: BSN-001"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 uppercase"
-                />
-                {error.staffId && (
-                  <p className="text-xs text-red-500">{error.staffId}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold">Unit Verifikasi</label>
-                <select
-                  name="unit"
-                  value={form.unit}
-                  onChange={handleChange}
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 cursor-pointer"
-                >
-                  <option value="" disabled hidden>Pilih Unit Asal</option>
-                  <option value="KC Semarang">KC Semarang</option>
-                  <option value="KCP Majapahit">KCP Majapahit</option>
-                  <option value="KCP Ngaliyan">KCP Ngaliyan</option>
-                  <option value="KCP Ungaran">KCP Ungaran</option>
-                  <option value="KCP Kendal">KCP Kendal</option>
-                  <option value="KCP Kudus">KCP Kudus</option>
-                  <option value="KCP Magelang">KCP Magelang</option>
-                </select>
-                {error.unit && (
-                  <p className="text-xs text-red-500">{error.unit}</p>
-                )}
-              </div>
-
+            <div>
+              <label className="text-sm font-semibold">Unit Verifikasi</label>
+              <select
+                name="unit"
+                value={form.unit}
+                onChange={handleChange}
+                className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 cursor-pointer"
+              >
+                <option value="" disabled hidden>Pilih Unit</option>
+                <option value="KC Semarang">KC Semarang</option>
+                <option value="KCP Majapahit">KCP Majapahit</option>
+                <option value="KCP Ngaliyan">KCP Ngaliyan</option>
+                <option value="KCP Ungaran">KCP Ungaran</option>
+                <option value="KCP Kendal">KCP Kendal</option>
+                <option value="KCP Kudus">KCP Kudus</option>
+                <option value="KCP Magelang">KCP Magelang</option>
+              </select>
+              {error.unit && (
+                <p className="text-xs text-red-500">{error.unit}</p>
+              )}
             </div>
 
             <button
@@ -228,12 +233,12 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="w-full flex justify-center items-center cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
-              {isLoading ? "Memproses Data..." : "Aktivasi Akun"}
+              {isLoading ? "Memproses Data..." : "Daftar"}
             </button>
           </form>
 
           <p className="mt-5 text-center text-sm">
-            Sudah punya akun aktif?{" "}
+            Sudah punya akun?{" "}
             <a
               href="/login"
               className="font-semibold text-[#00634b] hover:underline"

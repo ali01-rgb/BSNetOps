@@ -62,18 +62,22 @@ export default function AdminDashboard({ role = 'admin' }) {
         }
 
         // ----------------------------------------------------
-        // 2. HITUNG STATISTIK 
+        // 2. HITUNG STATISTIK (LOGIKA MATEMATIKA DIPERBAIKI)
         // ----------------------------------------------------
-        const totalMasuk = assets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
+        // Total Tersedia: Murni menjumlahkan sisa stok di database saat ini
+        const totalTersedia = assets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
 
+        // Total Keluar: Menjumlahkan barang dari request yang statusnya sudah ACC
         const approvedRequests = requests.filter(r => 
-          ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
+          ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
         );
         const totalKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
-        const totalTersedia = Math.max(0, totalMasuk - totalKeluar);
+        
+        // Total Masuk (Histori): Sisa stok saat ini + Barang yang sudah keluar
+        const totalMasuk = totalTersedia + totalKeluar;
 
         setStats({
-          totalBarang: totalTersedia,
+          totalBarang: totalTersedia, // Dijamin memunculkan sisa aslinya (contoh: 22 Unit)
           barangMasuk: totalMasuk,
           barangKeluar: totalKeluar
         });
@@ -234,7 +238,7 @@ export default function AdminDashboard({ role = 'admin' }) {
                 <tr className="text-zinc-500 border-b bg-zinc-50/50 text-xs uppercase font-semibold">
                   <th className="pb-3 pt-2 px-2">Barang</th>
                   <th className="pb-3 pt-2 px-2">Unit</th>
-                  <th className="pb-3 pt-2 px-2">Tipe</th>
+                  <th className="pb-3 pt-2 px-2">Status</th>
                   <th className="pb-3 pt-2 px-2">Tanggal</th>
                 </tr>
               </thead>

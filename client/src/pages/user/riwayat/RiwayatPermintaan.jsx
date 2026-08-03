@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Clock, CheckCircle2, XCircle, PackageCheck, Eye, ArrowLeft, FileText, Download, MoreVertical, X as CloseIcon } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../permintaan/TemplateDokumenA4'; 
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function RiwayatPermintaan() {
   const printRef = useRef();
@@ -9,7 +10,6 @@ export default function RiwayatPermintaan() {
   const [loading, setLoading] = useState(true);
   const [selectedLaporanId, setSelectedLaporanId] = useState(null);
 
-  // State untuk Preview Bon & Export PDF
   const [showBonPreview, setShowBonPreview] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -18,7 +18,6 @@ export default function RiwayatPermintaan() {
     fetchUserRequests();
   }, []);
 
-  // 🔥 FETCH DATA DARI NESTJS API
   const fetchUserRequests = async () => {
     setLoading(true);
     try {
@@ -33,25 +32,41 @@ export default function RiwayatPermintaan() {
       const data = resJson.data || resJson;
 
       if (Array.isArray(data)) {
-        // Karena NestJS menyimpan 1 request = 1 item, kita kelompokkan berdasarkan waktu agar tampil rapi di UI
+        const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
+
         const groupedRequests = data.reduce((acc, curr) => {
-          // Menggunakan timestamp sebagai kunci pengelompokan
-          const groupKey = new Date(curr.createdAt).getTime().toString(); 
+          const rawDate = new Date(curr.createdAt || Date.now());
+          const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+          const jamMenit = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          
+          const groupKey = `${tglStr}-${jamMenit}`; 
           
           if (!acc[groupKey]) {
+            const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
+            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            
             acc[groupKey] = {
-              id: `REQ-${new Date(curr.createdAt).toISOString().slice(0,10).replace(/-/g, '')}-${curr.id.substring(0, 3).toUpperCase()}`,
+              id: `REQ-${tglFormatId}-${padId}`, 
               originalId: curr.id,
-              tgl: new Date(curr.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              jam: new Date(curr.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              tgl: tglStr,
+              jam: jamMenit,
               pemohon: 'Anda', 
               unit: '-', 
               statusDb: curr.status,
-              isDiserahkan: curr.status === 'Diserahkan' || curr.status === 'Disetujui',
+              isDiserahkan: ['Diserahkan', 'Disetujui', 'Selesai'].includes(curr.status),
               tanggalDiserahkan: '',
               keperluan: curr.alasan || '-',
+              prioritasUtama: curr.prioritas || 'Rendah',
+              adminName: curr.adminName || '',     
+              managerName: curr.managerName || '', 
               items: []
             };
+          } else {
+            const currentGroupPriority = acc[groupKey].prioritasUtama;
+            const newItemPriority = curr.prioritas || 'Rendah';
+            if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
+              acc[groupKey].prioritasUtama = newItemPriority; 
+            }
           }
 
           acc[groupKey].items.push({
@@ -68,30 +83,23 @@ export default function RiwayatPermintaan() {
         }, {});
 
         const formatted = Object.values(groupedRequests).map(group => {
-          // Kalkulasi status keseluruhan dari laporan
-          const allReceived = group.items.every(i => i.statusItem === 'Diterima' || i.statusItem === 'Selesai');
-          const anyRejected = group.items.some(i => i.statusItem === 'Ditolak');
+          const allItems = group.items;
+          const anyRejected = allItems.some(i => i.statusItem?.toUpperCase() === 'DITOLAK' || i.statusItem?.toUpperCase() === 'REJECTED');
+          const allApproved = allItems.every(i => ['SELESAI', 'DISETUJUI', 'APPROVED', 'DITERIMA'].includes(i.statusItem?.toUpperCase()));
+          const allReceived = allItems.every(i => i.statusItem?.toUpperCase() === 'DITERIMA');
 
           let currentStatus = 'Pending';
           if (anyRejected) currentStatus = 'Rejected';
           else if (allReceived) currentStatus = 'Completed';
-          else if (group.statusDb === 'Disetujui' || group.statusDb === 'Diserahkan') currentStatus = 'Approved';
-
-          // Menentukan Prioritas Tertinggi dari kumpulan barang
-          const itemPriorities = group.items.map(i => i.prioritasItem);
-          let mainPriority = 'Rendah';
-          if (itemPriorities.includes('Tinggi')) mainPriority = 'Tinggi';
-          else if (itemPriorities.includes('Sedang')) mainPriority = 'Sedang';
+          else if (allApproved) currentStatus = 'Approved'; 
 
           return {
             ...group,
-            prioritasUtama: mainPriority,
             status: currentStatus, 
           };
         });
 
-        // Urutkan dari yang terbaru
-        formatted.sort((a, b) => b.originalId.localeCompare(a.originalId));
+        formatted.sort((a, b) => b.id.localeCompare(a.id));
         setLaporanRiwayat(formatted);
       }
     } catch (err) {
@@ -104,14 +112,13 @@ export default function RiwayatPermintaan() {
   const handleTerimaBarang = async (laporanId, itemId) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      // Melakukan PATCH ke server untuk mengubah status item jadi "Diterima"
-      // (Catatan: Pastikan kamu sudah membuat route ini di backend jika belum ada)
       await fetch(`http://localhost:3000/inventory/requests/${itemId}/receive`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      // Update state UI secara optimis
+      toast.success('Penerimaan barang berhasil dikonfirmasi!'); // 🔥 TAMBAHAN UX MANIS
+
       setLaporanRiwayat(prevLaporan =>
         prevLaporan.map(laporan => {
           if (laporan.id === laporanId) {
@@ -132,7 +139,7 @@ export default function RiwayatPermintaan() {
       );
     } catch (error) {
       console.error("Gagal konfirmasi terima barang:", error.message);
-      alert("Terjadi kesalahan saat mengkonfirmasi penerimaan barang.");
+      toast.error("Terjadi kesalahan saat mengkonfirmasi penerimaan barang."); // 🔥 GANTI ALERT
     }
   };
 
@@ -142,9 +149,9 @@ export default function RiwayatPermintaan() {
     setIsExporting(true);
 
     const opt = {
-      margin:      0,
-      filename:    `Bon_Barang_${activeLaporan?.id || 'BSN'}.pdf`,
-      image:       { type: 'jpeg', quality: 0.98 },
+      margin:       0,
+      filename:     `Bon_Barang_${activeLaporan?.id || 'BSN'}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
@@ -161,22 +168,13 @@ export default function RiwayatPermintaan() {
 
   const activeLaporan = laporanRiwayat.find(l => l.id === selectedLaporanId);
 
-  const isApprovedByManager = activeLaporan?.statusDb?.toLowerCase() === 'selesai' || activeLaporan?.statusDb?.toLowerCase() === 'disetujui';
-  const isHandedOverByAdmin = activeLaporan?.isDiserahkan === true;
-
-  const qrAdmin = isHandedOverByAdmin ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=Disetujui_Oleh_Admin_ID:${activeLaporan?.id}` : null;
-  const qrManager = isApprovedByManager ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=Disetujui_Oleh_Atasan_ID:${activeLaporan?.id}` : null;
-
   const mappedFormData = activeLaporan ? {
     divisi: activeLaporan.unit,
     alasanDibutuhkan: activeLaporan.keperluan,
     namaLengkap: activeLaporan.pemohon,
     status: activeLaporan.statusDb,
-    isApproved: isApprovedByManager,
-    adminName: 'Admin Gudang',
-    managerName: 'Manager Operasional',
-    qrAdmin: qrAdmin,
-    qrManager: qrManager
+    adminName: activeLaporan.adminName || 'Admin Gudang',
+    managerName: activeLaporan.managerName || 'Manager Operasional',
   } : {};
 
   const mappedDaftarBarang = activeLaporan ? activeLaporan.items.map(item => ({
@@ -185,11 +183,6 @@ export default function RiwayatPermintaan() {
     jumlahDisetujui: item.jumlahDisetujui,
     remark: item.remark
   })) : [];
-
-  const mappedAdminData = activeLaporan ? {
-    isDiserahkan: activeLaporan.isDiserahkan,
-    tanggal: activeLaporan.tanggalDiserahkan || new Date().toLocaleDateString('id-ID')
-  } : {};
 
   return (
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-zinc-800">
@@ -274,7 +267,6 @@ export default function RiwayatPermintaan() {
         ) : (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full bg-white">
             
-            {/* 🔥 REVISI UI: HEADER DETAIL BERWARNA HIJAU SESUAI REFERENSI GAMBAR */}
             <div className="bg-[#58a27d] p-5 rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -356,7 +348,6 @@ export default function RiwayatPermintaan() {
         )}
       </div>
 
-      {/* MODAL PREVIEW BON & DOWNLOAD PDF */}
       {showBonPreview && activeLaporan && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-zinc-200 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[95vh] overflow-hidden relative">
@@ -402,7 +393,6 @@ export default function RiwayatPermintaan() {
                   ref={printRef}
                   formData={mappedFormData} 
                   daftarBarang={mappedDaftarBarang} 
-                  adminData={mappedAdminData}
                 />
               </div>
             </div>
@@ -410,7 +400,6 @@ export default function RiwayatPermintaan() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

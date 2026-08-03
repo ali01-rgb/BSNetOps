@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 
 export default function EditKategori({ categoryData, onClose, onSuccess }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: ''
-  });
+  const [formData, setFormData] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (categoryData) {
@@ -20,6 +18,8 @@ export default function EditKategori({ categoryData, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const res = await fetch(`http://localhost:3000/inventory/categories/${categoryData.id}`, {
@@ -35,10 +35,12 @@ export default function EditKategori({ categoryData, onClose, onSuccess }) {
         onSuccess();
         onClose();
       } else {
-        alert("Gagal memperbarui kategori.");
+        const errData = await res.json();
+        setErrorMsg(errData.message || "Gagal memperbarui kategori.");
       }
     } catch (error) {
       console.error("Error:", error);
+      setErrorMsg("Terjadi kesalahan sistem. Cek koneksi server.");
     } finally {
       setLoading(false);
     }
@@ -55,6 +57,13 @@ export default function EditKategori({ categoryData, onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errorMsg && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm font-medium">
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">Nama Kategori</label>
             <input 

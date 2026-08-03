@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertical, Download } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4'; 
+import toast from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER
 
 export default function ApprovalRequest() {
   const printRef = useRef();
@@ -29,12 +30,11 @@ export default function ApprovalRequest() {
     fetchRequestsFromAPI();
   }, []);
 
-  // 🔥 FETCH DATA DARI NESTJS API & GROUPING SINKRON DENGAN ADMIN
   const fetchRequestsFromAPI = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:3000/inventory/admin/requests", {
+      const res = await fetch("http://localhost:3000/inventory/manager/requests", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -44,7 +44,8 @@ export default function ApprovalRequest() {
       const rawRequests = resJson.data || resJson;
 
       if (Array.isArray(rawRequests)) {
-        // 🔥 LOGIKA GROUPING DAN GENERATE KODE UNIK PRETTY ID (SINKRON DENGAN ADMIN)
+        const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
+
         const groupedData = rawRequests.reduce((acc, curr) => {
           const rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -53,21 +54,24 @@ export default function ApprovalRequest() {
 
           const groupKey = `${tglStr}-${curr.userId}`;
 
-          // Format penerjemah status untuk Tab UI Manager
-          let currentStatus = curr.status || 'Pending';
-          if (currentStatus === 'Pending' || currentStatus === 'Diteruskan' || currentStatus === 'menunggu') {
+          const statusUpper = (curr.status || '').toUpperCase();
+          let currentStatus = 'Menunggu Manager'; 
+
+          if (['PENDING', 'DITERUSKAN', 'MENUNGGU'].includes(statusUpper)) {
             currentStatus = 'Menunggu Manager';
-          } else if (currentStatus === 'Disetujui' || currentStatus === 'Selesai') {
+          } else if (['DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusUpper)) {
             currentStatus = 'Selesai';
+          } else if (['DITOLAK', 'REJECTED'].includes(statusUpper)) {
+            currentStatus = 'Ditolak';
           }
 
           if (!acc[groupKey]) {
             const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
             const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
-            const prettyId = `REQ-${tglFormatId}-${padId}`; // Contoh: REQ-20260729-001
+            const prettyId = `REQ-${tglFormatId}-${padId}`; 
 
             acc[groupKey] = {
-              id: prettyId, // ID Cantik
+              id: prettyId, 
               namaPemohon: pemohonName,
               unit: divisiPemohon,
               prioritas: curr.prioritas || 'Rendah',
@@ -75,12 +79,21 @@ export default function ApprovalRequest() {
               jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
               status: currentStatus,
               keperluan: curr.alasan || '-',
+              adminName: curr.adminName || '',     
+              managerName: curr.managerName || '', 
               items: []
             };
+          } else {
+            const currentGroupPriority = acc[groupKey].prioritas;
+            const newItemPriority = curr.prioritas || 'Rendah';
+            
+            if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
+               acc[groupKey].prioritas = newItemPriority; 
+            }
           }
 
           acc[groupKey].items.push({
-            idItem: curr.id, // Menyimpan UUID asli backend untuk request PATCH status
+            idItem: curr.id, 
             kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-', 
             namaBarang: curr.nama_aset || 'Barang Logistik',
             jumlahDiminta: curr.jumlah || 1,
@@ -142,12 +155,13 @@ export default function ApprovalRequest() {
     setIsConfirmOpen(true);
   };
 
-  // 🔥 ACTION UPDATE STATUS KE NESTJS (Backend yang atur stok)
   const handleFinalAction = async () => {
+    // 🔥 UX MANIS: Tampilkan loading toast saat memproses (Karena update data multiple id bisa butuh beberapa detik)
+    const loadingToast = toast.loading('Memproses persetujuan data...');
+
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Ambil seluruh idItem (UUID database) dari target grup yang dipilih
       const targetItemIds = [];
       confirmTargets.forEach(prettyId => {
         const foundGroup = requests.find(r => r.id === prettyId);
@@ -156,7 +170,6 @@ export default function ApprovalRequest() {
         }
       });
 
-      // Update status ke NestJS untuk setiap item
       for (const reqId of targetItemIds) {
         const res = await fetch(`http://localhost:3000/inventory/admin/requests/${reqId}/status`, {
           method: "POST",
@@ -170,16 +183,20 @@ export default function ApprovalRequest() {
         if (!res.ok) throw new Error(`Gagal memproses request ${reqId}`);
       }
 
-      alert(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
+      toast.dismiss(loadingToast); // Matikan loading
+      // 🔥 2. GANTI ALERT JADI TOAST SUCCESS
+      toast.success(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
 
       setSelectedRows([]);
       setIsConfirmOpen(false);
       setIsModalOpen(false);
-      fetchRequestsFromAPI(); // Refresh data
+      fetchRequestsFromAPI(); 
 
     } catch (error) {
+      toast.dismiss(loadingToast);
       console.error('Gagal memproses:', error.message);
-      alert('Terjadi kesalahan saat memproses data ke database server.');
+      // 🔥 3. GANTI ALERT JADI TOAST ERROR
+      toast.error('Terjadi kesalahan saat memproses data ke database server.');
     }
   };
 
@@ -211,7 +228,10 @@ export default function ApprovalRequest() {
   const mappedFormData = activeDetail ? {
     divisi: activeDetail.unit,
     alasanDibutuhkan: activeDetail.keperluan,
-    namaLengkap: activeDetail.namaPemohon
+    namaLengkap: activeDetail.namaPemohon,
+    status: activeDetail.status,
+    adminName: activeDetail.adminName || 'Admin Gudang',
+    managerName: activeDetail.managerName || 'Manager Operasional'
   } : {};
 
   const mappedDaftarBarang = activeDetail ? activeDetail.items.map(item => ({
@@ -349,7 +369,6 @@ export default function ApprovalRequest() {
                           />
                         )}
                       </td>
-                      {/* 🔥 MENAMPILKAN ID UNIK CANTIK UTUH (SINKRON DENGAN ADMIN) */}
                       <td className="py-4 px-2 font-mono font-bold text-zinc-900">{item.id}</td>
                       <td className="py-4 px-4">
                         <div className="flex flex-col">
@@ -402,7 +421,6 @@ export default function ApprovalRequest() {
         </div>
       </div>
 
-      {/* MODAL LEVEL 1: DETAIL PERMINTAAN */}
       {isModalOpen && activeDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]">
@@ -436,7 +454,10 @@ export default function ApprovalRequest() {
                 </div>
                 <div>
                   <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Status Saat Ini</span>
-                  <span className="font-bold text-[#00664b] uppercase">{activeDetail.status}</span>
+                  <span className={`font-bold uppercase ${
+                    activeDetail.status.toLowerCase() === 'selesai' ? 'text-emerald-600' :
+                    activeDetail.status.toLowerCase() === 'ditolak' ? 'text-red-600' : 'text-[#00664b]'
+                  }`}>{activeDetail.status}</span>
                 </div>
               </div>
 
@@ -520,7 +541,6 @@ export default function ApprovalRequest() {
         </div>
       )}
 
-      {/* MODAL KONFIRMASI */}
       {isConfirmOpen && confirmTargets.length > 0 && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4 animate-in zoom-in-95 duration-150 text-center">
@@ -567,7 +587,6 @@ export default function ApprovalRequest() {
         </div>
       )}
 
-      {/* MODAL PREVIEW BON */}
       {showBonPreview && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-zinc-200 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[95vh] overflow-hidden relative">

@@ -3,16 +3,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { InventoryModule } from './inventory/inventory.module'; // 🔥 1. IMPORT MODUL INVENTORY DI SINI
+import { InventoryModule } from './inventory/inventory.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule, 
     AuthModule, 
-    InventoryModule, NotificationsModule // 🔥 2. DAFTARKAN DI ARRAY IMPORTS BIAR RUTENYA AKTIF
+    InventoryModule, 
+    NotificationsModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService 
+  ],
 })
 export class AppModule {}

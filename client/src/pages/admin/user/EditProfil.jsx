@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Shield, Camera, Save, Building, Briefcase, Phone, Loader2 } from 'lucide-react';
 import { motion, useAnimation } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 export default function EditProfil() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +19,6 @@ export default function EditProfil() {
   const controls = useAnimation(); 
 
   useEffect(() => {
-    // 🔥 1. Animasi Buka: Membesar & memantul menuju tengah layar
     controls.start({
       opacity: 1,
       scale: 1,
@@ -27,13 +27,12 @@ export default function EditProfil() {
       transition: { type: "spring", mass: 0.7, stiffness: 220, damping: 20 }
     });
 
-    // 🔥 2. Animasi Tutup: Menyedot ekstrem ke arah tombol Settings di Sidebar
     const handleClose = () => {
       controls.start({
         opacity: 0,
-        scale: 0.02, // Mengecil sampai nyaris hilang
-        x: "-40vw", // Tarik paksa 40% ke kiri layar (Kawasan Sidebar)
-        y: "40vh",  // Tarik paksa 40% ke bawah layar (Kawasan tombol Setting)
+        scale: 0.02, 
+        x: "-40vw", 
+        y: "40vh",  
         transition: { type: "spring", mass: 0.5, stiffness: 250, damping: 22 }
       });
     };
@@ -89,8 +88,19 @@ export default function EditProfil() {
     e.preventDefault();
     setIsLoading(true);
 
+    // 🔥 VALIDASI DOMAIN EMAIL BSN
+    const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id"];
+    const isDomainValid = allowedDomains.some(domain => profile.email.toLowerCase().endsWith(domain));
+    
+    if (!isDomainValid) {
+      toast.error("Gagal: Gunakan email resmi BSN (@btn.co.id, @bankbsn.co.id, @bsn.co.id)");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
       const res = await fetch("http://localhost:3000/auth/profile", {
         method: "PATCH",
         headers: {
@@ -108,6 +118,15 @@ export default function EditProfil() {
       });
 
       if (res.ok) {
+        const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const updatedProfile = { 
+          ...currentProfile, 
+          fullName: profile.namaLengkap, 
+          role: profile.jabatan, 
+          avatar: profile.avatar 
+        };
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+
         window.dispatchEvent(new CustomEvent('profileUpdated', {
           detail: { 
             fullName: profile.namaLengkap, 
@@ -116,19 +135,19 @@ export default function EditProfil() {
           }
         }));
 
-        alert('Profil berhasil diperbarui dan disinkronkan ke Database!');
+        toast.success('Profil berhasil diperbarui dan disinkronkan ke Database!');
       } else {
-        alert('Gagal menyimpan ke database. Cek koneksi server.');
+        const errorData = await res.json();
+        toast.error(errorData.message || 'Gagal menyimpan ke database. Cek koneksi server.');
       }
     } catch (err) {
-      alert('Backend NestJS error atau tidak merespons.');
+      toast.error('Backend NestJS error atau tidak merespons.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    // 🔥 PERHATIKAN initial x & y: Ini posisi asal form saat pertama dirender (dari Sidebar kiri bawah)
     <motion.div 
       initial={{ opacity: 0, scale: 0.02, x: "-40vw", y: "40vh" }}
       animate={controls}
@@ -189,7 +208,14 @@ export default function EditProfil() {
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">ID Pegawai</label>
               <div className="relative flex items-center">
                 <Shield size={16} className="absolute left-3 text-zinc-400" />
-                <input type="text" name="nipPegawai" value={profile.nipPegawai} onChange={handleChange} className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors" required />
+                {/* 🔥 FIELD DI-DISABLE */}
+                <input 
+                  type="text" 
+                  name="nipPegawai" 
+                  value={profile.nipPegawai} 
+                  disabled 
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-100 border border-zinc-200 rounded-lg text-sm text-zinc-600 font-bold cursor-not-allowed select-none" 
+                />
               </div>
             </div>
 
@@ -220,6 +246,7 @@ export default function EditProfil() {
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Jabatan / Role</label>
               <div className="relative flex items-center">
                 <Briefcase size={16} className="absolute left-3 text-zinc-400" />
+                {/* 🔥 FIELD DI-DISABLE */}
                 <input 
                   type="text" 
                   name="jabatan" 

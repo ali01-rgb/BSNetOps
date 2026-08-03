@@ -2,6 +2,7 @@ import html2pdf from 'html2pdf.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, CheckSquare, X, Check, MoreVertical, Download } from 'lucide-react';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4';
+import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
 
 export default function PenyetujuanBarang() {
   const printRef = useRef();
@@ -15,7 +16,6 @@ export default function PenyetujuanBarang() {
   const [showBonPreview, setShowBonPreview] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 🔥 1. FETCH DATA DARI API NESTJS
   useEffect(() => {
     fetchRequestsFromAPI();
   }, []);
@@ -61,6 +61,8 @@ export default function PenyetujuanBarang() {
               isDiserahkan: curr.status === 'Diteruskan' || curr.status === 'Disetujui',
               tanggalDiserahkan: tglStr,
               keteranganPemohon: curr.alasan || '',
+              adminName: curr.adminName || '',
+              managerName: curr.managerName || '',
               items: []
             };
           }
@@ -73,7 +75,6 @@ export default function PenyetujuanBarang() {
             if (matched) latestStock = matched.stok || 0;
           }
 
-          // Nilai awal disetujui tidak boleh melebihi jumlah diminta maupun stok gudang
           const initialDiminta = curr.jumlah || 1;
           const initialDisetujui = Math.min(initialDiminta, latestStock);
 
@@ -83,8 +84,8 @@ export default function PenyetujuanBarang() {
             kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-',
             stokGudang: latestStock,
             jmlDiminta: initialDiminta,
-            jmlDisetujui: initialDisetujui,
-            remark: curr.alasan || ''
+            jmlDisetujui: curr.jumlah_disetujui ?? initialDisetujui, 
+            remark: curr.catatan_admin || curr.alasan || '' 
           });
 
           return acc;
@@ -112,7 +113,6 @@ export default function PenyetujuanBarang() {
     setIsModalOpen(true);
   };
 
-  // 🔥 VALIDASI DIBATASI: MAKSIMAL TERKECIL ANTARA JML DIMINTA ATAU STOK GUDANG
   const handleQtyChange = (idItem, newQty) => {
     setSelectedRequest((prev) => {
       const updatedItems = prev.items.map(item => {
@@ -121,7 +121,7 @@ export default function PenyetujuanBarang() {
           const maxAllowed = Math.min(item.jmlDiminta, item.stokGudang);
 
           if (inputVal > maxAllowed) {
-            inputVal = maxAllowed; // Otomatis mengunci ke batas maksimal
+            inputVal = maxAllowed; 
           }
 
           return { ...item, jmlDisetujui: inputVal };
@@ -141,17 +141,17 @@ export default function PenyetujuanBarang() {
     });
   };
 
-  // 🔥 FUNGSI ACC ADMIN KE NESTJS
   const handleApproveAndHandover = async () => {
-    // Validasi ganda saat submit
     const isInvalid = selectedRequest.items.some(
       item => item.jmlDisetujui > item.stokGudang || item.jmlDisetujui > item.jmlDiminta
     );
 
     if (isInvalid) {
-      alert("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
+      toast.error("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
       return;
     }
+
+    const loadingToast = toast.loading('Menyimpan persetujuan...');
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -163,19 +163,25 @@ export default function PenyetujuanBarang() {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ status: 'Diteruskan' })
+          body: JSON.stringify({ 
+            status: 'Diteruskan',
+            jumlah_disetujui: item.jmlDisetujui,
+            catatan_admin: item.remark 
+          })
         });
       }
 
-      alert(`Permintaan ${selectedRequest.id} berhasil disetujui Admin dan diteruskan ke Manager untuk ACC Final.`);
+      toast.dismiss(loadingToast);
+      toast.success(`Permintaan ${selectedRequest.id} berhasil disetujui dan diteruskan ke Manager.`);
       
       setIsModalOpen(false);
       setSelectedRequest(null);
       fetchRequestsFromAPI(); 
 
     } catch (error) {
+      toast.dismiss(loadingToast);
       console.error('Gagal memperbarui status penyerahan:', error.message);
-      alert('Terjadi kesalahan saat menyimpan ke database.');
+      toast.error('Terjadi kesalahan saat menyimpan ke database.');
     }
   };
 
@@ -202,10 +208,15 @@ export default function PenyetujuanBarang() {
     });
   };
 
+  const loggedInProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+  
   const mappedFormData = selectedRequest ? {
     divisi: selectedRequest.unit,
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
-    namaLengkap: selectedRequest.pemohon
+    namaLengkap: selectedRequest.pemohon,
+    status: (selectedRequest.status === 'Pending' || selectedRequest.status === 'menunggu') ? 'DITERUSKAN' : selectedRequest.status,
+    adminName: selectedRequest.adminName || loggedInProfile.fullName || 'Admin Gudang',
+    managerName: selectedRequest.managerName || 'Manager Operasional'
   } : {};
 
   const mappedDaftarBarang = selectedRequest ? selectedRequest.items.map(item => ({
@@ -215,15 +226,9 @@ export default function PenyetujuanBarang() {
     remark: item.remark
   })) : [];
 
-  const mappedAdminData = selectedRequest ? {
-    isDiserahkan: selectedRequest.isDiserahkan,
-    tanggal: selectedRequest.tanggalDiserahkan || new Date().toLocaleDateString('id-ID')
-  } : {};
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
       
-      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Penyetujuan & Penyerahan Barang</h2>
@@ -231,7 +236,6 @@ export default function PenyetujuanBarang() {
         </div>
       </div>
 
-      {/* SEARCH BAR */}
       <div className="flex bg-white p-4 rounded-xl shadow-md border border-zinc-200/80">
         <div className="flex-1 relative flex items-center">
           <Search size={18} className="absolute left-3 text-zinc-400" />
@@ -245,7 +249,6 @@ export default function PenyetujuanBarang() {
         </div>
       </div>
 
-      {/* TABEL DATA */}
       <div className="bg-white border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
@@ -294,7 +297,6 @@ export default function PenyetujuanBarang() {
         </table>
       </div>
 
-      {/* MODAL ADJUSTMENT & PERSETUJUAN */}
       {isModalOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -331,17 +333,13 @@ export default function PenyetujuanBarang() {
                   <span className="text-[10px] text-zinc-500 font-mono mt-1 font-bold">TTD Pemohon</span>
                 </div>
 
-                <div className={`flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] ${selectedRequest.isDiserahkan ? 'border-emerald-300 bg-emerald-50/50' : 'border-zinc-200 bg-zinc-100 opacity-60'}`}>
-                  {selectedRequest.isDiserahkan ? (
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`Approved & Handed over by Agus (Admin GA)`)}`} 
-                      alt="QR Admin Agus" 
-                      className="w-16 h-16 mix-blend-multiply opacity-90"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 flex items-center justify-center text-[10px] text-center text-zinc-400 font-mono">Belum Diserahkan</div>
-                  )}
-                  <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold">Agus (Admin GA)</span>
+                <div className={`flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] border-emerald-300 bg-emerald-50/50`}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`Approved & Handed over by ${mappedFormData.adminName}`)}`} 
+                    alt="QR Admin" 
+                    className="w-16 h-16 mix-blend-multiply opacity-90"
+                  />
+                  <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold">{mappedFormData.adminName}</span>
                 </div>
               </div>
 
@@ -359,7 +357,7 @@ export default function PenyetujuanBarang() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {selectedRequest.items.map((item) => (
+                    {selectedRequest.items.map((item, index) => (
                       <tr key={item.idItem} className="hover:bg-zinc-50/40">
                         <td className="p-3">
                           <div className="font-bold text-zinc-800 capitalize">{item.namaBarang}</div>
@@ -375,7 +373,6 @@ export default function PenyetujuanBarang() {
                           <input 
                             type="number" 
                             min="0"
-                            // 🔥 MAX DIBATASI ANTARA JML DIMINTA / STOK GUDANG
                             max={Math.min(item.jmlDiminta, item.stokGudang)}
                             value={item.jmlDisetujui}
                             onChange={(e) => handleQtyChange(item.idItem, e.target.value)}
@@ -419,9 +416,8 @@ export default function PenyetujuanBarang() {
         </div>
       )}
 
-      {/* MODAL PREVIEW BON */}
       {showBonPreview && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-zinc-200 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[95vh] overflow-hidden relative">
             
             <div className="px-6 py-4 bg-white border-b border-zinc-300 flex justify-between items-center z-20 shadow-sm">
@@ -465,7 +461,6 @@ export default function PenyetujuanBarang() {
                   ref={printRef}
                   formData={mappedFormData} 
                   daftarBarang={mappedDaftarBarang} 
-                  adminData={mappedAdminData}
                 />
               </div>
             </div>
@@ -473,7 +468,6 @@ export default function PenyetujuanBarang() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

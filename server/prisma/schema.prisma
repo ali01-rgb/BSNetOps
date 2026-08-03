@@ -22,23 +22,28 @@ model User {
   updatedAt     DateTime       @updatedAt
   requests      Request[] 
   notifications Notification[]
+  is_suspended  Boolean? @default(false)
+  deleted_at    DateTime?
 }
 
 model Request {
   id                 String   @id @default(uuid())
-  no_urut            Int      @default(autoincrement()) // Buat generate urutan RQ-001
-  nama_aset          String
-  jumlah             Int
-  prioritas          String
-  tanggal_dibutuhkan DateTime
-  alasan             String
-  status             String   @default("Pending")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt                // Yang bikin historis lengkap
-
-  // Jembatan Relasi ke User
   userId             String
   user               User     @relation(fields: [userId], references: [id])
+  assetId            String?
+  asset              Asset?   @relation(fields: [assetId], references: [id])
+  nama_aset          String
+  jumlah             Int
+  jumlah_disetujui   Int?      
+  catatan_admin      String?
+  prioritas          String
+  tanggal_dibutuhkan DateTime
+  alasan             String?
+  status             String   @default("Pending")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  adminName   String?   // Akan terisi saat Admin klik 'Diteruskan'
+  managerName String?   // Akan terisi saat Manager klik 'Disetujui'
 }
 
 // --- TABEL KATEGORI BARANG ---
@@ -55,19 +60,24 @@ model Category {
 
 // --- TABEL ASSET (Stok Barang Gabungan) ---
 model Asset {
-  id            String    @id @default(uuid())
-  kode_barang   String    @unique
-  nama_barang   String
-  stok          Int       @default(0)
-  location      String?
-  status        String    @default("Aman")
-  image_url     String?
-  deleted_at    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  kode_barang         String    @unique
+  nama_barang         String
+  stok                Int       @default(0)
+  location            String?
+  status              String    @default("Aman")
+  image_url           String?
+  deleted_at          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  categoryId    String?
-  category      Category? @relation(fields: [categoryId], references: [id])
+  categoryId          String?
+  category            Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  kategori_sebelumnya String? 
+
+  // 🔥 PENYELAMAT: Tambahkan baris ini biar relasi Request <-> Asset dua arah!
+  requests            Request[]
 }
 
 model Notification {

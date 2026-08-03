@@ -58,13 +58,14 @@ export default function ManagerDashboard() {
     fetchDashboardData();
   }, []);
 
-  // 🔥 AMBIL DATA DARI BACKEND DENGAN TRACKING PER KC/UNIT
+// 🔥 AMBIL DATA DARI BACKEND DENGAN TRACKING PER KC/UNIT
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const headers = { "Authorization": `Bearer ${token}` };
 
       const [reqRes, assetsRes] = await Promise.all([
+        // Gunakan endpoint admin agar bisa menarik semua data untuk analitik chart
         fetch("http://localhost:3000/inventory/admin/requests", { headers }),
         fetch("http://localhost:3000/inventory/assets", { headers })
       ]);
@@ -82,26 +83,43 @@ export default function ManagerDashboard() {
         rawAssets = assetsJson.data || assetsJson || [];
       }
 
-      // 1. HITUNG STATISTIK 3 CARD ATAS
-      const pendingCount = rawRequests.filter(r => 
-        ['PENDING', 'DITERUSKAN', 'MENUNGGU', 'MENUNGGU MANAGER'].includes((r.status || '').toUpperCase())
-      ).length;
+      // ==========================================
+      // 1. HITUNG STATISTIK 3 CARD ATAS (REVISI)
+      // ==========================================
+      
+      // A. Antrean Approval: Hanya cari barang yang 'DITERUSKAN' oleh Admin ke Manager
+      const pendingItemsForManager = rawRequests.filter(r => 
+        ['DITERUSKAN', 'DITERUSKAN KE MANAGER'].includes((r.status || '').toUpperCase())
+      );
+      
+      // Mengelompokkan barang menjadi 1 "Surat Laporan" berdasarkan Tanggal & ID Pemohon
+      const uniquePendingReports = new Set(
+        pendingItemsForManager.map(r => {
+          const rawDate = new Date(r.createdAt || Date.now());
+          const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+          return `${tglStr}-${r.userId}`;
+        })
+      );
+      const antreanApprovalCount = uniquePendingReports.size; // Hasilnya akan akurat (misal: 2 Pengajuan)
 
+      // B. Barang Keluar: HANYA yang sudah ACC Final (Disetujui/Selesai/Diterima)
       const approvedRequests = rawRequests.filter(r => 
-        ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
+        ['DISETUJUI', 'SELESAI', 'APPROVED', 'DISERAHKAN', 'DITERIMA'].includes((r.status || '').toUpperCase())
       );
       const totalBarangKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
 
+      // C. Restock Segera: Stok barang yang tersisa <= 3
       const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) <= 3).length;
 
       setStats({
-        antreanApproval: pendingCount,
+        antreanApproval: antreanApprovalCount,
         barangKeluar: totalBarangKeluar,
         restockSegera: restockCount
       });
 
-      // 2. PETAKAN DATA REAL DARI DATABASE KE MASING-MASING KC/KCP
-      // Template awal agar semua KC di UI tetap muncul
+      // ==========================================
+      // 2. LOGIKA GRAFIK DISTRIBUSI (REVISI)
+      // ==========================================
       const baseUnits = [
         { name: 'KC Semarang', Diminta: 0, Keluar: 0 },
         { name: 'KCP Majapahit', Diminta: 0, Keluar: 0 },
@@ -112,26 +130,23 @@ export default function ManagerDashboard() {
         { name: 'KCP Magelang', Diminta: 0, Keluar: 0 },
       ];
 
-      // Akumulasi data dari tabel Request berdasarkan divisi user pemohon
       rawRequests.forEach(req => {
         const userDivisi = (req.user?.divisi || req.unit || 'KC Semarang').trim();
         const jumlahBarang = parseInt(req.jumlah) || 0;
         const statusUpper = (req.status || '').toUpperCase();
 
-        // Cari KC yang cocok di array template
         let targetUnit = baseUnits.find(u => u.name.toLowerCase() === userDivisi.toLowerCase());
 
-        // Jika user punya divisi baru di luar template, buatkan entri baru
         if (!targetUnit) {
           targetUnit = { name: userDivisi, Diminta: 0, Keluar: 0 };
           baseUnits.push(targetUnit);
         }
 
-        // Tambahkan jumlah ke "Diminta"
+        // Semua request dihitung ke "Diminta" (Termasuk yang ditolak)
         targetUnit.Diminta += jumlahBarang;
 
-        // Tambahkan jumlah ke "Keluar" jika statusnya sudah disetujui / diteruskan
-        if (['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes(statusUpper)) {
+        // "Keluar" hanya dihitung kalau barang benar-benar sudah ACC Final & Diambil
+        if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DISERAHKAN', 'DITERIMA'].includes(statusUpper)) {
           targetUnit.Keluar += jumlahBarang;
         }
       });
