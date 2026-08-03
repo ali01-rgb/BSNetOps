@@ -4,19 +4,23 @@ import {
   HttpStatus, 
   NotFoundException, 
   BadRequestException, 
-  ConflictException 
+  ConflictException,
+  Inject,
+  forwardRef
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt'; 
 import * as bcrypt from 'bcrypt';
-import { MailService } from './mail.service'; // 🔥 INJECT DI SINI
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private mailService: MailService // 🔥 INJECT DI SINI
+    // 🔥 TAMBAHKAN INJECT & FORWARDREF DI SINI
+    @Inject(forwardRef(() => MailService))
+    private mailService: MailService 
   ) {}
 
   async register(data: any) {

@@ -1,10 +1,14 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Req, Inject, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard'; 
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  // 🔥 TAMBAHKAN INJECT & FORWARDREF DI SINI
+  constructor(
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService
+  ) {}
 
   @Post('register')
   async register(@Body() body: any) {
