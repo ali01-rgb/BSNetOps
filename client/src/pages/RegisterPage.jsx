@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FaXmark } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast"; // 🔥 IMPORT TOASTER
-import { API_URL } from '../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function RegisterPage() {
   const navigate = useNavigate();

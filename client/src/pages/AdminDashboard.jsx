@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 // Warna acak dinamis untuk Chart
 const generateRandomColor = (index) => {

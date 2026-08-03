@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { API_URL } from '../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();

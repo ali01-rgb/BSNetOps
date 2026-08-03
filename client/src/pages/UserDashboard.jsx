@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Hourglass, Package, CheckCircle2, Circle, ArrowRight, XCircle } from 'lucide-react';
-import { API_URL } from '../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function UserDashboard({ setCurrentView }) {
   const [lastRequest, setLastRequest] = useState(null);

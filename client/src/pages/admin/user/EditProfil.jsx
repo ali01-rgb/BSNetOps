@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Shield, Camera, Save, Building, Briefcase, Phone, Loader2 } from 'lucide-react';
 import { motion, useAnimation } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function EditProfil() {
   const [isLoading, setIsLoading] = useState(false);

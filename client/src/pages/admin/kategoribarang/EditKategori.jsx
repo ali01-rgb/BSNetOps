@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function EditKategori({ categoryData, onClose, onSuccess }) {
   const [formData, setFormData] = useState({ name: '', description: '' });

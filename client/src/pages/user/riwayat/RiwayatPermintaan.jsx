@@ -3,7 +3,7 @@ import { Clock, CheckCircle2, XCircle, PackageCheck, Eye, ArrowLeft, FileText, D
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../permintaan/TemplateDokumenA4'; 
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu (pakai ../api atau ../../api)
+import { API_URL } from '@/api';
 
 export default function RiwayatPermintaan() {
   const printRef = useRef();

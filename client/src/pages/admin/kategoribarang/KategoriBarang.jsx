@@ -3,7 +3,7 @@ import { Plus, Edit3, Trash2, Search, ArrowLeft, RefreshCw, XCircle, AlertTriang
 import TambahKategori from './TambahKategori';
 import EditKategori from './EditKategori';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function KategoriBarang() {
   const [categories, setCategories] = useState([]);

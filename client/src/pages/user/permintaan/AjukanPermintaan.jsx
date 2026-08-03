@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from './TemplateDokumenA4';
 import toast from 'react-hot-toast';
-import { API_URL } from '../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function AjukanPermintaan() {
   const printRef = useRef();

@@ -3,7 +3,7 @@ import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCir
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER DI SINI
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);

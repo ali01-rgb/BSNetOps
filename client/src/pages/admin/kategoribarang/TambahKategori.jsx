@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function TambahKategori({ onClose, onSuccess, existingCategoriesCount = 0 }) {
   const [formData, setFormData] = useState({ name: '', description: '' });

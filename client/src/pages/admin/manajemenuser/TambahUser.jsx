@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function TambahUser({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({ 

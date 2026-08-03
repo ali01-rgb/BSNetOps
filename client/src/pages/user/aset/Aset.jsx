@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Calendar, Package, X, Check, ShoppingCart, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function Aset({ setCurrentView }) {
   const [searchQuery, setSearchQuery] = useState('');

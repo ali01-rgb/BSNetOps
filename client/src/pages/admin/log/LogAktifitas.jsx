@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function LogAktifitasAdmin() {
   const [history, setHistory] = useState([]);

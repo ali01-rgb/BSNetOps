@@ -3,7 +3,7 @@ import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertica
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4'; 
 import toast from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path ke file api.js kamu
+import { API_URL } from '@/api';
 
 export default function ApprovalRequest() {
   const printRef = useRef();

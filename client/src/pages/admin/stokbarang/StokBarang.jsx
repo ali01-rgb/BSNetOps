@@ -3,7 +3,7 @@ import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriang
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function StokBarang({ role = 'admin' }) {
   const isAdmin = role === 'admin' || role === 'ADMIN';

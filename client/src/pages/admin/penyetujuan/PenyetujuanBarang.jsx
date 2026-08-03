@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, CheckSquare, X, Check, MoreVertical, Download } from 'lucide-react';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4';
 import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
-import { API_URL } from '../../api'; // Sesuaikan path jika perlu
+import { API_URL } from '@/api';
 
 export default function PenyetujuanBarang() {
   const printRef = useRef();

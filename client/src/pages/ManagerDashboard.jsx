@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, CartesianGrid, LabelList } from 'recharts';
 import { ClipboardList, AlertTriangle, CheckSquare, ShieldAlert, Building2, Package } from 'lucide-react';
-import { API_URL } from '../../api'; // Sesuaikan path titik-titiknya dengan lokasi api.js kamu
+import { API_URL } from '@/api';
 
 const CustomLegend = (props) => {
   const { payload } = props;
