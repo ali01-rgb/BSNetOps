@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, LogOut, ChevronDown, CheckCircle2, XCircle, PackagePlus, Clock, TriangleAlert, Trash2, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { API_URL } from '../js/api'; // 🔥 1. IMPORT API_URL (Sesuaikan titik/path foldernya jika merah)
+import { API_URL } from '@/api';
 
 export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentView }) {
   const navigate = useNavigate();

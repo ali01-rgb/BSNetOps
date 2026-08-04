@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, X } from 'lucide-react';
 import { menuConfig } from '../../config/menuConfig';
-import { API_URL } from '../js/api'; // 🔥 1. IMPORT API_URL (Sesuaikan titik/path foldernya jika merah)
+import { API_URL } from '@/api';
 
 export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurrentView }) {
   const currentMenu = menuConfig[role] || [];
