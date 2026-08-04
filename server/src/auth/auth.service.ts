@@ -16,13 +16,13 @@ import { MailService } from './mail.service';
 @Injectable()
 export class AuthService {
   constructor(
-    // 🔥 TAMBAHKAN @Inject(forwardRef) UNTUK PRISMA SERVICE DI SINI 🔥
     @Inject(forwardRef(() => PrismaService))
     private prisma: PrismaService,
 
+    // 🔥 TAMBAHKAN INJECT & FORWARDREF UNTUK JWTSERVICE DI SINI 🔥
+    @Inject(forwardRef(() => JwtService))
     private jwtService: JwtService,
     
-    // Ini biarkan saja, sudah aman
     @Inject(forwardRef(() => MailService))
     private mailService: MailService 
   ) {}

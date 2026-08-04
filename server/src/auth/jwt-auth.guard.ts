@@ -1,10 +1,14 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  // 🔥 TAMBAH FORWARDREF BIAR AMAN DARI CIRCULAR DEPENDENCY
+  constructor(
+    @Inject(forwardRef(() => JwtService))
+    private jwtService: JwtService
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -14,10 +18,10 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Akses ditolak: Token tidak ditemukan.');
     }
     
- try {
-      // REVISI: Samakan kuncinya dengan yang ada di auth.module.ts
+    try {
+      // 🔥 REVISI KRUSIAL: Kasih fallback 'rahasia' biar server nggak crash kalau ENV telat kebaca
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET
+        secret: process.env.JWT_SECRET || 'rahasia'
       });
       
       request['user'] = payload; 
