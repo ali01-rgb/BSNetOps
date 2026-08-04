@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { NotificationsModule } from '../notifications/notifications.module'; // 🔥 IMPORT INI
+// Hapus PrismaModule dari import karena sudah @Global()
+import { NotificationsModule } from '../notifications/notifications.module'; 
+import { AuthModule } from '../auth/auth.module'; // IMPORT INI
 
 @Module({
   imports: [
-    PrismaModule, 
-    NotificationsModule // 🔥 TAMBAHKAN KE DALAM ARRAY IMPORTS
+    NotificationsModule, 
+    AuthModule // TAMBAHKAN KE DALAM ARRAY IMPORTS
   ], 
   controllers: [InventoryController],
   providers: [InventoryService],

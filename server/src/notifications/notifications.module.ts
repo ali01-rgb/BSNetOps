@@ -1,12 +1,18 @@
 import { Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
-import { PrismaService } from '../prisma/prisma.service'; // Sesuaikan path PrismaService lu
-import { JwtService } from '@nestjs/jwt';
+import { AuthModule } from '../auth/auth.module'; // IMPORT AuthModule
 
 @Module({
+  imports: [
+    AuthModule // Wajib di-import agar JwtAuthGuard bisa bekerja di controller ini
+  ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, PrismaService, JwtService],
-  exports: [NotificationsService], // Diexport biar modul Request bisa bikin notif
+  providers: [
+    NotificationsService 
+    // HAPUS PrismaService & JwtService. 
+    // Prisma sudah Global, JWT ngambil dari AuthModule.
+  ],
+  exports: [NotificationsService], 
 })
 export class NotificationsModule {}
