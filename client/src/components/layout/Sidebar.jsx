@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, X } from 'lucide-react';
 import { menuConfig } from '../../config/menuConfig';
+import { API_URL } from '../js/api'; // 🔥 1. IMPORT API_URL (Sesuaikan titik/path foldernya jika merah)
 
 export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurrentView }) {
   const currentMenu = menuConfig[role] || [];
@@ -20,7 +21,7 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/profile", {
+        const res = await fetch(`${API_URL}/auth/profile`, { // 🔥 REVISI URL
           headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -63,23 +64,23 @@ export default function Sidebar({ role, isOpen, setIsOpen, currentView, setCurre
     };
   }, [role]);
 
-  // 🔥 Fungsi Klik Menu: Jika profil terbuka, jalankan animasi tutup dulu!
+  // 🔥 Fungsi Klik Menu
   const handleMenuClick = (menuPath) => {
     if (currentView === 'edit-profil' && menuPath !== 'edit-profil') {
-      window.dispatchEvent(new Event('closeProfileAnimation')); // Trigger animasi tutup
+      window.dispatchEvent(new Event('closeProfileAnimation'));
       setTimeout(() => {
-        setCurrentView(menuPath); // Pindah halaman setelah animasi selesai (350ms)
+        setCurrentView(menuPath);
       }, 350); 
     } else {
       setCurrentView(menuPath);
     }
   };
 
-  // 🔥 Fungsi Buka/Tutup Profil dari Icon Settings
+  // 🔥 Fungsi Buka/Tutup Profil
   const toggleSettings = () => {
     if (currentView === 'edit-profil') {
       const nextView = prevView || currentMenu[0]?.name.toLowerCase().replace(/\s+/g, '-');
-      window.dispatchEvent(new Event('closeProfileAnimation')); // Trigger animasi tutup
+      window.dispatchEvent(new Event('closeProfileAnimation'));
       setTimeout(() => {
         setCurrentView(nextView);
       }, 350);

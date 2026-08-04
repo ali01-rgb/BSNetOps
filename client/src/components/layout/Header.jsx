@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, LogOut, ChevronDown, CheckCircle2, XCircle, PackagePlus, Clock, TriangleAlert, Trash2, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../js/api'; // 🔥 1. IMPORT API_URL (Sesuaikan titik/path foldernya jika merah)
 
 export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentView }) {
   const navigate = useNavigate();
@@ -15,13 +16,13 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
-  // 🔥 1. FETCH NOTIFIKASI DARI BACKEND
+  // 🔥 FETCH NOTIFIKASI DARI BACKEND
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
 
-      const res = await fetch("http://localhost:3000/notifications", {
+      const res = await fetch(`${API_URL}/notifications`, { // 🔥 REVISI URL
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -36,7 +37,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
             id: n.id,
             title: n.title || n.judul || 'Pemberitahuan',
             message: n.message || n.pesan || '',
-            type: n.type || n.tipe || 'request', // 'alert' atau 'request'
+            type: n.type || n.tipe || 'request',
             isRead: n.isRead || n.is_read || false,
             createdAt: n.createdAt || n.created_at || new Date().toISOString(),
             target: n.target || 'dashboard'
@@ -50,11 +51,10 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 2. FUNGSI KLIK NOTIF (BACA & PINDAH HALAMAN)
+  // 🔥 FUNGSI KLIK NOTIF 
   const handleNotifClick = async (id, target) => {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     
-    // Update UI Instan
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
     
     if (target && setCurrentView) {
@@ -63,7 +63,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
 
     try {
-      await fetch(`http://localhost:3000/notifications/${id}/read`, {
+      await fetch(`${API_URL}/notifications/${id}/read`, { // 🔥 REVISI URL
         method: 'PATCH',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -72,14 +72,14 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 3. FUNGSI TANDAI SEMUA DIBACA
+  // 🔥 FUNGSI TANDAI SEMUA DIBACA
   const markAllAsRead = async () => {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     
     try {
-      await fetch("http://localhost:3000/notifications/read-all", {
+      await fetch(`${API_URL}/notifications/read-all`, { // 🔥 REVISI URL
         method: 'PATCH',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -88,15 +88,15 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 4. FUNGSI HAPUS SATU NOTIFIKASI
+  // 🔥 FUNGSI HAPUS SATU NOTIFIKASI
   const handleDeleteNotif = async (e, id) => {
-    e.stopPropagation(); // Mencegah pemicu klik item
+    e.stopPropagation();
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
     setNotifications(prev => prev.filter(n => n.id !== id));
 
     try {
-      await fetch(`http://localhost:3000/notifications/${id}`, {
+      await fetch(`${API_URL}/notifications/${id}`, { // 🔥 REVISI URL
         method: 'DELETE',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -105,7 +105,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
   };
 
-  // 🔥 5. FUNGSI HAPUS SEMUA NOTIFIKASI
+  // 🔥 FUNGSI HAPUS SEMUA NOTIFIKASI
   const handleDeleteAllNotifs = async () => {
     if (!window.confirm("Hapus semua notifikasi?")) return;
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -113,7 +113,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     setNotifications([]);
 
     try {
-      await fetch("http://localhost:3000/notifications", {
+      await fetch(`${API_URL}/notifications`, { // 🔥 REVISI URL
         method: 'DELETE',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -128,7 +128,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/profile", {
+        const res = await fetch(`${API_URL}/auth/profile`, { // 🔥 REVISI URL
           headers: { "Authorization": `Bearer ${token}` }
         });
 
