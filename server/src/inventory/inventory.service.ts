@@ -11,14 +11,22 @@ export class InventoryService {
   ) {}
 
   // ================= ASSETS (BARANG / INVENTARIS) =================
-  async getAllAssets() {
+async getAllAssets() {
+  try {
     return await this.prisma.asset.findMany({
       orderBy: { kode_barang: 'asc' },
       include: {
         category: true,
       },
     });
+  } catch (error) {
+    console.error("🔥 Error pada getAllAssets():", error);
+    throw new HttpException(
+      'Gagal mengambil data aset dari database.',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
+}
 
   async createAsset(data: any) {
     const kodeBarang = data.kode_barang || data.id || `BRG-${Date.now()}`;
