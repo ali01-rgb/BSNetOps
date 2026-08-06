@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER DI SINI
+import { Toaster } from 'react-hot-toast';
 
 import LandingPage from "./pages/LandingPage";
-import bantuan from "./pages/barketentuan/Bantuan";
-import syaratKetentuan from "./pages/barketentuan/SyaratKetentuan";
-import kebijakanPrivasi from "./pages/barketentuan/KebijakanPrivasi";
+
+// 💡 PENYESUAIAN: Nama import diubah jadi Huruf Kapital agar sesuai dengan JSX di Route
+import Bantuan from "./pages/barketentuan/Bantuan";
+import SyaratKetentuan from "./pages/barketentuan/SyaratKetentuan";
+import KebijakanPrivasi from "./pages/barketentuan/KebijakanPrivasi";
+
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -97,8 +100,6 @@ export default function App() {
 
   return (
     <>
-      {/* 🔥 2. PASANG LAYAR TV (TOASTER) DI SINI */}
-      {/* Ini akan membuat notif bisa muncul di halaman mana pun */}
       <Toaster 
         position="top-center" 
         reverseOrder={false} 
@@ -118,6 +119,11 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Route Halaman Ketentuan */}
+          <Route path="/bantuan" element={<Bantuan />} />
+          <Route path="/kebijakan-privasi" element={<KebijakanPrivasi />} />
+          <Route path="/syarat-ketentuan" element={<SyaratKetentuan />} />
 
           {/* ================= ROUTE ROLE: ADMIN ================= */}
           <Route path="/admin" element={
@@ -165,4 +171,3 @@ export default function App() {
     </>
   ); 
 }
-
