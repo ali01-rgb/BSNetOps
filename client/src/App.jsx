@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER DI SINI
 
 import LandingPage from "./pages/LandingPage";
+import bantuan from "./pages/barketentuan/Bantuan";
+import syaratKetentuan from "./pages/barketentuan/SyaratKetentuan";
+import kebijakanPrivasi from "./pages/barketentuan/KebijakanPrivasi";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -162,3 +165,4 @@ export default function App() {
     </>
   ); 
 }
+
