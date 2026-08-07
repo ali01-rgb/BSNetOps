@@ -44,18 +44,24 @@ export default function LogAktifitasAdmin() {
         const data = resJson.data || resJson;
 
         if (Array.isArray(data)) {
-          const formatted = data.map(req => ({
-            id: req.no_urut ? `REQ-${new Date(req.createdAt || Date.now()).toISOString().slice(0,10).replace(/-/g, '')}-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
-            originalId: req.id, // 🔥 ID ASLI DARI DATABASE (UUID)
-            requester: req.user?.fullName || req.user?.username || 'user',
-            unit: req.user?.divisi || req.unit || 'KC Semarang',
-            itemName: req.nama_aset || 'Barang',
-            qty: req.jumlah || 1,
-            date: req.createdAt || req.tanggal_dibutuhkan || new Date().toISOString(),
-            managerStatus: req.status || 'Pending',
-            adminStatus: req.status || 'Pending',
-            type: 'Keluar' 
-          }));
+          const formatted = data.map(req => {
+            // 🔥 PELINDUNG TANGGAL
+            let rawDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
+            if (isNaN(rawDate.getTime())) rawDate = new Date();
+
+            return {
+              id: req.no_urut ? `REQ-${rawDate.toISOString().slice(0,10).replace(/-/g, '')}-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
+              originalId: req.id, 
+              requester: req.user?.fullName || req.user?.username || 'user',
+              unit: req.user?.divisi || req.unit || 'KC Semarang',
+              itemName: req.nama_aset || 'Barang',
+              qty: req.jumlah || 1,
+              date: rawDate.toISOString(),
+              managerStatus: req.status || 'Pending',
+              adminStatus: req.status || 'Pending',
+              type: 'Keluar' 
+            };
+          });
           setHistory(formatted);
         }
       }
@@ -73,6 +79,8 @@ export default function LogAktifitasAdmin() {
       if (periodType === 'Semua') return true;
       
       const itemDate = new Date(item.date);
+      if (isNaN(itemDate.getTime())) return true; // Bypass kalau date aneh
+
       const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
       const itemYear = String(itemDate.getFullYear());
 
@@ -83,11 +91,12 @@ export default function LogAktifitasAdmin() {
       }
       return true;
     })
+    // 🔥 PELINDUNG PENCARIAN (NULL-SAFETY)
     .filter(item =>
-      item.requester.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.unit.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase())
+      (item.requester || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.itemName || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -124,7 +133,6 @@ export default function LogAktifitasAdmin() {
     toast.success("Laporan berhasil diunduh. Fitur hapus riwayat terbuka.");
   };
 
-  // 🔥 EKSEKUSI HAPUS REAL DI DATABASE NESTJS (PRISMA)
   const handleDeleteHistory = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk dihapus!");

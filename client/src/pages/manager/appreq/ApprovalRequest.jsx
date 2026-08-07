@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertical, Download } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4'; 
-import toast from 'react-hot-toast'; // 🔥 1. IMPORT TOASTER
+import toast from 'react-hot-toast'; 
 import { API_URL } from '@/api';
 
 export default function ApprovalRequest() {
@@ -48,7 +48,10 @@ export default function ApprovalRequest() {
         const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
 
         const groupedData = rawRequests.reduce((acc, curr) => {
-          const rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
+          // 🔥 PELINDUNG TANGGAL
+          let rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
+          if (isNaN(rawDate.getTime())) rawDate = new Date();
+
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
           const pemohonName = curr.user?.fullName || curr.user?.username || 'Pemohon BSN';
           const divisiPemohon = curr.user?.divisi || 'KC Semarang';
@@ -124,10 +127,12 @@ export default function ApprovalRequest() {
   const filteredRequests = requests.filter(r => {
     const matchTab = r.status?.toLowerCase() === activeTab.toLowerCase();
     const matchPriority = selectedPriority === 'Semua Prioritas' ? true : r.prioritas === selectedPriority;
+    
+    // 🔥 PELINDUNG PENCARIAN (NULL-SAFETY)
     const matchSearch = 
-      r.namaPemohon.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.items.some(item => item.namaBarang.toLowerCase().includes(searchQuery.toLowerCase()));
+      (r.namaPemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (r.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.items.some(item => (item.namaBarang || '').toLowerCase().includes(searchQuery.toLowerCase()));
     
     return matchTab && matchPriority && matchSearch;
   });
@@ -157,7 +162,6 @@ export default function ApprovalRequest() {
   };
 
   const handleFinalAction = async () => {
-    // 🔥 UX MANIS: Tampilkan loading toast saat memproses (Karena update data multiple id bisa butuh beberapa detik)
     const loadingToast = toast.loading('Memproses persetujuan data...');
 
     try {
@@ -184,8 +188,7 @@ export default function ApprovalRequest() {
         if (!res.ok) throw new Error(`Gagal memproses request ${reqId}`);
       }
 
-      toast.dismiss(loadingToast); // Matikan loading
-      // 🔥 2. GANTI ALERT JADI TOAST SUCCESS
+      toast.dismiss(loadingToast); 
       toast.success(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
 
       setSelectedRows([]);
@@ -196,7 +199,6 @@ export default function ApprovalRequest() {
     } catch (error) {
       toast.dismiss(loadingToast);
       console.error('Gagal memproses:', error.message);
-      // 🔥 3. GANTI ALERT JADI TOAST ERROR
       toast.error('Terjadi kesalahan saat memproses data ke database server.');
     }
   };

@@ -2,7 +2,7 @@ import html2pdf from 'html2pdf.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, CheckSquare, X, Check, MoreVertical, Download } from 'lucide-react';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4';
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
 export default function PenyetujuanBarang() {
@@ -41,7 +41,10 @@ export default function PenyetujuanBarang() {
 
       if (Array.isArray(rawRequests)) {
         const groupedData = rawRequests.reduce((acc, curr) => {
-          const rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
+          // 🔥 PERBAIKAN: Safely parse Date untuk mencegah crash 'Invalid Date'
+          let rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
+          if (isNaN(rawDate.getTime())) rawDate = new Date();
+
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
           const pemohonName = curr.user?.fullName || curr.user?.username || 'Pemohon BSN';
           const divisiPemohon = curr.user?.divisi || 'KC Semarang';
@@ -70,8 +73,10 @@ export default function PenyetujuanBarang() {
 
           let latestStock = 0;
           if (Array.isArray(allMasterItems)) {
+            // 🔥 PERBAIKAN: Cegah .trim() crash jika nama barang NULL
             const matched = allMasterItems.find(a => 
-              a.nama_barang?.trim().toLowerCase() === curr.nama_aset?.trim().toLowerCase()
+              a.nama_barang && curr.nama_aset &&
+              String(a.nama_barang).trim().toLowerCase() === String(curr.nama_aset).trim().toLowerCase()
             );
             if (matched) latestStock = matched.stok || 0;
           }
@@ -103,10 +108,11 @@ export default function PenyetujuanBarang() {
     }
   };
 
+  // 🔥 PERBAIKAN: Aman dari error undefined saat filter pencarian
   const filteredRequests = requests.filter(req =>
-    req.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    req.pemohon.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    req.unit.toLowerCase().includes(searchQuery.toLowerCase())
+    (req.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (req.pemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (req.unit || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleReview = (req) => {

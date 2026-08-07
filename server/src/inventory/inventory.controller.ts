@@ -71,8 +71,9 @@ export class InventoryController {
   }
 
   // ================= REQUESTS (USER) =================
+  // 🔥 PERBAIKAN: Admin & Manager sekarang bisa create request juga (gak akan 403 Forbidden)
   @Post('requests')
-  @Roles('USER', 'user')
+  @Roles('USER', 'user', 'ADMIN', 'admin', 'MANAGER', 'manager')
   async createRequest(@Body() body: any, @Request() req: any) {
     try {
       await this.inventoryService.createRequest(req.user.sub, body);
@@ -83,8 +84,9 @@ export class InventoryController {
     }
   }
 
+  // 🔥 PERBAIKAN: Admin & Manager sekarang berhak melihat halaman Riwayatnya sendiri
   @Get('my-requests')
-  @Roles('USER', 'user')
+  @Roles('USER', 'user', 'ADMIN', 'admin', 'MANAGER', 'manager')
   async getMyRequests(@Request() req: any) {
     try {
       const myRequests = await this.inventoryService.getMyRequests(req.user.sub);
@@ -133,7 +135,6 @@ export class InventoryController {
     }
   }
 
-  // 🔥 TAMBAHAN ENDPOINT BULK DELETE
   @Delete('requests/bulk-delete')
   @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
   async bulkDeleteRequests(@Body('ids') ids: string[]) {

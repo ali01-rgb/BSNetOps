@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Clock, CheckCircle2, XCircle, PackageCheck, Eye, ArrowLeft, FileText, Download, MoreVertical, X as CloseIcon } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../permintaan/TemplateDokumenA4'; 
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
 export default function RiwayatPermintaan() {
@@ -36,7 +36,10 @@ export default function RiwayatPermintaan() {
         const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
 
         const groupedRequests = data.reduce((acc, curr) => {
-          const rawDate = new Date(curr.createdAt || Date.now());
+          // 🔥 PERBAIKAN: Safely parse Date
+          let rawDate = new Date(curr.createdAt || Date.now());
+          if (isNaN(rawDate.getTime())) rawDate = new Date();
+
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
           const jamMenit = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
           
@@ -118,7 +121,7 @@ export default function RiwayatPermintaan() {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      toast.success('Penerimaan barang berhasil dikonfirmasi!'); // 🔥 TAMBAHAN UX MANIS
+      toast.success('Penerimaan barang berhasil dikonfirmasi!'); 
 
       setLaporanRiwayat(prevLaporan =>
         prevLaporan.map(laporan => {
@@ -140,7 +143,7 @@ export default function RiwayatPermintaan() {
       );
     } catch (error) {
       console.error("Gagal konfirmasi terima barang:", error.message);
-      toast.error("Terjadi kesalahan saat mengkonfirmasi penerimaan barang."); // 🔥 GANTI ALERT
+      toast.error("Terjadi kesalahan saat mengkonfirmasi penerimaan barang."); 
     }
   };
 

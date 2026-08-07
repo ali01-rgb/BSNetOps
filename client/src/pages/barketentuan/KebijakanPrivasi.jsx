@@ -34,8 +34,8 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    {/* 1. Background Halaman: Hijau kalem yang memudar halus ke putih pucat */}
     <div className="min-h-screen bg-gradient-to-b from-[#7da795] via-[#e2ece7] to-[#f8faf9] text-slate-800 pb-20 font-sans">
+      {/* 1. Background Halaman: Hijau kalem yang memudar halus ke putih pucat */}
       
       {/* 2. Header: Warna solid hijau gelap kontras (bg-[#004f3b]) dipisah dari background bawah */}
       <div className="relative pt-12 pb-28 px-6 md:px-12 text-center bg-[#004f3b] shadow-md border-b border-[#003d2d]">
