@@ -34,29 +34,33 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-slate-800 pb-20 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-[#0d5942] via-[#659d89] to-[#ebf3f0] text-slate-800 pb-20 font-sans">
       
-      {/* Header - Dibuat rata tengah (text-center) dan padding bawah agak tebal buat tempat kartu melayang */}
-      <div className="bg-gradient-to-r from-[#003d2d] via-[#00533d] to-[#00664b] text-white pt-12 pb-28 px-6 md:px-12 text-center shadow-sm">
+      {/* Header - Rata tengah dengan ruang untuk tombol melayang */}
+      <div className="relative pt-12 pb-28 px-6 md:px-12 text-center shadow-sm">
+        
+        {/* Tombol Kembali - Posisi absolut di pojok kiri atas, sejajar dengan header */}
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-xs font-medium text-emerald-200 hover:text-white transition bg-white/10 px-4 py-2 rounded-full backdrop-blur-md mb-6 border border-white/10"
+          className="absolute left-6 md:left-12 top-12 inline-flex items-center gap-2 text-xs font-medium text-emerald-100 hover:text-white transition bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"
         >
-          ← Kembali ke Landing Page
+          ← Kembali
         </Link>
-        <p className="text-emerald-300 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
+        
+        <p className="text-emerald-200 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
-        <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight">Kebijakan Privasi</h1>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-white">
+          Kebijakan Privasi
+        </h1>
       </div>
 
-      {/* Main Content - Posisi Center, Liquid Glass Effect, Floating Shadow */}
+      {/* Main Content - Posisi Center, Liquid Glass Effect */}
       <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
         
-        {/* Kertas Melayang: bg-white/70 (Transparan), backdrop-blur-md (Efek Kaca), shadow-xl (Melayang) */}
+        {/* Kertas Melayang dengan efek kaca */}
         <div className="w-full max-w-4xl bg-white/70 backdrop-blur-md border border-white/60 rounded-3xl shadow-xl shadow-slate-300/50 p-8 md:p-14">
 
-          {/* Isi Dokumen (Elemen yang gak penting udah dibuang semua) */}
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
             {sections.map((s, i) => (
               <section key={s.id}>
