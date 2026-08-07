@@ -34,71 +34,47 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-slate-800 pb-16">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#003d2d] via-[#00533d] to-[#00664b] text-white pt-10 pb-6 px-6 shadow-md">
-        <div className="max-w-5xl mx-auto">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-emerald-200 hover:text-white transition bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-sm mb-6"
-          >
-            ← Kembali ke Landing Page
-          </Link>
-          <p className="text-emerald-300 text-[11px] font-semibold tracking-[0.2em] uppercase mb-1">
-            Dokumen Kebijakan Internal
-          </p>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight">Kebijakan Privasi</h1>
-        </div>
+    <div className="min-h-screen bg-[#faf9f6] text-slate-800 pb-20">
+      {/* Header - Dibuat lebih pendek (py-8) dan langsung rata kiri (px-12 lg:px-24) */}
+      <div className="bg-gradient-to-r from-[#003d2d] via-[#00533d] to-[#00664b] text-white py-8 px-12 lg:px-24 shadow-sm">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs font-medium text-emerald-200 hover:text-white transition bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm mb-6"
+        >
+          ← Kembali ke Landing Page
+        </Link>
+        <p className="text-emerald-300 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
+          Dokumen Kebijakan Internal
+        </p>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight">Kebijakan Privasi</h1>
       </div>
 
-      {/* Document meta strip */}
-      <div className="max-w-5xl mx-auto px-6 -mt-px">
-        <div className="bg-[#00382a] text-emerald-100 text-[11px] rounded-b-xl px-6 py-3 flex flex-wrap gap-x-8 gap-y-1.5 shadow-md">
-          <span><span className="text-emerald-400/70">No. Dokumen:</span> PRIV/BSN-OPS/2026/001</span>
-          <span><span className="text-emerald-400/70">Versi:</span> 1.0</span>
-          <span><span className="text-emerald-400/70">Berlaku Efektif:</span> 6 Agustus 2026</span>
-          <span><span className="text-emerald-400/70">Klasifikasi:</span> Internal</span>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-6 mt-10 grid md:grid-cols-[200px_1fr] gap-8">
-        {/* Sticky table of contents */}
-        <aside className="hidden md:block">
-          <div className="sticky top-8">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Daftar Isi</p>
-            <nav className="space-y-1 border-l border-slate-200">
-              {sections.map((s, i) => (
-                <a
-                  key={s.id}
-                  href={`#${s.id}`}
-                  className="block pl-4 py-1.5 text-xs text-slate-500 hover:text-[#00533d] hover:border-[#00533d] border-l-2 border-transparent -ml-px transition-colors"
-                >
-                  {String(i + 1).padStart(2, '0')} — {s.title}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        {/* Document body */}
-        <div className="relative bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 md:p-10">
+      {/* Main Content - Sejajar kiri dengan header, lebar dibatasi, font sedikit dibesarkan */}
+      <div className="px-12 lg:px-24 mt-10">
+        <div className="relative max-w-4xl bg-white border border-slate-200/80 rounded-2xl shadow-sm p-8 md:p-12">
+          
           {/* Watermark stamp */}
-          <div className="absolute top-5 right-5 rotate-12 border-2 border-rose-300/60 text-rose-400/70 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md select-none pointer-events-none">
+          <div className="absolute top-6 right-6 rotate-12 border-2 border-rose-300/60 text-rose-400/70 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md select-none pointer-events-none">
             Rahasia
           </div>
 
-          <div className="space-y-10 text-sm text-slate-600 leading-relaxed">
+          {/* Intro text (Optional, if you want to replace the meta bar info subtly) */}
+          <p className="text-xs text-slate-400 mb-8 pb-4 border-b border-slate-100">
+            No. Dokumen: PRIV/BSN-OPS/2026/001 | Efektif: 6 Agustus 2026
+          </p>
+
+          <div className="space-y-12 text-sm text-slate-600 leading-relaxed">
             {sections.map((s, i) => (
-              <section key={s.id} id={s.id} className="scroll-mt-8">
-                <h2 className="font-serif text-lg font-bold text-slate-800 pb-2 mb-3 border-b-2 border-[#00533d]/15">
+              <section key={s.id}>
+                <h2 className="font-serif text-xl font-bold text-slate-800 pb-2 mb-4 border-b-2 border-[#00533d]/15">
                   {String(i + 1).padStart(2, '0')}. {s.title}
                 </h2>
-                <p className="text-xs leading-normal">{s.intro}</p>
+                <p className="text-sm leading-relaxed">{s.intro}</p>
                 {s.points.length > 0 && (
-                  <ul className="mt-3 space-y-2">
+                  <ul className="mt-4 space-y-3">
                     {s.points.map((p, idx) => (
-                      <li key={idx} className="flex gap-3 text-xs">
-                        <span className="font-serif text-[#00533d]/50 font-semibold shrink-0">
+                      <li key={idx} className="flex gap-4 text-sm">
+                        <span className="font-serif text-[#00533d]/50 font-bold shrink-0 mt-0.5">
                           {i + 1}.{idx + 1}
                         </span>
                         <span>{p}</span>
@@ -110,7 +86,8 @@ export default function KebijakanPrivasi() {
             ))}
           </div>
 
-          <div className="mt-10 pt-5 border-t border-dashed border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+          {/* Footer Card */}
+          <div className="mt-12 pt-6 border-t border-dashed border-slate-200 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-400">
             <span>Dicetak otomatis oleh Sistem BSNetOps</span>
             <span>Halaman 1 dari 1</span>
           </div>
