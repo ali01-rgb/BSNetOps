@@ -34,48 +34,28 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#468065] via-[#d1dfd8] to-[#f8faf9] text-slate-800 pb-20 font-sans">
-      
-      {/* Header: Warna solid hijau gelap kontras */}
-      <div className="pt-12 pb-28 px-6 md:px-12 bg-[#004f3b] shadow-md border-b border-[#003d2d]">
-        <div className="max-w-5xl mx-auto">
-          
-          <p className="text-center text-emerald-200 text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase mb-3">
-            Dokumen Kebijakan Internal
-          </p>
-          
-          <div className="relative flex items-center justify-center">
-            
-            <Link
-              to="/"
-              className="absolute left-0 hidden sm:inline-flex items-center gap-2 text-xs font-bold text-emerald-100 hover:text-white transition-all bg-white/10 hover:bg-white/25 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"
-            >
-              ← Kembali
-            </Link>
-            
-            <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-white px-32 text-center">
-              Kebijakan Privasi
-            </h1>
-            
-          </div>
-          
-          <div className="mt-6 flex justify-center sm:hidden">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-[10px] font-bold text-emerald-100 hover:text-white bg-white/10 px-3 py-1.5 rounded-full border border-white/20"
-            >
-              ← Kembali ke Landing Page
-            </Link>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-[#40725a] via-[#c1d3ca] to-[#f8faf9] text-slate-800 pb-20 font-sans">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#004f3b] shadow-md border-b border-[#003d2d]">
+        <p className="text-emerald-200 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
+          Dokumen Kebijakan Internal
+        </p>
 
+        <div className="relative w-full flex items-center justify-center">
+          <Link
+            to="/"
+            className="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 text-xs font-medium text-emerald-100 hover:text-white transition bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full backdrop-blur-md border border-white/20"
+          >
+            ← Kembali
+          </Link>
+          
+          <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-white">
+            Kebijakan Privasi
+          </h1>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
-        
         <div className="w-full max-w-4xl bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl shadow-xl shadow-slate-400/20 p-8 md:p-14">
-
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
             {sections.map((s, i) => (
               <section key={s.id}>
@@ -98,7 +78,6 @@ export default function KebijakanPrivasi() {
               </section>
             ))}
           </div>
-
         </div>
       </div>
     </div>
