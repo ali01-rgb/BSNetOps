@@ -34,11 +34,11 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    // Penambahan font-['Poppins'] dan penyesuaian gradasi
+    {/* 1. Background Halaman: Gradasi disamakan, Font global diset ke Poppins */}
     <div className="min-h-screen bg-gradient-to-b from-[#00664b]/90 via-zinc-100 to-zinc-50 text-slate-800 pb-20 font-['Poppins']">
       
-      {/* Header: Warna solid hijau gelap kontras. border-b dihapus biar transisi gradasi lebih halus */}
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md">
+      {/* 2. Header: Dibuat TRANSPARAN (hapus bg, shadow, border) agar menyatu 100% mulus dengan gradasi di atas */}
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
@@ -57,15 +57,15 @@ export default function KebijakanPrivasi() {
         </div>
       </div>
 
-      {/* Main Content: Kertas Solid */}
+      {/* 3. Main Content: Kertas Solid */}
       <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
-        
         <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
 
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
             {sections.map((s, i) => (
               <section key={s.id}>
-                <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
+                {/* Garis bawah diubah warnanya menyesuaikan tema #00664b */}
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
                   {String(i + 1).padStart(2, '0')}. {s.title}
                 </h2>
                 <p className="text-sm leading-relaxed">{s.intro}</p>
@@ -73,7 +73,8 @@ export default function KebijakanPrivasi() {
                   <ul className="mt-4 space-y-3">
                     {s.points.map((p, idx) => (
                       <li key={idx} className="flex gap-4 text-sm">
-                        <span className="text-[#00533d] font-bold shrink-0 mt-0.5">
+                        {/* Angka list disesuaikan juga warnanya ke #00664b */}
+                        <span className="text-[#00664b] font-bold shrink-0 mt-0.5">
                           {i + 1}.{idx + 1}
                         </span>
                         <span>{p}</span>
