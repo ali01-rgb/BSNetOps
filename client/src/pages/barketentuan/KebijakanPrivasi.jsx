@@ -34,10 +34,11 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#40725a] via-[#c1d3ca] to-[#f8faf9] text-slate-800 pb-20 font-sans">
+    // Penambahan font-['Poppins'] dan penyesuaian gradasi
+    <div className="min-h-screen bg-gradient-to-b from-[#00664b]/90 via-zinc-100 to-zinc-50 text-slate-800 pb-20 font-['Poppins']">
       
-      {/* Header: Warna solid hijau gelap kontras */}
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md border-b border-[#003d2d]">
+      {/* Header: Warna solid hijau gelap kontras. border-b dihapus biar transisi gradasi lebih halus */}
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
@@ -50,7 +51,6 @@ export default function KebijakanPrivasi() {
             ← Kembali
           </Link>
           
-          {/* font-serif diganti jadi font-extrabold bawaan sans biar selaras dashboard */}
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
             Kebijakan Privasi
           </h1>
@@ -60,13 +60,11 @@ export default function KebijakanPrivasi() {
       {/* Main Content: Kertas Solid */}
       <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
         
-        {/* bg-white/75 dan backdrop-blur dihapus, diganti jadi bg-white solid dengan border rapi */}
         <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
 
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
             {sections.map((s, i) => (
               <section key={s.id}>
-                {/* font-serif dihilangkan, ketebalan disesuaikan */}
                 <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
                   {String(i + 1).padStart(2, '0')}. {s.title}
                 </h2>
