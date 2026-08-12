@@ -34,8 +34,9 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#00664b]/50 via-zinc-100 to-zinc-50 text-slate-800 pb-20 font-['Poppins']">
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] border-b border-black/10 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-[#00664b]/40 via-zinc-100 via-[75%] to-zinc-50 text-slate-800 pb-20 font-['Poppins']">
+      
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] border-b border-[#004d38] shadow-sm">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
@@ -59,7 +60,7 @@ export default function KebijakanPrivasi() {
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
             {sections.map((s, i) => (
               <section key={s.id}>
-                <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
                   {String(i + 1).padStart(2, '0')}. {s.title}
                 </h2>
                 <p className="text-sm leading-relaxed">{s.intro}</p>
@@ -67,7 +68,7 @@ export default function KebijakanPrivasi() {
                   <ul className="mt-4 space-y-3">
                     {s.points.map((p, idx) => (
                       <li key={idx} className="flex gap-4 text-sm">
-                        <span className="text-[#00533d] font-bold shrink-0 mt-0.5">
+                        <span className="text-[#00664b] font-bold shrink-0 mt-0.5">
                           {i + 1}.{idx + 1}
                         </span>
                         <span>{p}</span>
