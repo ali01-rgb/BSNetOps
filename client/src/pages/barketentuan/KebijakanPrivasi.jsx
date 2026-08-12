@@ -34,18 +34,8 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    // Satu background gradient menerus dari atas (hijau tua) sampai ~3/4 tinggi halaman,
-    // baru benar-benar terang di sisa 1/4 bawah. Header tidak lagi punya bg/shadow sendiri
-    // supaya transisinya menyatu, tanpa garis potong.
-    <div
-      className="min-h-screen text-slate-800 pb-20 font-['Poppins']"
-      style={{
-        background:
-          'linear-gradient(to bottom, #00533d 0%, #00664b 16%, #045843 32%, #2f7a5f 48%, #6fa38c 62%, #b9d3c6 74%, #eef4f1 84%, #f8faf9 100%)'
-      }}
-    >
-      {/* Header (tanpa background sendiri, menyatu dengan gradient) */}
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#00664b]/50 via-zinc-100 to-zinc-50 text-slate-800 pb-20 font-['Poppins']">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] border-b border-black/10 shadow-sm">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
@@ -57,14 +47,13 @@ export default function KebijakanPrivasi() {
           >
             ← Kembali
           </Link>
-
+          
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
             Kebijakan Privasi
           </h1>
         </div>
       </div>
 
-      {/* Main Content: Kertas Solid */}
       <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
         <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
           <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
