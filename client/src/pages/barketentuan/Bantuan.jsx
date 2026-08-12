@@ -61,7 +61,7 @@ export default function Bantuan() {
     <div className="min-h-screen bg-gradient-to-b from-[#40725a] via-[#c1d3ca] to-[#f8faf9] text-slate-800 pb-20 font-sans">
       
       {/* 1. Header: Warna solid hijau gelap kontras */}
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#004f3b] shadow-md border-b border-[#003d2d]">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md border-b border-[#003d2d]">
         <p className="text-emerald-200 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
           Pusat Layanan & Dukungan
         </p>

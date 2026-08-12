@@ -37,8 +37,8 @@ export default function KebijakanPrivasi() {
     <div className="min-h-screen bg-gradient-to-b from-[#40725a] via-[#c1d3ca] to-[#f8faf9] text-slate-800 pb-20 font-sans">
       
       {/* Header: Warna solid hijau gelap kontras */}
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#004f3b] shadow-md border-b border-[#003d2d]">
-        <p className="text-emerald-200 text-xs font-semibold tracking-[0.2em] uppercase mb-2">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md border-b border-[#003d2d]">
+        <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
 
@@ -67,7 +67,7 @@ export default function KebijakanPrivasi() {
             {sections.map((s, i) => (
               <section key={s.id}>
                 {/* font-serif dihilangkan, ketebalan disesuaikan */}
-                <h2 className="text-lg md:text-xl font-extrabold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
                   {String(i + 1).padStart(2, '0')}. {s.title}
                 </h2>
                 <p className="text-sm leading-relaxed">{s.intro}</p>
