@@ -4,18 +4,18 @@ export default function KebijakanPrivasi() {
   const sections = [
     {
       id: 'pengumpulan',
-      title: 'Pengumpulan Informasi',
+      title: '1. Pengumpulan Informasi',
       intro:
         'Aplikasi BSNetOps mencatat informasi tertentu milik staf/pengguna internal untuk mendukung tata kelola aset perusahaan yang akuntabel. Data yang dikumpulkan meliputi:',
       points: [
         'Identitas resmi (Nama lengkap, ID Karyawan, Jabatan, dan Email internal).',
-        'Riwayat permintaan, peminjaman barang inventaris.',
+        'Riwayat permintaan aset.',
         'Log aktivitas sistem untuk kebutuhan audit perusahaan.'
       ]
     },
     {
       id: 'penggunaan',
-      title: 'Penggunaan Data',
+      title: '2. Penggunaan Data',
       intro: 'Seluruh data yang tercatat dalam sistem digunakan secara eksklusif untuk kepentingan internal:',
       points: [
         'Memproses pengajuan dan validasi izin permintaan aset.',

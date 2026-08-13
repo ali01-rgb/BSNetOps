@@ -4,7 +4,7 @@ export default function SyaratKetentuan() {
   const sections = [
     {
       id: 'pasal-1',
-      title: 'Pasal 1 — Ketentuan Umum',
+      title: '1. Ketentuan Umum',
       intro: 'Dalam syarat dan ketentuan ini, yang dimaksud dengan:',
       points: [
         'Sistem BSNetOps adalah platform manajemen inventaris dan operasional jaringan internal milik Bank Syariah Nasional.',
@@ -14,7 +14,7 @@ export default function SyaratKetentuan() {
     },
     {
       id: 'pasal-2',
-      title: 'Pasal 2 — Hak dan Kewajiban Pengguna',
+      title: '2. Hak dan Kewajiban Pengguna',
       intro: 'Setiap pengguna yang terdaftar pada sistem memiliki hak dan kewajiban sebagai berikut:',
       points: [
         'Hak: Pengguna berhak mengajukan permohonan permintaan aset sesuai dengan kebutuhan operasional pekerjaan divisi masing-masing.',
