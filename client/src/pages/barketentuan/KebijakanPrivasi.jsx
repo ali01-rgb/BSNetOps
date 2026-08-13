@@ -8,9 +8,9 @@ export default function KebijakanPrivasi() {
       intro:
         'Aplikasi BSNetOps mencatat informasi tertentu milik staf/pengguna internal untuk mendukung tata kelola aset perusahaan yang akuntabel. Data yang dikumpulkan meliputi:',
       points: [
-        'Identitas resmi (Nama lengkap, NIP/ID Karyawan, Jabatan, dan Email internal).',
-        'Riwayat permintaan, peminjaman, serta pengembalian barang inventaris.',
-        'Alamat IP lokal dan log aktivitas sistem untuk kebutuhan audit IT.'
+        'Identitas resmi (Nama lengkap, ID Karyawan, Jabatan, dan Email internal).',
+        'Riwayat permintaan, peminjaman barang inventaris.',
+        'Log aktivitas sistem untuk kebutuhan audit IT.'
       ]
     },
     {
@@ -19,7 +19,7 @@ export default function KebijakanPrivasi() {
       intro: 'Seluruh data yang tercatat dalam sistem digunakan secara eksklusif untuk kepentingan internal:',
       points: [
         'Memproses pengajuan dan validasi izin peminjaman perangkat.',
-        'Penyusunan Laporan Hasil Audit (LHA) inventaris berkala.',
+        'Penyusunan Laporan Hasil Permintaan (LHP) inventaris berkala.',
         'Mencegah dan mendeteksi penggunaan fasilitas jaringan secara tidak sah.'
       ]
     },
@@ -27,7 +27,7 @@ export default function KebijakanPrivasi() {
       id: 'keamanan',
       title: 'Keamanan & Kerahasiaan',
       intro:
-        'Data disimpan dalam basis data terenkripsi milik Bank Syariah Nasional. Kami menjamin bahwa tidak ada data pengguna yang diperjualbelikan atau disebarluaskan kepada pihak ketiga di luar instansi resmi.',
+        'Data disimpan dalam basis data dan terenkripsi secara aman. Kami menjamin bahwa tidak ada data pengguna yang diperjualbelikan atau disebarluaskan kepada pihak ketiga di luar instansi resmi.',
       points: []
     }
   ];
