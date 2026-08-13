@@ -4,7 +4,7 @@ export default function KebijakanPrivasi() {
   const sections = [
     {
       id: 'pengumpulan',
-      title: '1. Pengumpulan Informasi',
+      title: 'Pengumpulan Informasi',
       intro:
         'Aplikasi BSNetOps mencatat informasi tertentu milik staf/pengguna internal untuk mendukung tata kelola aset perusahaan yang akuntabel. Data yang dikumpulkan meliputi:',
       points: [
@@ -15,7 +15,7 @@ export default function KebijakanPrivasi() {
     },
     {
       id: 'penggunaan',
-      title: '2. Penggunaan Data',
+      title: 'Penggunaan Data',
       intro: 'Seluruh data yang tercatat dalam sistem digunakan secara eksklusif untuk kepentingan internal:',
       points: [
         'Memproses pengajuan dan validasi izin permintaan aset.',
@@ -38,7 +38,7 @@ export default function KebijakanPrivasi() {
         {sections.map((s, i) => (
           <section key={s.id}>
             <h2 className="text-lg md:text-xl font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
-              {String(i + 1).padStart(2, '0')}. {s.title}
+              {i + 1}. {s.title}
             </h2>
             <p className="text-sm leading-relaxed">{s.intro}</p>
             {s.points.length > 0 && (
