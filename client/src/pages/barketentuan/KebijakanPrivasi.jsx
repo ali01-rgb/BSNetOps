@@ -35,10 +35,10 @@ export default function KebijakanPrivasi() {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-b from-[#00664b]/80 via-[#00664b]/15 via-[75%] to-zinc-50 text-slate-800 pb-20"
+      className="min-h-screen bg-gradient-to-b from-[#00664b]/90 via-zinc-100 to-zinc-50 text-slate-800 pb-20"
       style={{ fontFamily: "'Poppins', sans-serif" }}
     >
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] border-b border-[#004d38]">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md relative z-20">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           Dokumen Kebijakan Internal
         </p>
