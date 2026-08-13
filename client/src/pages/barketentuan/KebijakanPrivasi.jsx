@@ -33,11 +33,11 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
+    <div className="w-full bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
       <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
         {sections.map((s, i) => (
           <section key={s.id}>
-            <h2 className="text-lg md:text-xl font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
+            <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
               {String(i + 1).padStart(2, '0')}. {s.title}
             </h2>
             <p className="text-sm leading-relaxed">{s.intro}</p>

@@ -32,11 +32,10 @@ import Aset from './pages/user/aset/Aset';
 import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
 import RiwayatPermintaan from './pages/user/riwayat/RiwayatPermintaan';
 
-// --- LAYOUT KHUSUS UNTUK HALAMAN DOKUMEN (PRIVASI, SYARAT, BANTUAN) ---
 function PublicDocLayout({ title, subtitle, children }) {
   return (
-    <div className="flex-1 min-h-screen flex flex-col font-['Poppins'] bg-gradient-to-b from-[#00664b]/90 via-zinc-70 to-zinc-30 select-none">
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md relative z-20">
+    <div className="flex-1 min-h-screen flex flex-col font-['Poppins'] select-none">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] relative z-20">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           {subtitle}
         </p>
@@ -52,8 +51,10 @@ function PublicDocLayout({ title, subtitle, children }) {
           </h1>
         </div>
       </div>
-      <main className="flex-1 px-6 md:px-12 flex justify-center -mt-16 relative z-10 pb-20">
-        {children}
+      <main className="flex-1 bg-gradient-to-b from-[#00664b]/90 via-zinc-70 to-zinc-30 relative z-10 flex justify-center px-6 md:px-12 pb-20">
+        <div className="-mt-16 w-full max-w-4xl">
+          {children}
+        </div>
       </main>
     </div>
   );
@@ -143,7 +144,6 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* ================= ROUTE DOKUMEN PUBLIK ================= */}
           <Route path="/kebijakan-privasi" element={
             <PublicDocLayout title="Kebijakan Privasi" subtitle="Dokumen Kebijakan Internal">
               <KebijakanPrivasi />
@@ -160,7 +160,6 @@ export default function App() {
             </PublicDocLayout>
           } />
 
-          {/* ================= ROUTE ROLE: ADMIN ================= */}
           <Route path="/admin" element={
             <ProtectedRoute allowedRole="admin">
               <DashboardLayout role="admin" currentView={currentView} setCurrentView={setCurrentView}>
@@ -175,7 +174,6 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* ================= ROUTE ROLE: MANAGER ================= */}
           <Route path="/manager" element={
             <ProtectedRoute allowedRole="manager">
               <DashboardLayout role="manager" currentView={currentView} setCurrentView={setCurrentView}>
@@ -187,7 +185,6 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* ================= ROUTE ROLE: USER ================= */}
           <Route path="/user" element={
             <ProtectedRoute allowedRole="user">
               <DashboardLayout role="user" currentView={currentView} setCurrentView={setCurrentView}>
