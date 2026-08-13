@@ -10,7 +10,7 @@ export default function KebijakanPrivasi() {
       points: [
         'Identitas resmi (Nama lengkap, ID Karyawan, Jabatan, dan Email internal).',
         'Riwayat permintaan, peminjaman barang inventaris.',
-        'Log aktivitas sistem untuk kebutuhan audit IT.'
+        'Log aktivitas sistem untuk kebutuhan audit perusahaan.'
       ]
     },
     {
@@ -18,7 +18,7 @@ export default function KebijakanPrivasi() {
       title: 'Penggunaan Data',
       intro: 'Seluruh data yang tercatat dalam sistem digunakan secara eksklusif untuk kepentingan internal:',
       points: [
-        'Memproses pengajuan dan validasi izin peminjaman perangkat.',
+        'Memproses pengajuan dan validasi izin permintaan aset.',
         'Penyusunan Laporan Hasil Permintaan (LHP) inventaris berkala.',
         'Mencegah dan mendeteksi penggunaan fasilitas jaringan secara tidak sah.'
       ]

@@ -48,13 +48,6 @@ export default function SyaratKetentuan() {
           </section>
         ))}
       </div>
-
-      <div className="mt-16 pt-8 border-t border-dashed border-slate-300">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-emerald-50/50 border border-emerald-100/80 p-6 rounded-2xl">
-          <div className="flex-1">
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
