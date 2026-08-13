@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 export default function KebijakanPrivasi() {
   const sections = [
@@ -34,54 +33,28 @@ export default function KebijakanPrivasi() {
   ];
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-b from-[#00664b]/90 via-zinc-100 to-zinc-50 text-slate-800 pb-20"
-      style={{ fontFamily: "'Poppins', sans-serif" }}
-    >
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md relative z-20">
-        <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
-          Dokumen Kebijakan Internal
-        </p>
-
-        <div className="relative w-full flex items-center justify-center">
-          <Link
-            to="/"
-            className="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 text-xs font-medium text-emerald-100 hover:text-white transition bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/20"
-          >
-            ← Kembali
-          </Link>
-          
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-            Kebijakan Privasi
-          </h1>
-        </div>
-      </div>
-
-      <div className="px-6 md:px-12 flex justify-center -mt-16 relative z-10">
-        <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
-          <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
-            {sections.map((s, i) => (
-              <section key={s.id}>
-                <h2 className="text-lg md:text-xl font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
-                  {String(i + 1).padStart(2, '0')}. {s.title}
-                </h2>
-                <p className="text-sm leading-relaxed">{s.intro}</p>
-                {s.points.length > 0 && (
-                  <ul className="mt-4 space-y-3">
-                    {s.points.map((p, idx) => (
-                      <li key={idx} className="flex gap-4 text-sm">
-                        <span className="text-[#00664b] font-bold shrink-0 mt-0.5">
-                          {i + 1}.{idx + 1}
-                        </span>
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ))}
-          </div>
-        </div>
+    <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
+      <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
+        {sections.map((s, i) => (
+          <section key={s.id}>
+            <h2 className="text-lg md:text-xl font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
+              {String(i + 1).padStart(2, '0')}. {s.title}
+            </h2>
+            <p className="text-sm leading-relaxed">{s.intro}</p>
+            {s.points.length > 0 && (
+              <ul className="mt-4 space-y-3">
+                {s.points.map((p, idx) => (
+                  <li key={idx} className="flex gap-4 text-sm">
+                    <span className="text-[#00664b] font-bold shrink-0 mt-0.5">
+                      {i + 1}.{idx + 1}
+                    </span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
       </div>
     </div>
   );

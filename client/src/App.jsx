@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
 
 import LandingPage from "./pages/LandingPage";
 
-// 💡 PENYESUAIAN: Nama import diubah jadi Huruf Kapital agar sesuai dengan JSX di Route
 import Bantuan from "./pages/barketentuan/Bantuan";
 import SyaratKetentuan from "./pages/barketentuan/SyaratKetentuan";
 import KebijakanPrivasi from "./pages/barketentuan/KebijakanPrivasi";
@@ -19,7 +18,6 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ManagerDashboard from "./pages/ManagerDashboard.jsx";
 import UserDashboard from "./pages/UserDashboard.jsx";
 
-// --- IMPORT COMPONENT ADMIN ---
 import StokBarang from './pages/admin/stokbarang/StokBarang';
 import UserManagement from './pages/admin/manajemenuser/UserManagement'; 
 import KategoriBarang from './pages/admin/kategoribarang/KategoriBarang';
@@ -27,14 +25,39 @@ import LogAktifitasAdmin from './pages/admin/log/LogAktifitas.jsx';
 import EditProfil from './pages/admin/user/EditProfil';
 import PenyetujuanBarang from './pages/admin/penyetujuan/PenyetujuanBarang';
 
-// --- IMPORT COMPONENT MANAGER ---
 import ApprovalRequest from './pages/manager/appreq/ApprovalRequest';
 import ActivityLogManager from './pages/manager/actlog/ActivityLog.jsx'; 
 
-// --- IMPORT COMPONENT USER ---
 import Aset from './pages/user/aset/Aset';
 import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
 import RiwayatPermintaan from './pages/user/riwayat/RiwayatPermintaan';
+
+// --- LAYOUT KHUSUS UNTUK HALAMAN DOKUMEN (PRIVASI, SYARAT, BANTUAN) ---
+function PublicDocLayout({ title, subtitle, children }) {
+  return (
+    <div className="flex-1 min-h-screen flex flex-col font-['Poppins'] bg-gradient-to-b from-[#00664b]/90 via-zinc-70 to-zinc-30 select-none">
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] shadow-md relative z-20">
+        <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
+          {subtitle}
+        </p>
+        <div className="relative w-full flex items-center justify-center">
+          <Link
+            to="/"
+            className="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 text-xs font-medium text-emerald-100 hover:text-white transition bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full border border-white/20"
+          >
+            ← Kembali
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
+            {title}
+          </h1>
+        </div>
+      </div>
+      <main className="flex-1 px-6 md:px-12 flex justify-center -mt-16 relative z-10 pb-20">
+        {children}
+      </main>
+    </div>
+  );
+}
 
 function DashboardLayout({ role, currentView, setCurrentView, children }) {
   const [isOpen, setIsOpen] = useState(() => JSON.parse(localStorage.getItem('sidebarOpen')) ?? true);
@@ -120,10 +143,22 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Route Halaman Ketentuan */}
-          <Route path="/bantuan" element={<Bantuan />} />
-          <Route path="/kebijakan-privasi" element={<KebijakanPrivasi />} />
-          <Route path="/syarat-ketentuan" element={<SyaratKetentuan />} />
+          {/* ================= ROUTE DOKUMEN PUBLIK ================= */}
+          <Route path="/kebijakan-privasi" element={
+            <PublicDocLayout title="Kebijakan Privasi" subtitle="Dokumen Kebijakan Internal">
+              <KebijakanPrivasi />
+            </PublicDocLayout>
+          } />
+          <Route path="/syarat-ketentuan" element={
+            <PublicDocLayout title="Syarat & Ketentuan" subtitle="Dokumen Perjanjian Resmi">
+              <SyaratKetentuan />
+            </PublicDocLayout>
+          } />
+          <Route path="/bantuan" element={
+            <PublicDocLayout title="Bantuan & FAQ" subtitle="Pusat Layanan & Dukungan">
+              <Bantuan />
+            </PublicDocLayout>
+          } />
 
           {/* ================= ROUTE ROLE: ADMIN ================= */}
           <Route path="/admin" element={
