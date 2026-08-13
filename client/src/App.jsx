@@ -32,10 +32,14 @@ import Aset from './pages/user/aset/Aset';
 import AjukanPermintaan from './pages/user/permintaan/AjukanPermintaan';
 import RiwayatPermintaan from './pages/user/riwayat/RiwayatPermintaan';
 
+// --- LAYOUT KHUSUS UNTUK HALAMAN DOKUMEN (PRIVASI, SYARAT, BANTUAN) ---
 function PublicDocLayout({ title, subtitle, children }) {
   return (
-    <div className="flex-1 min-h-screen flex flex-col font-['Poppins'] select-none">
-      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] relative z-20">
+    // Font dipaksa pakai inline style biar ga jadi Times New Roman lagi
+    <div className="flex-1 min-h-screen flex flex-col font-sans select-none" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      
+      {/* HEADER: z-10 (layer bawah), ditambah shadow-lg biar transisi gradasinya alus */}
+      <div className="pt-12 pb-28 px-6 md:px-12 text-center bg-[#00664b] relative z-10 shadow-lg shadow-[#00664b]/30">
         <p className="text-emerald-200 text-xs font-extrabold tracking-[0.2em] uppercase mb-2">
           {subtitle}
         </p>
@@ -51,11 +55,14 @@ function PublicDocLayout({ title, subtitle, children }) {
           </h1>
         </div>
       </div>
-      <main className="flex-1 bg-gradient-to-b from-[#00664b]/90 via-zinc-70 to-zinc-30 relative z-10 flex justify-center px-6 md:px-12 pb-20">
+      
+      {/* MAIN & KERTAS: z-20 (layer atas), -mt-16 narik kotak ke atas numpuk di atas header */}
+      <main className="flex-1 bg-gradient-to-b from-[#00664b]/90 via-zinc-70 to-zinc-30 relative z-20 flex justify-center px-6 md:px-12 pb-20">
         <div className="-mt-16 w-full max-w-4xl">
           {children}
         </div>
       </main>
+      
     </div>
   );
 }

@@ -37,7 +37,7 @@ export default function KebijakanPrivasi() {
       <div className="space-y-12 text-sm text-slate-700 leading-relaxed">
         {sections.map((s, i) => (
           <section key={s.id}>
-            <h2 className="text-lg md:text-xl font-semibold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
+            <h2 className="text-lg md:text-xl font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
               {String(i + 1).padStart(2, '0')}. {s.title}
             </h2>
             <p className="text-sm leading-relaxed">{s.intro}</p>
