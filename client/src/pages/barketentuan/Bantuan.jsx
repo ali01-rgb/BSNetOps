@@ -129,7 +129,6 @@ export default function Bantuan() {
             <h2 className="text-lg font-bold text-slate-900">
               Pertanyaan Sering Diajukan
             </h2>
-            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{filteredFaqs.length} Hasil</span>
           </div>
 
           <div className="divide-y divide-slate-200/60 bg-white rounded-2xl border border-slate-200/80 px-2 shadow-sm">
