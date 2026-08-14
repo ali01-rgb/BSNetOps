@@ -9,7 +9,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   
-  // State Kontrol Modal Reset Password (0: Hidden, 1: Input Email, 2: Sukses Kirim, 3: Form Password Baru)
   const [forgotStep, setForgotEmailStep] = useState(0); 
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetToken, setResetToken] = useState("");
@@ -19,19 +18,16 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: "", password: "", remember: false });
   const [error, setError] = useState({ username: "", password: "" });
 
-  // 🔥 TANGKAP URL DARI EMAIL SAAT USER KLIK LINK
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     const email = urlParams.get("email");
     
-    // Jika url memiliki parameter token dan email, otomatis buka modal password baru
     if (token && email) {
       setResetToken(token);
       setForgotEmail(email);
-      setForgotEmailStep(3); // Langsung Buka Form Tahap 3
+      setForgotEmailStep(3); 
       
-      // Rapikan URL di browser agar token tidak tampil terus
       window.history.replaceState(null, '', '/login');
     }
   }, []);
@@ -83,7 +79,6 @@ export default function LoginPage() {
     }
   };
 
-  // ✉️ TAHAP 1: REQUEST FORGOT PASSWORD
   const handleForgotRequest = async (e) => {
     e.preventDefault();
 
@@ -92,7 +87,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Validasi domain resmi BSN (Ditambah gmail untuk testing)
     const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id", "@gmail.com"];
     const isDomainValid = allowedDomains.some(domain => forgotEmail.toLowerCase().endsWith(domain));
 
@@ -114,7 +108,22 @@ export default function LoginPage() {
       toast.dismiss(loadingToast);
 
       if (res.ok) {
-        setForgotEmailStep(2); // Pindah ke Notif Sukses Kirim
+        setForgotEmailStep(0);
+        
+        toast.custom((t) => (
+          <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-4 flex items-center gap-4`}>
+            <div className="w-10 h-10 rounded-lg border-2 border-slate-800 flex items-center justify-center shrink-0 bg-white">
+              <svg className="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-[#00634b]">Link Terkirim!</p>
+              <p className="text-[11px] text-slate-600 leading-tight mt-0.5">silahkan cek kotak masuk email anda.</p>
+            </div>
+          </div>
+        ), { position: "top-center", duration: 5000 });
+
       } else {
         toast.error(data.message || "Email tidak ditemukan di database.");
       }
@@ -124,7 +133,6 @@ export default function LoginPage() {
     }
   };
 
-  // 🔑 TAHAP 3: EKSEKUSI UPDATE PASSWORD BARU
   const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
 
@@ -147,7 +155,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email: forgotEmail,
           newPassword: newPassword,
-          token: resetToken // 🔥 PASTIKAN TOKEN TERKIRIM KE BACKEND
+          token: resetToken 
         }),
       });
 
@@ -155,12 +163,26 @@ export default function LoginPage() {
       toast.dismiss(loadingToast);
 
       if (res.ok) {
-        toast.success("Password berhasil diperbarui! Silakan login.");
         setForgotEmailStep(0);
         setForgotEmail("");
         setNewPassword("");
         setConfirmNewPassword("");
         setResetToken("");
+
+        toast.custom((t) => (
+          <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-4 flex items-center gap-4`}>
+            <div className="w-10 h-10 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0 bg-white">
+              <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-emerald-600">Password Berhasil!</p>
+              <p className="text-[11px] text-slate-600 leading-tight mt-0.5">Password Anda berhasil diperbarui.</p>
+            </div>
+          </div>
+        ), { position: "top-center", duration: 5000 });
+
       } else {
         toast.error(data.message || "Gagal memperbarui password.");
       }
@@ -171,97 +193,101 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900">
+    <main className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 font-sans">
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-sm" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/35" />
 
-      {/* FORM LOGIN UTAMA */}
       {forgotStep === 0 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[400px] rounded-2xl bg-white px-8 py-8 shadow-2xl animate-in fade-in duration-200">
-            <a href="/" className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110 hover:text-[#00634b]">
+          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in fade-in duration-200 border border-slate-100">
+            <a href="/" className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
               <FaXmark />
             </a>
 
-            <div className="mb-6 text-center">
+            <div className="mb-8 text-center">
               <h1 className="text-2xl font-bold text-[#00634b]">Selamat Datang!</h1>
-              <p className="text-sm text-[#4a9b7c]">Masuk untuk mengakses akun anda</p>
+              <p className="text-sm text-[#4a9b7c] mt-1 font-medium">Masuk untuk mengakses akun anda</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="mb-1 block text-sm font-semibold">Username / Email</label>
+                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Email</label>
                 <input
                   type="text"
                   name="username"
                   value={form.username}
                   onChange={handleChange}
-                  placeholder="Username atau Email"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                  placeholder="contoh@bsn.go.id"
+                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
                 />
               </div>
 
               <div className="relative">
-                <label className="mb-1 block text-sm font-semibold">Password</label>
+                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Password"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                  placeholder="•••••"
+                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 cursor-pointer text-slate-600">
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
+                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
-                {error.password && <p className="mt-1 text-xs text-red-500">{error.password}</p>}
+                {error.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{error.password}</p>}
               </div>
 
-              <div className="flex justify-end">
-                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-xs font-semibold text-[#00634b] hover:underline cursor-pointer">
-                  Lupa Password?
+              <div className="flex justify-between items-center pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#00634b] focus:ring-[#00634b]" />
+                  <span className="text-xs font-bold text-slate-700">Ingat Saya</span>
+                </label>
+                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-xs font-bold text-[#4a9b7c] hover:text-[#00634b] transition-colors cursor-pointer">
+                  Lupa password?
                 </button>
               </div>
 
-              <button type="submit" className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-1 hover:bg-[#004d3a]">
-                Log in
-              </button>
+              <div className="pt-2">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
+                  Log in
+                </button>
+              </div>
             </form>
 
-            <p className="mt-5 text-center text-sm">
-              Belum punya akun? <a href="/register" className="font-semibold text-[#00634b] hover:underline cursor-pointer">Daftar Sekarang</a>
+            <p className="mt-6 text-center text-[13px] font-bold text-slate-700">
+              Belum punya akun? <a href="/register" className="text-[#00634b] hover:underline cursor-pointer">Daftar Sekarang</a>
             </p>
           </div>
         </section>
       )}
 
-      {/* MODAL LUPA PASSWORD - TAHAP 1: INPUT EMAIL */}
       {forgotStep === 1 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[400px] rounded-2xl bg-white px-8 py-8 shadow-2xl animate-in zoom-in-95 duration-200">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110 hover:text-[#00634b]">
+          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
               <FaXmark />
             </button>
 
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-[#00634b]">Reset Password</h1>
-              <p className="text-sm text-[#4a9b7c]">Masukkan email BSN terdaftar untuk verifikasi</p>
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold text-slate-900">Reset Password</h1>
+              <p className="text-[13px] text-slate-500 mt-1 font-medium">kami akan mengirimkan link untuk memulihkan akunmu</p>
             </div>
 
-            <form onSubmit={handleForgotRequest} className="space-y-4">
+            <form onSubmit={handleForgotRequest} className="space-y-6">
               <div>
-                <label className="mb-1 block text-sm font-semibold">Email Pengguna BSN</label>
+                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Email Terdaftar</label>
                 <input
                   type="email"
                   required
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="budi@bsn.go.id"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                  placeholder="Admin@bsn.go.id"
+                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3.5 text-sm outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium placeholder:text-slate-400"
                 />
               </div>
 
-              <button type="submit" className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-1 hover:bg-[#004d3a]">
+              <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
                 Kirim Link Reset
               </button>
             </form>
@@ -269,78 +295,54 @@ export default function LoginPage() {
         </section>
       )}
 
-      {/* MODAL LUPA PASSWORD - TAHAP 2: SUCCESS MSG */}
-      {forgotStep === 2 && (
-        <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[400px] rounded-2xl bg-white px-8 py-8 shadow-2xl text-center animate-in zoom-in-95 duration-200">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110 hover:text-[#00634b]">
-              <FaXmark />
-            </button>
-
-            <div className="w-16 h-16 bg-emerald-100 text-[#00634b] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-              ✓
-            </div>
-
-            <h1 className="text-xl font-bold text-[#00634b] mb-2">Email Terkirim!</h1>
-            <p className="text-xs text-slate-600 mb-6 leading-relaxed">
-              Link reset password telah dikirimkan ke <span className="font-bold text-slate-900">{forgotEmail}</span>. Silakan periksa pesan masuk (atau folder spam) untuk melanjutkan.
-            </p>
-
-            <button 
-              type="button" 
-              onClick={() => setForgotEmailStep(0)}
-              className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-1 hover:bg-[#004d3a]"
-            >
-              Kembali ke Login
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* MODAL LUPA PASSWORD - TAHAP 3: FORM INPUT PASSWORD BARU */}
       {forgotStep === 3 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[400px] rounded-2xl bg-white px-8 py-8 shadow-2xl animate-in zoom-in-95 duration-200">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110 hover:text-[#00634b]">
+          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
               <FaXmark />
             </button>
 
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-[#00634b]">Password Baru</h1>
-              <p className="text-xs text-[#4a9b7c]">Buat password baru untuk akun <span className="font-bold">{forgotEmail}</span></p>
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold text-[#00634b]">Buat Password Baru</h1>
+              <p className="text-[13px] text-[#4a9b7c] mt-1 font-medium">masukan password baru untuk akun anda</p>
             </div>
 
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-5">
               <div className="relative">
-                <label className="mb-1 block text-sm font-semibold">Password Baru</label>
+                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Password Baru</label>
                 <input
                   type={showNewPassword ? "text" : "password"}
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Masukkan password baru"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                  placeholder="contoh@bsn.go.id"
+                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
                 />
-                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-9 cursor-pointer text-slate-600">
-                  {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
+                  {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold">Konfirmasi Password Baru</label>
+              <div className="relative">
+                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">konfirmasi Password Baru</label>
                 <input
                   type="password"
                   required
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Ulangi password baru"
-                  className="w-full rounded-lg bg-[#e7f0ec] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40"
+                  placeholder="•••••"
+                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
                 />
+                <div className="absolute right-4 top-[38px] text-[#00634b]">
+                  <FaEye size={16} />
+                </div>
               </div>
 
-              <button type="submit" className="w-full cursor-pointer rounded-lg bg-[#00634b] py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-1 hover:bg-[#004d3a]">
-                Simpan Password Baru
-              </button>
+              <div className="pt-2">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
+                  Simpan Password Baru
+                </button>
+              </div>
             </form>
           </div>
         </section>

@@ -1,10 +1,10 @@
 import { Controller, Post, Body, Get, Patch, UseGuards, Req, Inject, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard'; 
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler'; // 🔥 IMPORT THROTTLER UNTUK ANTI-SPAM
 
 @Controller('auth')
 export class AuthController {
-  // 🔥 TAMBAHKAN INJECT & FORWARDREF DI SINI
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService
@@ -20,7 +20,9 @@ export class AuthController {
     return this.authService.login(body.username, body.password);
   }
 
-  // 🔥 RUTE 1: REQUEST FORGOT PASSWORD
+  // 🔥 RUTE 1: REQUEST FORGOT PASSWORD (DILINDUNGI ANTI-SPAM)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 1, ttl: 180000 } }) // Maks 1 request per 3 menit (180000 ms)
   @Post('forgot-password')
   async forgotPassword(@Body() body: { email: string }) {
     return this.authService.forgotPassword(body.email);

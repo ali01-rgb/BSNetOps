@@ -33,7 +33,7 @@ export class AuthService {
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanUsername = (username || '').trim().toLowerCase();
 
-    const allowedDomains = ['@btn.co.id', '@bankbsn.co.id', '@bsn.co.id'];
+    const allowedDomains = ['@btn.co.id', '@bankbsn.co.id', '@bsn.co.id', '@gmail.com'];
     const isDomainValid = allowedDomains.some((domain) =>
       cleanEmail.endsWith(domain),
     );
