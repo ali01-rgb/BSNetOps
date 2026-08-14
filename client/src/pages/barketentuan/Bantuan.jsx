@@ -8,33 +8,27 @@ export default function Bantuan() {
   const faqs = [
     {
       id: 1,
-      category: 'Permintaan',
-      q: 'Bagaimana cara mengajukan permintaan aset/barang?',
-      a: "Masuk ke Dashboard akun Anda, pilih menu 'Aset', tentukan perangkat yang ingin diminta, lalu isi formulir 'Ajukan Permintaan'. Permintaan Anda akan dikirim ke Manager untuk persetujuan."
+      category: 'Peminjaman',
+      q: 'Bagaimana cara mengajukan peminjaman aset/perangkat?',
+      a: "Masuk ke Dashboard akun Anda, pilih menu 'Aset', tentukan perangkat yang ingin dipinjam, lalu isi formulir 'Ajukan Permintaan'. Permintaan Anda akan dikirim ke Manager untuk persetujuan."
     },
     {
       id: 2,
       category: 'Approval',
-      q: 'Berapa lama proses persetujuan (approval) permintaan?',
+      q: 'Berapa lama proses persetujuan (approval) peminjaman?',
       a: 'Proses persetujuan oleh Manager dan Admin IT Operations biasanya memakan waktu maksimal 1x24 jam kerja.'
     },
     {
       id: 3,
       category: 'Teknis',
       q: 'Apa yang harus dilakukan jika perangkat mengalami masalah teknis?',
-      a: "Segera laporkan kendala atau hubungi Helpdesk IT Operations melalui nomor ekstensi internal atau kontak yang tersedia."
+      a: "Segera laporkan kendala melalui menu 'Lapor Kendala' di Dashboard atau hubungi Helpdesk IT Operations melalui nomor ekstensi internal atau kontak yang tersedia."
     },
     {
       id: 4,
-      category: 'Sign Up/Register',
-      q: 'Bagaimana cara mendaftar akun?',
-      a: 'Kunjungi halaman utama web/aplikasi, klik tombol "Sign Up". Atau saat masuk di tombol "Sign In", klik "Daftar Sekarang".'
-    },
-     {
-      id: 5,
-      category: 'Sign In/Login',
-      q: 'Bagaimana cara masuk ke akun?',
-      a: 'Kunjungi halaman utama web/aplikasi, klik tombol "Sign In" dan masukkan kredensial akun Anda (username/email dan password).'
+      category: 'Pengembalian',
+      q: 'Bagaimana prosedur pengembalian barang?',
+      a: 'Bawa fisik perangkat ke meja IT Operations, lalu pastikan Admin melakukan verifikasi pengembalian pada sistem BSNetOps.'
     }
   ];
 
@@ -61,7 +55,6 @@ export default function Bantuan() {
 
   return (
     <div className="w-full bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-300/40 p-8 md:p-14">
-      
       <div className="mb-10 max-w-xl mx-auto">
         <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm focus-within:border-[#00533d] focus-within:ring-4 focus-within:ring-[#00533d]/10 transition-all">
           <svg className="w-5 h-5 text-slate-400 shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -78,7 +71,6 @@ export default function Bantuan() {
       </div>
 
       <div className="space-y-12">
-        
         <section>
           <h2 className="text-lg font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00533d]/15">
             Kontak Darurat (IT Support)
