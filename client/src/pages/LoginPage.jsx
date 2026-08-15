@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast"; // 🔥 TAMBAHIN IMPORT Toaster
+import toast, { Toaster } from "react-hot-toast";
 import { API_URL } from '@/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Fix toggle mata
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [forgotStep, setForgotEmailStep] = useState(0); 
   const [forgotEmail, setForgotEmail] = useState("");
@@ -43,7 +43,8 @@ export default function LoginPage() {
     e.preventDefault();
 
     let newError = { username: "", password: "" };
-    if (!form.username) newError.username = "Masukkan username atau email";
+    // Pesan error disesuaikan jadi "email"
+    if (!form.username) newError.username = "Masukkan email Anda";
     if (!form.password) newError.password = "Masukkan password";
 
     setError(newError);
@@ -55,7 +56,8 @@ export default function LoginPage() {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: form.username, password: form.password }),
+        // 🔥 INI PERBAIKANNYA: properti yang dikirim adalah 'email', bukan 'username'
+        body: JSON.stringify({ email: form.username, password: form.password }),
       });
 
       const data = await res.json();
@@ -67,7 +69,7 @@ export default function LoginPage() {
         const userRole = rawRole.toUpperCase();
 
         localStorage.setItem("userRole", userRole);
-        localStorage.setItem("userProfile", JSON.stringify(data.user || { username: form.username, role: userRole }));
+        localStorage.setItem("userProfile", JSON.stringify(data.user || { email: form.username, role: userRole }));
 
         toast.success("Login berhasil!");
 
@@ -75,7 +77,7 @@ export default function LoginPage() {
         else if (userRole === "MANAGER") navigate("/manager");
         else navigate("/user");
       } else {
-        setError({ ...error, password: data.message || "Username atau password salah" });
+        setError({ ...error, password: data.message || "Email atau password salah" });
         toast.error(data.message || "Gagal masuk. Periksa kredensial Anda.");
       }
     } catch (err) {
@@ -114,12 +116,10 @@ export default function LoginPage() {
 
       if (res.ok) {
         setForgotEmailStep(0);
-        setForgotEmail(""); // Kosongkan input
+        setForgotEmail(""); 
         
-        // 🔥 TOAST CUSTOM PERSIS GAMBAR: Link Terkirim
         toast.custom((t) => (
           <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[340px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-4`}>
-            {/* Icon Amplop */}
             <div className="flex items-center justify-center shrink-0">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -178,10 +178,8 @@ export default function LoginPage() {
         setConfirmNewPassword("");
         setResetToken("");
 
-        // 🔥 TOAST CUSTOM PERSIS GAMBAR: Password Berhasil
         toast.custom((t) => (
           <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[340px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-4`}>
-            {/* Icon Centang Kotak */}
             <div className="flex items-center justify-center shrink-0">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00634b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
@@ -205,14 +203,12 @@ export default function LoginPage() {
   };
 
   return (
-    // 🔥 Wajib pakai font Poppins di wrapper utama
     <main className="relative min-h-screen overflow-hidden bg-slate-100 font-['Poppins',_sans-serif]">
       
-      {/* 🔥 INI YANG BIKIN TOAST LU BISA MUNCUL */}
       <Toaster position="top-center" reverseOrder={false} />
 
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
-      <div className="absolute inset-0 bg-black/40" /> {/* Disesuaikan biar text kebaca */}
+      <div className="absolute inset-0 bg-black/40" /> 
 
       {/* ================= STEP 0: LOGIN ================= */}
       {forgotStep === 0 && (
