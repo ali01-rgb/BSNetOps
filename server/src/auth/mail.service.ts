@@ -42,7 +42,7 @@ export class MailService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Gagal mengirim email verifikasi:', error);
+      console.error('🔥 Gagal mengirim email verifikasi. Detail error:', error);
       throw new InternalServerErrorException('Gagal mengirim email verifikasi.');
     }
   }
@@ -71,6 +71,7 @@ export class MailService {
       });
       return { success: true };
     } catch (error) {
+      console.error('🔥 Gagal mengirim email reset password. Detail error:', error);
       throw new InternalServerErrorException('Gagal mengirim email reset password.');
     }
   }
