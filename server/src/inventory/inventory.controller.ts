@@ -135,7 +135,8 @@ export class InventoryController {
     }
   }
 
-  @Delete('requests/bulk-delete')
+  // 🔥 REVISI 2: MENGUBAH @Delete MENJADI @Post UNTUK MENGHINDARI ERROR CORS/BODY STRIPPING DI FRONTEND
+  @Post('requests/bulk-delete')
   @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
   async bulkDeleteRequests(@Body('ids') ids: string[]) {
     try {

@@ -423,12 +423,16 @@ export class InventoryService {
     });
   }
 
+  // 🔥 REVISI 3: MENAMBAHKAN categoryId: null AGAR TERHINDAR DARI FOREIGN KEY CONSTRAINT ERROR
   async deleteCategory(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (category) {
       await this.prisma.asset.updateMany({
         where: { categoryId: id },
-        data: { kategori_sebelumnya: category.name },
+        data: { 
+          kategori_sebelumnya: category.name,
+          categoryId: null // 🔥 Memutuskan ikatan relasi 
+        },
       });
     }
 

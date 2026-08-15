@@ -5,8 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "scripts": {
-    "build": "nest build",
+"scripts": {
+    "postinstall": "prisma generate",
+    "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
