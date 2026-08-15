@@ -1,34 +1,79 @@
-import { useState } from "react";
-import { FaXmark } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast"; 
+import { useState, useEffect, useRef } from "react";
+import { FaXmark, FaEye, FaEyeSlash, FaChevronDown } from "react-icons/fa6";
+import { useNavigate, useLocation } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
 import { API_URL } from '@/api';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false); 
-
-  const [form, setForm] = useState({
+  const location = useLocation();
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [form, setForm] = useState({ 
     fullName: "", 
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    unit: "",
+    email: "", 
+    password: "", 
+    confirmPassword: "" 
   });
+  
+  // Custom Dropdown State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState("");
+  const dropdownRef = useRef(null);
 
+  // Modal Verifikasi State
+  const [verifyStatus, setVerifyStatus] = useState(null); // 'success' | 'fail' | null
   const [error, setError] = useState({});
 
+  const unitList = [
+    "KC Semarang", "KCP Majapahit", "KCP Ngaliyan", "KCP Ungaran",
+    "KCP Kendal", "KCP Kudus", "KCP Magelang"
+  ];
+
+  // Efek nutup dropdown kalau klik area luar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Efek nangkep URL Verifikasi Email
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const token = urlParams.get("verifyToken");
+
+    if (token) {
+      handleVerifyEmail(token);
+    }
+  }, [location.search]);
+
+  // Fungsi Nembak API Verifikasi
+  const handleVerifyEmail = async (token) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/verify-email?token=${token}`, { method: 'GET' });
+      if (res.ok) {
+        setVerifyStatus('success');
+      } else {
+        setVerifyStatus('fail');
+      }
+    } catch (error) {
+      setVerifyStatus('fail');
+    } finally {
+      // Bersihkan URL bar
+      window.history.replaceState(null, '', '/register');
+    }
+  };
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: value,
-    });
-    setError({
-      ...error,
-      [name]: "",
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError({ ...error, [e.target.name]: "" });
   };
 
   const handleSubmit = async (e) => {
@@ -39,19 +84,15 @@ export default function RegisterPage() {
     if (!form.email) newError.email = "Email wajib diisi";
     if (!form.password) newError.password = "Password wajib diisi";
     if (!form.confirmPassword) newError.confirmPassword = "Konfirmasi password wajib diisi";
-    if (!form.unit) newError.unit = "Unit wajib diisi";
+    if (!selectedUnit) newError.unit = "Unit wajib dipilih";
 
-    if (form.password && form.confirmPassword) {
-      if (form.password !== form.confirmPassword) {
-        newError.confirmPassword = "Password tidak sama";
-      }
+    if (form.password && form.confirmPassword && form.password !== form.confirmPassword) {
+      newError.confirmPassword = "Password tidak sama";
     }
 
     if (form.email) {
       const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id", "@gmail.com"];
-      const isDomainValid = allowedDomains.some(domain => form.email.toLowerCase().endsWith(domain));
-      
-      if (!isDomainValid) {
+      if (!allowedDomains.some(domain => form.email.toLowerCase().endsWith(domain))) {
         newError.email = "Gunakan email resmi BSN";
       }
     }
@@ -60,200 +101,228 @@ export default function RegisterPage() {
     if (Object.keys(newError).length > 0) return;
 
     setIsLoading(true);
+    const loadingToast = toast.loading("Memproses pendaftaran...");
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: form.fullName, 
-          username: form.email.split('@')[0], 
           email: form.email,
           password: form.password,
+          unit: selectedUnit // 🔥 Dikirim ke backend sesuai dropdown
         }),
       });
 
       const data = await response.json();
+      toast.dismiss(loadingToast);
 
       if (!response.ok) {
         throw new Error(data.message || "Gagal melakukan registrasi");
       }
 
+      // 🔥 TOAST CUSTOM PERSIS FIGMA
       toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-3 flex items-center gap-4`}>
-          <div className="w-8 h-8 rounded-full bg-[#00634b] flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+        <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[380px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-3`}>
+          <div className="flex items-center justify-center shrink-0 w-8 h-8 bg-[#00634b] rounded-full">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
-          <div className="flex-1">
-            <p className="text-[12px] font-bold text-slate-800 leading-snug">
-              registrasi berhasil! Link verifikasi telah dikirim ke <br />
-              <span className="font-extrabold">{form.email}</span>
-            </p>
+          <div className="flex-1 flex flex-col justify-center">
+            <p className="text-[13px] font-bold text-slate-800 leading-tight">registrasi berhasil! Link verifikasi telah dikirim ke</p>
+            <p className="text-[13px] font-bold text-slate-800 leading-tight mt-0.5">{form.email}</p>
           </div>
         </div>
-      ), { position: "top-center", duration: 5000 });
+      ), { position: "top-center", duration: 6000 });
 
-      navigate("/login"); 
+      setForm({ fullName: "", email: "", password: "", confirmPassword: "" });
+      setSelectedUnit("");
 
     } catch (err) {
-      toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-3 flex items-center gap-4 justify-center`}>
-          <div className="w-6 h-6 rounded-md bg-red-100 border border-red-200 flex items-center justify-center shrink-0">
-            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          <p className="text-[13px] font-bold text-slate-700">
-            {err.message === "Gagal melakukan registrasi" ? "Email sudah terdaftar" : err.message}
-          </p>
-        </div>
-      ), { position: "top-center", duration: 4000 });
+      toast.dismiss(loadingToast);
+      toast.error(err.message === "Gagal melakukan registrasi" ? "Email sudah terdaftar" : err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-sans text-slate-900">
-      <div
-        className="absolute inset-0 bg-cover bg-center blur-sm"
-        style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }}
-      />
-      <div className="absolute inset-0 bg-black/35" />
+    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-['Poppins',_sans-serif]">
+      <Toaster position="top-center" reverseOrder={false} />
 
-      <section className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="relative w-full max-w-[640px] rounded-[24px] bg-white px-8 md:px-10 py-10 shadow-2xl animate-in fade-in duration-200 border border-slate-100">
-          <a
-            href="/"
-            className="absolute right-5 top-5 text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700"
-          >
-            <FaXmark />
-          </a>
+      {/* Background Image & Overlay */}
+      <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
+      <div className="absolute inset-0 bg-black/40" />
 
-          <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-[#00634b]">
-              Buat Akun Baru
-            </h1>
-            <p className="text-[13px] text-[#4a9b7c] mt-1 font-medium">
-              Lengkapi data berikut untuk membuat akun
+      {/* MODAL VERIFIKASI BERHASIL */}
+      {verifyStatus === 'success' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[400px] rounded-[16px] bg-white px-8 py-10 shadow-2xl text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#4ade80] mb-5 shadow-lg shadow-[#4ade80]/40">
+              <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-[20px] font-bold text-[#00634b]">Verifikasi Berhasil</h2>
+            <p className="mt-2 text-[13px] text-slate-500 font-medium">Email berhasil diverifikasi. Akun sudah aktif</p>
+            <p className="mt-6 text-[13px] font-bold text-[#00634b] cursor-pointer hover:underline" onClick={() => navigate('/login')}>
+              Anda akan diarahkan ke halaman login...
             </p>
           </div>
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Nama Lengkap</label>
-                <input
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  placeholder="Masukan Nama"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
-                />
-                {error.fullName && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.fullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="•••••"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
-                />
-                {error.password && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.password}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Email</label>
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="contoh @gmail.com"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
-                />
-                {error.email && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Konfirmasi Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Ulangi Password"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
-                />
-                {error.confirmPassword && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">
-                    {error.confirmPassword}
-                  </p>
-                )}
+      {/* MODAL VERIFIKASI GAGAL */}
+      {verifyStatus === 'fail' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[400px] rounded-[16px] bg-white px-8 py-10 shadow-2xl text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ffccd5] mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ff4d4f] shadow-lg shadow-[#ff4d4f]/40">
+                <FaXmark className="h-5 w-5 text-white" />
               </div>
             </div>
+            <h2 className="text-[20px] font-bold text-[#ff4d4f]">Verifikasi Gagal</h2>
+            <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed">
+              Link verifikasi sudah kedaluwarsa. Email belum diverifikasi
+            </p>
+            <button 
+              onClick={() => {
+                setVerifyStatus(null);
+                toast.success("Silakan daftar ulang untuk meminta token baru.");
+              }}
+              className="mt-6 w-full rounded-xl bg-[#00634b] py-3 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
-            <div className="pt-1">
-              <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Pilih Unit</label>
-              <div className="relative">
-                <select
-                  name="unit"
-                  value={form.unit}
-                  onChange={handleChange}
-                  className="w-full appearance-none rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 cursor-pointer font-medium text-slate-700"
-                >
-                  <option value="" disabled hidden>pilih unit</option>
-                  <option value="KC Semarang" className="bg-blue-600 text-white font-bold">KC Semarang</option>
-                  <option value="KCP Majapahit" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Majapahit</option>
-                  <option value="KCP Ngaliyan" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Ngaliyan</option>
-                  <option value="KCP Ungaran" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Ungaran</option>
-                  <option value="KCP Kendal" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Kendal</option>
-                  <option value="KCP Kudus" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Kudus</option>
-                  <option value="KCP Magelang" className="bg-[#e7f0ec] text-slate-800 font-bold">KCP Magelang</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-600">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+      {/* FORM REGISTRASI */}
+      <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+        <div className="relative w-full max-w-[650px] rounded-[20px] bg-white px-10 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+          <button onClick={() => navigate('/')} className="absolute right-6 top-6 cursor-pointer text-xl text-slate-800 transition hover:scale-110">
+            <FaXmark />
+          </button>
+
+          <div className="mb-8 text-center">
+            <h1 className="text-[22px] font-bold text-[#00634b] leading-tight">Buat Akun Baru</h1>
+            <p className="text-[13px] text-[#4a9b7c] mt-1 font-medium">Lengkapi data berikut untuk membuat akun</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div>
+              <label className="mb-2 block text-[13px] font-bold text-slate-900">Nama Lengkap</label>
+              <input
+                type="text"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                placeholder="Masukan Nama"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
+              />
+              {error.fullName && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.fullName}</p>}
+            </div>
+
+            <div className="relative">
+              <label className="mb-2 block text-[13px] font-bold text-slate-900">Password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="•••••"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-10 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
+                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+              </button>
+              {error.password && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.password}</p>}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[13px] font-bold text-slate-900">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="contoh @gmail.com"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
+              />
+              {error.email && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.email}</p>}
+            </div>
+
+            <div className="relative">
+              <label className="mb-2 block text-[13px] font-bold text-slate-900">Konfirmasi Password</label>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Ulangi Password"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-10 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
+                {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+              </button>
+              {error.confirmPassword && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.confirmPassword}</p>}
+            </div>
+
+            <div className="md:col-span-2 relative" ref={dropdownRef}>
+              <label className="mb-2 block text-[13px] font-bold text-slate-900">Pilih Unit</label>
+              <div 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none cursor-pointer flex justify-between items-center font-medium focus:ring-2 focus:ring-[#00634b]/40 transition-colors"
+              >
+                <span className={selectedUnit ? "text-slate-900" : "text-slate-500 font-normal"}>
+                  {selectedUnit || "pilih unit"}
+                </span>
+                <FaChevronDown className={`text-slate-600 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+
+              {isDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-[#dce9e3] rounded-xl shadow-xl border border-[#c5d8cf] overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="max-h-52 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[#00634b] scrollbar-track-transparent">
+                    {unitList.map((unit, index) => (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          setSelectedUnit(unit);
+                          setIsDropdownOpen(false);
+                          setError({ ...error, unit: "" });
+                        }}
+                        className={`px-4 py-3 my-0.5 rounded-lg text-[13px] font-bold cursor-pointer transition-all duration-200
+                          ${selectedUnit === unit 
+                            ? 'bg-[#0b00ff] text-white shadow-md' 
+                            : 'text-slate-800 hover:bg-[#0b00ff] hover:text-white hover:scale-[1.015] hover:shadow-sm' 
+                          }
+                        `}
+                      >
+                        {unit}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              {error.unit && (
-                <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.unit}</p>
               )}
+              {error.unit && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.unit}</p>}
             </div>
 
-            <div className="pt-4">
+            <div className="md:col-span-2 pt-3">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all duration-300 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? "Memproses Data..." : "Daftar"}
               </button>
             </div>
           </form>
 
-          <p className="mt-6 text-center text-[13px] font-bold text-slate-800">
-            Sudah punya akun?{" "}
-            <a
-              href="/login"
-              className="text-[#00634b] hover:underline"
-            >
-              Masuk Sekarang
-            </a>
+          <p className="mt-7 text-center text-[13px] font-bold text-slate-900">
+            Sudah punya akun? <span onClick={() => navigate('/login')} className="text-[#00634b] hover:underline cursor-pointer">Masuk Sekarang</span>
           </p>
         </div>
       </section>

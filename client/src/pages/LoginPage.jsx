@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast"; // 🔥 TAMBAHIN IMPORT Toaster
 import { API_URL } from '@/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Fix toggle mata
   
   const [forgotStep, setForgotEmailStep] = useState(0); 
   const [forgotEmail, setForgotEmail] = useState("");
@@ -48,6 +49,8 @@ export default function LoginPage() {
     setError(newError);
     if (newError.username || newError.password) return;
 
+    const loadingToast = toast.loading("Sedang masuk...");
+
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
@@ -56,6 +59,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
+      toast.dismiss(loadingToast);
 
       if (res.ok) {
         localStorage.setItem("token", data.access_token);
@@ -65,7 +69,7 @@ export default function LoginPage() {
         localStorage.setItem("userRole", userRole);
         localStorage.setItem("userProfile", JSON.stringify(data.user || { username: form.username, role: userRole }));
 
-        toast.success("Login berhasil! Mengalihkan ke dashboard...");
+        toast.success("Login berhasil!");
 
         if (userRole === "ADMIN") navigate("/admin");
         else if (userRole === "MANAGER") navigate("/manager");
@@ -75,6 +79,7 @@ export default function LoginPage() {
         toast.error(data.message || "Gagal masuk. Periksa kredensial Anda.");
       }
     } catch (err) {
+      toast.dismiss(loadingToast);
       toast.error("Gagal terhubung ke server. Pastikan Backend aktif!");
     }
   };
@@ -95,7 +100,7 @@ export default function LoginPage() {
       return;
     }
 
-    const loadingToast = toast.loading("Mencari email di database...");
+    const loadingToast = toast.loading("Mengirim link reset password...");
 
     try {
       const res = await fetch(`${API_URL}/auth/forgot-password`, {
@@ -109,17 +114,21 @@ export default function LoginPage() {
 
       if (res.ok) {
         setForgotEmailStep(0);
+        setForgotEmail(""); // Kosongkan input
         
+        // 🔥 TOAST CUSTOM PERSIS GAMBAR: Link Terkirim
         toast.custom((t) => (
-          <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-4 flex items-center gap-4`}>
-            <div className="w-10 h-10 rounded-lg border-2 border-slate-800 flex items-center justify-center shrink-0 bg-white">
-              <svg className="w-5 h-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[340px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-4`}>
+            {/* Icon Amplop */}
+            <div className="flex items-center justify-center shrink-0">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[#00634b]">Link Terkirim!</p>
-              <p className="text-[11px] text-slate-600 leading-tight mt-0.5">silahkan cek kotak masuk email anda.</p>
+            <div className="flex-1 flex flex-col justify-center">
+              <p className="text-[15px] font-bold text-[#00634b] leading-tight">Link Terkirim!</p>
+              <p className="text-[12px] text-slate-700 leading-tight mt-1">silahkan cek kotak masuk email anda.</p>
             </div>
           </div>
         ), { position: "top-center", duration: 5000 });
@@ -169,16 +178,19 @@ export default function LoginPage() {
         setConfirmNewPassword("");
         setResetToken("");
 
+        // 🔥 TOAST CUSTOM PERSIS GAMBAR: Password Berhasil
         toast.custom((t) => (
-          <div className={`${t.visible ? 'animate-in slide-in-from-top-5' : 'animate-out slide-out-to-top-5 fade-out'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-slate-200 p-4 flex items-center gap-4`}>
-            <div className="w-10 h-10 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0 bg-white">
-              <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[340px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-4`}>
+            {/* Icon Centang Kotak */}
+            <div className="flex items-center justify-center shrink-0">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00634b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
+                <polyline points="9 12 12 15 16 9"></polyline>
               </svg>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-emerald-600">Password Berhasil!</p>
-              <p className="text-[11px] text-slate-600 leading-tight mt-0.5">Password Anda berhasil diperbarui.</p>
+            <div className="flex-1 flex flex-col justify-center">
+              <p className="text-[15px] font-bold text-[#00634b] leading-tight">Password Berhasil!</p>
+              <p className="text-[12px] text-slate-700 leading-tight mt-1">Password Anda berhasil diperbarui.</p>
             </div>
           </div>
         ), { position: "top-center", duration: 5000 });
@@ -193,101 +205,108 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 font-sans">
-      <div className="absolute inset-0 scale-105 bg-cover bg-center blur-sm" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
-      <div className="absolute inset-0 bg-black/35" />
+    // 🔥 Wajib pakai font Poppins di wrapper utama
+    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-['Poppins',_sans-serif]">
+      
+      {/* 🔥 INI YANG BIKIN TOAST LU BISA MUNCUL */}
+      <Toaster position="top-center" reverseOrder={false} />
 
+      <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
+      <div className="absolute inset-0 bg-black/40" /> {/* Disesuaikan biar text kebaca */}
+
+      {/* ================= STEP 0: LOGIN ================= */}
       {forgotStep === 0 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in fade-in duration-200 border border-slate-100">
-            <a href="/" className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
+          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <button onClick={() => window.location.href = '/'} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
               <FaXmark />
-            </a>
+            </button>
 
             <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold text-[#00634b]">Selamat Datang!</h1>
-              <p className="text-sm text-[#4a9b7c] mt-1 font-medium">Masuk untuk mengakses akun anda</p>
+              <h1 className="text-[26px] font-bold text-[#00634b] leading-tight">Selamat Datang!</h1>
+              <p className="text-[14px] text-[#00634b] mt-1 font-medium">Masuk untuk mengakses akun anda</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Email</label>
+                <label className="mb-2 block text-[13px] font-bold text-slate-900">Email</label>
                 <input
                   type="text"
                   name="username"
                   value={form.username}
                   onChange={handleChange}
                   placeholder="contoh@bsn.go.id"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
                 />
               </div>
 
               <div className="relative">
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Password</label>
+                <label className="mb-2 block text-[13px] font-bold text-slate-900">Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={form.password}
                   onChange={handleChange}
                   placeholder="•••••"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
-                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
+                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                 </button>
                 {error.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{error.password}</p>}
               </div>
 
-              <div className="flex justify-between items-center pt-1">
+              <div className="flex justify-between items-center pt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#00634b] focus:ring-[#00634b]" />
-                  <span className="text-xs font-bold text-slate-700">Ingat Saya</span>
+                  <span className="text-[13px] font-bold text-slate-900">Ingat Saya</span>
                 </label>
-                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-xs font-bold text-[#4a9b7c] hover:text-[#00634b] transition-colors cursor-pointer">
-                  Lupa password?
+                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-[13px] font-bold text-[#00634b] hover:underline transition-all cursor-pointer">
+                  Lupa password ?
                 </button>
               </div>
 
-              <div className="pt-2">
-                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
+              <div className="pt-3">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:bg-[#004d3a]">
                   Log in
                 </button>
               </div>
             </form>
 
-            <p className="mt-6 text-center text-[13px] font-bold text-slate-700">
+            <p className="mt-7 text-center text-[13px] font-bold text-slate-900">
               Belum punya akun? <a href="/register" className="text-[#00634b] hover:underline cursor-pointer">Daftar Sekarang</a>
             </p>
           </div>
         </section>
       )}
 
+      {/* ================= STEP 1: REQUEST FORGOT PASSWORD ================= */}
       {forgotStep === 1 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
+          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in zoom-in-95 duration-300">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
               <FaXmark />
             </button>
 
-            <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold text-slate-900">Reset Password</h1>
+            <div className="mb-8 border-b border-slate-200 pb-4 text-left pr-6">
+              <h1 className="text-[20px] font-bold text-slate-900">Reset Password</h1>
               <p className="text-[13px] text-slate-500 mt-1 font-medium">kami akan mengirimkan link untuk memulihkan akunmu</p>
             </div>
 
             <form onSubmit={handleForgotRequest} className="space-y-6">
               <div>
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Email Terdaftar</label>
+                <label className="mb-2 block text-[13px] font-bold text-slate-900">Email Terdaftar</label>
                 <input
                   type="email"
                   required
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Admin@bsn.go.id"
-                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3.5 text-sm outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium placeholder:text-slate-400"
+                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3.5 text-[14px] outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium text-slate-900 placeholder:text-slate-400"
                 />
               </div>
 
-              <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
+              <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#004d3a]">
                 Kirim Link Reset
               </button>
             </form>
@@ -295,51 +314,52 @@ export default function LoginPage() {
         </section>
       )}
 
+      {/* ================= STEP 3: EXECUTE NEW PASSWORD ================= */}
       {forgotStep === 3 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-400 transition hover:scale-110 hover:text-slate-700">
+          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in zoom-in-95 duration-300">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
               <FaXmark />
             </button>
 
             <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold text-[#00634b]">Buat Password Baru</h1>
-              <p className="text-[13px] text-[#4a9b7c] mt-1 font-medium">masukan password baru untuk akun anda</p>
+              <h1 className="text-[24px] font-bold text-[#00634b] leading-tight">Buat Password Baru</h1>
+              <p className="text-[13px] text-[#00634b] mt-1 font-medium">masukan password baru untuk akun anda</p>
             </div>
 
             <form onSubmit={handleResetPasswordSubmit} className="space-y-5">
               <div className="relative">
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">Password Baru</label>
+                <label className="mb-2 block text-[13px] font-bold text-slate-900">Password Baru</label>
                 <input
                   type={showNewPassword ? "text" : "password"}
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="contoh@bsn.go.id"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500"
                 />
-                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
-                  {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
+                  {showNewPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                 </button>
               </div>
 
               <div className="relative">
-                <label className="mb-1.5 block text-[13px] font-bold text-slate-800">konfirmasi Password Baru</label>
+                <label className="mb-2 block text-[13px] font-bold text-slate-900">konfirmasi Password Baru</label>
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   placeholder="•••••"
-                  className="w-full rounded-xl bg-[#e7f0ec] px-4 py-3.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium placeholder:text-slate-400 tracking-widest"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
                 />
-                <div className="absolute right-4 top-[38px] text-[#00634b]">
-                  <FaEye size={16} />
-                </div>
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
+                  {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                </button>
               </div>
 
-              <div className="pt-2">
-                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-sm font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:-translate-y-0.5 hover:bg-[#004d3a]">
+              <div className="pt-3">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#004d3a]">
                   Simpan Password Baru
                 </button>
               </div>

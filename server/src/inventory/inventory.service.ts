@@ -128,11 +128,12 @@ export class InventoryService {
           where: { role: { in: ['ADMIN', 'admin', 'Admin'] } },
         });
 
+        // 🔥 PERBAIKAN: username dihapus, pakai email/fullName
         const notifPromises = adminUsers.map((admin) =>
           this.notificationsService.createNotification({
             userId: admin.id,
             title: 'Request Barang Baru',
-            message: `${userYangRequest?.fullName || userYangRequest?.username || 'User'} mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
+            message: `${userYangRequest?.fullName || userYangRequest?.email || 'User'} mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
             type: 'request',
             target: 'penyetujuan-barang',
           })
@@ -154,7 +155,6 @@ export class InventoryService {
 
     if (requests.length === 0) return [];
 
-    // 🔥 PERBAIKAN: .filter(Boolean) agar tidak ada nilai [null] yang masuk ke Prisma query
     const assetNames = [...new Set(requests.map((r) => r.nama_aset).filter(Boolean))];
 
     const assets = await this.prisma.asset.findMany({
@@ -184,7 +184,8 @@ export class InventoryService {
 
     return requests.map((req) => ({
       ...req,
-      user: req.user || { fullName: 'User Terhapus', username: 'deleted_user', divisi: '-' },
+      // 🔥 PERBAIKAN: username dihapus
+      user: req.user || { fullName: 'User Terhapus', email: 'deleted_user@system', divisi: '-' },
     }));
   }
 
@@ -202,10 +203,10 @@ export class InventoryService {
       },
       include: {
         user: {
+          // 🔥 PERBAIKAN: username dihapus dari select
           select: {
             id: true,
             fullName: true,
-            username: true,
             divisi: true,
             email: true,
           },
@@ -216,7 +217,6 @@ export class InventoryService {
 
     if (requests.length === 0) return [];
 
-    // 🔥 PERBAIKAN: .filter(Boolean)
     const assetNames = [...new Set(requests.map((r) => r.nama_aset).filter(Boolean))];
     const assets = await this.prisma.asset.findMany({
       where: { nama_barang: { in: assetNames } },
@@ -264,11 +264,12 @@ export class InventoryService {
         const userDb = await this.prisma.user.findUnique({ where: { id: currentUser.sub } });
         if (userDb) {
           const roleUpper = (userDb.role || '').toUpperCase();
+          // 🔥 PERBAIKAN: username dihapus, rekam jejak menggunakan email/fullName
           if (roleUpper === 'ADMIN' && statusUpper === 'DITERUSKAN') {
-             updateData.adminName = userDb.fullName || userDb.username;
+             updateData.adminName = userDb.fullName || userDb.email;
           }
           if (roleUpper === 'MANAGER' && ['DISETUJUI', 'DITOLAK', 'SELESAI'].includes(statusUpper)) {
-             updateData.managerName = userDb.fullName || userDb.username;
+             updateData.managerName = userDb.fullName || userDb.email;
           }
         }
       } catch (e) {
@@ -423,7 +424,6 @@ export class InventoryService {
     });
   }
 
-  // 🔥 REVISI 3: MENAMBAHKAN categoryId: null AGAR TERHINDAR DARI FOREIGN KEY CONSTRAINT ERROR
   async deleteCategory(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (category) {
@@ -431,7 +431,7 @@ export class InventoryService {
         where: { categoryId: id },
         data: { 
           kategori_sebelumnya: category.name,
-          categoryId: null // 🔥 Memutuskan ikatan relasi 
+          categoryId: null
         },
       });
     }
@@ -444,16 +444,17 @@ export class InventoryService {
   // ================= MANAJEMEN USER / HAK AKSES STAF (PRISMA) =================
   async getAllUsers() {
     return await this.prisma.user.findMany({
+      // 🔥 PERBAIKAN: username dihapus dari select, isVerified ditambahkan
       select: {
         id: true,
         employeeId: true,
-        username: true,
         email: true,
         fullName: true,
         divisi: true,
         phone: true,
         role: true,
         hasSignedUp: true,
+        isVerified: true,
         createdAt: true,
         updatedAt: true,
         is_suspended: true,
@@ -465,19 +466,14 @@ export class InventoryService {
 
   async createUserByAdmin(data: any) {
     const cleanEmail = (data.email || '').trim().toLowerCase();
-    const cleanUsername = (data.username || cleanEmail.split('@')[0] || '').trim().toLowerCase();
 
+    // 🔥 PERBAIKAN: Cek duplikasi murni dari email saja karena username dihapus
     const existingEmployee = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: cleanEmail, mode: 'insensitive' } },
-          { username: { equals: cleanUsername, mode: 'insensitive' } }
-        ],
-      },
+      where: { email: { equals: cleanEmail, mode: 'insensitive' } },
     });
 
     if (existingEmployee) {
-      throw new ConflictException('Email atau Username sudah terdaftar di sistem!');
+      throw new ConflictException('Email sudah terdaftar di sistem!');
     }
 
     const roleString = (data.role || 'STAFF').toUpperCase();
@@ -512,18 +508,18 @@ export class InventoryService {
     return await this.prisma.user.create({
       data: {
         employeeId: autoGeneratedId,
-        username: cleanUsername,
         email: cleanEmail,
         password: hashedPassword,
-        fullName: data.fullName || data.name || cleanUsername,
+        fullName: data.fullName || data.name || cleanEmail.split('@')[0],
         divisi: data.divisi || data.unit || 'KC Semarang',
         role: roleString === 'STAFF' ? 'USER' : roleString,
         hasSignedUp: data.hasSignedUp ?? true,
+        isVerified: true, // 🔥 Akun buatan admin otomatis Verified
       },
+      // 🔥 PERBAIKAN: username dihapus dari select
       select: {
         id: true,
         employeeId: true,
-        username: true,
         email: true,
         fullName: true,
         role: true,
@@ -560,10 +556,10 @@ export class InventoryService {
     return await this.prisma.user.update({
       where: { id: id },
       data: updatePayload,
+      // 🔥 PERBAIKAN: username dihapus dari select
       select: {
         id: true,
         employeeId: true,
-        username: true,
         email: true,
         fullName: true,
         role: true,

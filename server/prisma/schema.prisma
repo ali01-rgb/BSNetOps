@@ -9,7 +9,6 @@ datasource db {
 model User {
   id            String         @id @default(uuid())
   employeeId    String         @unique                // Sesuai form: ID Staff
-  username      String         @unique                // Sesuai form Register & Login
   email         String         @unique                // Buat reset password & login
   password      String?                              
   fullName      String?                               // Tetap ada buat nama asli karyawan
@@ -18,11 +17,12 @@ model User {
   avatar        String?
   role          String         @default("USER")      
   hasSignedUp   Boolean        @default(false)        
+  isVerified    Boolean        @default(false)        // 🔥 DITAMBAHKAN UNTUK EMAIL VERIFIKASI
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   requests      Request[] 
   notifications Notification[]
-  is_suspended  Boolean? @default(false)
+  is_suspended  Boolean?       @default(false)
   deleted_at    DateTime?
 }
 

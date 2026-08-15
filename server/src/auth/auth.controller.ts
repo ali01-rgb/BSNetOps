@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Req, Inject, forwardRef } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Req, Inject, forwardRef, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard'; 
-import { ThrottlerGuard, Throttle } from '@nestjs/throttler'; // 🔥 IMPORT THROTTLER UNTUK ANTI-SPAM
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -15,20 +15,25 @@ export class AuthController {
     return this.authService.register(body);
   }
 
+  // 🔥 UBAH LOGIN UNTUK MENERIMA EMAIL SAJA
   @Post('login')
-  async login(@Body() body: any) {
-    return this.authService.login(body.username, body.password);
+  async login(@Body() body: { email: string; password: string }) {
+    return this.authService.login(body.email, body.password);
   }
 
-  // 🔥 RUTE 1: REQUEST FORGOT PASSWORD (DILINDUNGI ANTI-SPAM)
+  // 🔥 RUTE BARU: VERIFIKASI EMAIL 
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 1, ttl: 180000 } }) // Maks 1 request per 3 menit (180000 ms)
+  @Throttle({ default: { limit: 1, ttl: 180000 } })
   @Post('forgot-password')
   async forgotPassword(@Body() body: { email: string }) {
     return this.authService.forgotPassword(body.email);
   }
 
-  // 🔥 RUTE 2: EXECUTE RESET PASSWORD BARU (DITAMBAH PARAMETER TOKEN)
   @Post('reset-password')
   async resetPassword(@Body() body: { email: string; newPassword: string; token: string }) {
     return this.authService.resetPassword(body.email, body.newPassword, body.token);
