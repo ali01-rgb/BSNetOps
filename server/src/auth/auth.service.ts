@@ -101,6 +101,36 @@ export class AuthService {
     }
   }
 
+  // 🔥 FUNGSI BARU: KIRIM ULANG VERIFIKASI EMAIL
+  async resendVerification(email: string) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Alamat email tidak terdaftar.');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Akun ini sudah diverifikasi sebelumnya. Silakan login.');
+    }
+
+    // Buat Token Baru 5 Menit
+    const verifyToken = this.jwtService.sign(
+      { sub: user.id, email: user.email },
+      {
+        secret: process.env.JWT_SECRET || 'rahasia-reset',
+        expiresIn: '5m',
+      }
+    );
+
+    await this.mailService.sendVerificationEmail(user.email, verifyToken, user.fullName || 'User');
+
+    return { message: 'Link verifikasi baru berhasil dikirim ke email Anda.' };
+  }
+
   // --- LOGIN HANYA MENGGUNAKAN EMAIL ---
   async login(email: string, pass: string) {
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -136,7 +166,6 @@ export class AuthService {
     };
   }
 
-  // Fungsi forgotPassword, resetPassword, getProfile, updateProfile biarkan sama persis seperti kode sebelumnya.
   async forgotPassword(email: string) {
     const cleanEmail = (email || '').trim().toLowerCase();
     const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id", "@gmail.com"];

@@ -27,6 +27,12 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
+  // 🔥 RUTE BARU: KIRIM ULANG EMAIL VERIFIKASI
+  @Post('resend-verification')
+  async resendVerification(@Body() body: { email: string }) {
+    return this.authService.resendVerification(body.email);
+  }
+
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 1, ttl: 180000 } })
   @Post('forgot-password')
