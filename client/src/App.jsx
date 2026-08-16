@@ -126,14 +126,30 @@ export default function App() {
     <>
       <Toaster 
         position="top-center" 
-        reverseOrder={false} 
+        reverseOrder={false}
+        gutter={8}
         toastOptions={{
-          duration: 3000,
+          duration: 3500,
+          removeDelay: 500,
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#00634b',
+              secondary: '#ffffff',
+            },
+          },
+          error: {
+            duration: 4000,
+          },
           style: {
-            background: '#333',
-            color: '#fff',
-            borderRadius: '10px',
-            fontSize: '14px',
+            background: '#ffffff',
+            color: '#1e293b',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
+            border: '1px solid #f1f5f9',
+            fontSize: '13px',
+            fontWeight: '600',
+            padding: '12px 16px',
           }
         }} 
       />

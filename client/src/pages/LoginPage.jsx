@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaXmark, FaEye, FaEyeSlash } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { API_URL } from '@/api';
 
 export default function LoginPage() {
@@ -43,7 +43,6 @@ export default function LoginPage() {
     e.preventDefault();
 
     let newError = { username: "", password: "" };
-    // Pesan error disesuaikan jadi "email"
     if (!form.username) newError.username = "Masukkan email Anda";
     if (!form.password) newError.password = "Masukkan password";
 
@@ -56,7 +55,6 @@ export default function LoginPage() {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 🔥 INI PERBAIKANNYA: properti yang dikirim adalah 'email', bukan 'username'
         body: JSON.stringify({ email: form.username, password: form.password }),
       });
 
@@ -127,7 +125,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <p className="text-[15px] font-bold text-[#00634b] leading-tight">Link Terkirim!</p>
+              <p className="text-[14px] font-semibold text-[#00634b] leading-tight">Link Terkirim!</p>
               <p className="text-[12px] text-slate-700 leading-tight mt-1">silahkan cek kotak masuk email anda.</p>
             </div>
           </div>
@@ -187,7 +185,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              <p className="text-[15px] font-bold text-[#00634b] leading-tight">Password Berhasil!</p>
+              <p className="text-[14px] font-semibold text-[#00634b] leading-tight">Password Berhasil!</p>
               <p className="text-[12px] text-slate-700 leading-tight mt-1">Password Anda berhasil diperbarui.</p>
             </div>
           </div>
@@ -203,9 +201,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-['Poppins',_sans-serif]">
+    // 🔥 PERBAIKAN FONT: Ditambah font-sans, antialiased, dan text-slate-800
+    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-sans antialiased text-slate-800" style={{ fontFamily: "'Poppins', sans-serif" }}>
       
-      <Toaster position="top-center" reverseOrder={false} />
+      {/* 🔥 CSS SUNTIKAN: Membunuh paksa mata bawaan browser Edge / Chrome */}
+      <style>{`
+        input::-ms-reveal, input::-ms-clear { display: none !important; }
+        input::-webkit-credentials-auto-fill-button { visibility: hidden; position: absolute; right: 0; }
+      `}</style>
 
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/40" /> 
@@ -213,64 +216,71 @@ export default function LoginPage() {
       {/* ================= STEP 0: LOGIN ================= */}
       {forgotStep === 0 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-            <button onClick={() => window.location.href = '/'} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
+          <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <button onClick={() => window.location.href = '/'} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-500 transition hover:text-slate-800">
               <FaXmark />
             </button>
 
-            <div className="mb-8 text-center">
-              <h1 className="text-[26px] font-bold text-[#00634b] leading-tight">Selamat Datang!</h1>
-              <p className="text-[14px] text-[#00634b] mt-1 font-medium">Masuk untuk mengakses akun anda</p>
+            <div className="mb-7 text-center">
+              <h1 className="text-[24px] font-bold text-[#00634b] tracking-tight">Selamat Datang!</h1>
+              <p className="text-[13px] text-[#00634b]/80 mt-1 font-medium">Masuk untuk mengakses akun anda</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[13px] font-bold text-slate-900">Email</label>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Email</label>
                 <input
                   type="text"
                   name="username"
                   value={form.username}
                   onChange={handleChange}
                   placeholder="contoh@bsn.go.id"
-                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
                 />
               </div>
 
-              <div className="relative">
-                <label className="mb-2 block text-[13px] font-bold text-slate-900">Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="•••••"
-                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
-                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                </button>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Password</label>
+                {/* 🔥 PERBAIKAN: Flex container biar mata presisi di tengah, no hardcode top */}
+                <div className="relative flex items-center">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="•••••"
+                    className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 tracking-wider"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)} 
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b] hover:opacity-80 transition-opacity"
+                  >
+                    {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
                 {error.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{error.password}</p>}
               </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex justify-between items-center pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#00634b] focus:ring-[#00634b]" />
-                  <span className="text-[13px] font-bold text-slate-900">Ingat Saya</span>
+                  <span className="text-[12px] font-semibold text-slate-700">Ingat Saya</span>
                 </label>
-                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-[13px] font-bold text-[#00634b] hover:underline transition-all cursor-pointer">
+                <button type="button" onClick={() => setForgotEmailStep(1)} className="text-[12px] font-semibold text-[#00634b] hover:underline transition-all cursor-pointer">
                   Lupa password ?
                 </button>
               </div>
 
-              <div className="pt-3">
-                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all hover:bg-[#004d3a]">
+              <div className="pt-2">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3 text-[14px] font-semibold text-white shadow-md shadow-[#00634b]/20 transition-all hover:bg-[#004d3a]">
                   Log in
                 </button>
               </div>
             </form>
 
-            <p className="mt-7 text-center text-[13px] font-bold text-slate-900">
-              Belum punya akun? <a href="/register" className="text-[#00634b] hover:underline cursor-pointer">Daftar Sekarang</a>
+            <p className="mt-6 text-center text-[12px] font-medium text-slate-700">
+              Belum punya akun? <a href="/register" className="font-semibold text-[#00634b] hover:underline cursor-pointer">Daftar Sekarang</a>
             </p>
           </div>
         </section>
@@ -279,30 +289,30 @@ export default function LoginPage() {
       {/* ================= STEP 1: REQUEST FORGOT PASSWORD ================= */}
       {forgotStep === 1 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in zoom-in-95 duration-300">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
+          <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-500 transition hover:text-slate-800">
               <FaXmark />
             </button>
 
-            <div className="mb-8 border-b border-slate-200 pb-4 text-left pr-6">
-              <h1 className="text-[20px] font-bold text-slate-900">Reset Password</h1>
-              <p className="text-[13px] text-slate-500 mt-1 font-medium">kami akan mengirimkan link untuk memulihkan akunmu</p>
+            <div className="mb-6 border-b border-slate-100 pb-4 text-left">
+              <h1 className="text-[19px] font-bold text-slate-900">Reset Password</h1>
+              <p className="text-[12px] text-slate-500 mt-0.5 font-medium">kami akan mengirimkan link untuk memulihkan akunmu</p>
             </div>
 
-            <form onSubmit={handleForgotRequest} className="space-y-6">
+            <form onSubmit={handleForgotRequest} className="space-y-5">
               <div>
-                <label className="mb-2 block text-[13px] font-bold text-slate-900">Email Terdaftar</label>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Email Terdaftar</label>
                 <input
                   type="email"
                   required
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Admin@bsn.go.id"
-                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3.5 text-[14px] outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium text-slate-900 placeholder:text-slate-400"
+                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3 text-[13px] outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium text-slate-900 placeholder:text-slate-400"
                 />
               </div>
 
-              <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#004d3a]">
+              <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3 text-[14px] font-semibold text-white shadow-md transition-all hover:bg-[#004d3a]">
                 Kirim Link Reset
               </button>
             </form>
@@ -313,49 +323,61 @@ export default function LoginPage() {
       {/* ================= STEP 3: EXECUTE NEW PASSWORD ================= */}
       {forgotStep === 3 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[440px] rounded-[20px] bg-white px-9 py-10 shadow-2xl animate-in zoom-in-95 duration-300">
-            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-900 transition hover:scale-110">
+          <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
+            <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-500 transition hover:text-slate-800">
               <FaXmark />
             </button>
 
-            <div className="mb-8 text-center">
-              <h1 className="text-[24px] font-bold text-[#00634b] leading-tight">Buat Password Baru</h1>
-              <p className="text-[13px] text-[#00634b] mt-1 font-medium">masukan password baru untuk akun anda</p>
+            <div className="mb-6 text-center">
+              <h1 className="text-[22px] font-bold text-[#00634b]">Buat Password Baru</h1>
+              <p className="text-[12px] text-[#00634b]/80 mt-1 font-medium">masukan password baru untuk akun anda</p>
             </div>
 
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-5">
-              <div className="relative">
-                <label className="mb-2 block text-[13px] font-bold text-slate-900">Password Baru</label>
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="contoh@bsn.go.id"
-                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500"
-                />
-                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
-                  {showNewPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                </button>
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Password Baru</label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="contoh@bsn.go.id"
+                    className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowNewPassword(!showNewPassword)} 
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b]"
+                  >
+                    {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
               </div>
 
-              <div className="relative">
-                <label className="mb-2 block text-[13px] font-bold text-slate-900">konfirmasi Password Baru</label>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  required
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="•••••"
-                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
-                />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-[40px] cursor-pointer text-[#00634b]">
-                  {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                </button>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Konfirmasi Password Baru</label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="•••••"
+                    className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 tracking-wider"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b]"
+                  >
+                    {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
               </div>
 
-              <div className="pt-3">
-                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#004d3a]">
+              <div className="pt-2">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3 text-[14px] font-semibold text-white shadow-md transition-all hover:bg-[#004d3a]">
                   Simpan Password Baru
                 </button>
               </div>
