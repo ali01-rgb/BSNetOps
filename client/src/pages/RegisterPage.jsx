@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FaXmark, FaEye, FaEyeSlash, FaChevronDown } from "react-icons/fa6";
 import { useNavigate, useLocation } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast"; // Toaster component dihapus dari sini karena sudah di App.jsx
 import { API_URL } from '@/api';
 
 export default function RegisterPage() {
@@ -19,13 +19,11 @@ export default function RegisterPage() {
     confirmPassword: "" 
   });
   
-  // Custom Dropdown State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("");
   const dropdownRef = useRef(null);
 
-  // Modal Verifikasi State
-  const [verifyStatus, setVerifyStatus] = useState(null); // 'success' | 'fail' | null
+  const [verifyStatus, setVerifyStatus] = useState(null); 
   const [error, setError] = useState({});
 
   const unitList = [
@@ -33,7 +31,6 @@ export default function RegisterPage() {
     "KCP Kendal", "KCP Kudus", "KCP Magelang"
   ];
 
-  // Efek nutup dropdown kalau klik area luar
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -44,7 +41,6 @@ export default function RegisterPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Efek nangkep URL Verifikasi Email
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const token = urlParams.get("verifyToken");
@@ -54,7 +50,6 @@ export default function RegisterPage() {
     }
   }, [location.search]);
 
-  // Fungsi Nembak API Verifikasi
   const handleVerifyEmail = async (token) => {
     try {
       const res = await fetch(`${API_URL}/auth/verify-email?token=${token}`, { method: 'GET' });
@@ -66,7 +61,6 @@ export default function RegisterPage() {
     } catch (error) {
       setVerifyStatus('fail');
     } finally {
-      // Bersihkan URL bar
       window.history.replaceState(null, '', '/register');
     }
   };
@@ -111,7 +105,7 @@ export default function RegisterPage() {
           fullName: form.fullName, 
           email: form.email,
           password: form.password,
-          unit: selectedUnit // 🔥 Dikirim ke backend sesuai dropdown
+          unit: selectedUnit 
         }),
       });
 
@@ -122,7 +116,6 @@ export default function RegisterPage() {
         throw new Error(data.message || "Gagal melakukan registrasi");
       }
 
-      // 🔥 TOAST CUSTOM PERSIS FIGMA
       toast.custom((t) => (
         <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[380px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-3`}>
           <div className="flex items-center justify-center shrink-0 w-8 h-8 bg-[#00634b] rounded-full">
@@ -149,8 +142,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-['Poppins',_sans-serif]">
-      <Toaster position="top-center" reverseOrder={false} />
+    // 🔥 PERBAIKAN: antialiased ditambahkan untuk memperhalus font
+    <main className="relative min-h-screen overflow-hidden bg-slate-100 font-sans antialiased text-slate-800" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      
+      {/* 🔥 CSS SUNTIKAN: Membunuh ikon mata native browser */}
+      <style>{`
+        input::-ms-reveal, input::-ms-clear { display: none !important; }
+        input::-webkit-credentials-auto-fill-button { visibility: hidden; position: absolute; right: 0; }
+      `}</style>
 
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
@@ -203,7 +202,7 @@ export default function RegisterPage() {
       {/* FORM REGISTRASI */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="relative w-full max-w-[650px] rounded-[20px] bg-white px-10 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-          <button onClick={() => navigate('/')} className="absolute right-6 top-6 cursor-pointer text-xl text-slate-800 transition hover:scale-110">
+          <button onClick={() => navigate('/')} className="absolute right-6 top-6 cursor-pointer text-xl text-slate-500 transition hover:text-slate-800">
             <FaXmark />
           </button>
 
@@ -214,94 +213,114 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             <div>
-              <label className="mb-2 block text-[13px] font-bold text-slate-900">Nama Lengkap</label>
+              <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Nama Lengkap</label>
               <input
                 type="text"
                 name="fullName"
                 value={form.fullName}
                 onChange={handleChange}
                 placeholder="Masukan Nama"
-                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
               />
               {error.fullName && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.fullName}</p>}
             </div>
 
-            <div className="relative">
-              <label className="mb-2 block text-[13px] font-bold text-slate-900">Password</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="•••••"
-                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-10 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
-                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Password</label>
+              <div className="relative flex items-center">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="•••••"
+                  /* 🔥 PERBAIKAN: placeholder:tracking-normal mencegah placeholder melebar */
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 tracking-wider placeholder:tracking-normal"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute right-3.5 flex items-center justify-center text-[#00634b] hover:opacity-80 transition-opacity"
+                >
+                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                </button>
+              </div>
               {error.password && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.password}</p>}
             </div>
 
             <div>
-              <label className="mb-2 block text-[13px] font-bold text-slate-900">Email</label>
+              <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Email</label>
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="contoh @gmail.com"
-                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 placeholder:font-normal"
+                placeholder="contoh@gmail.com"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
               />
               {error.email && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.email}</p>}
             </div>
 
-            <div className="relative">
-              <label className="mb-2 block text-[13px] font-bold text-slate-900">Konfirmasi Password</label>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                placeholder="Ulangi Password"
-                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-10 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/40 font-medium text-slate-900 placeholder:text-slate-500 tracking-widest"
-              />
-              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-[38px] cursor-pointer text-[#00634b]">
-                {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
+            <div>
+              <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Konfirmasi Password</label>
+              <div className="relative flex items-center">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Ulangi Password"
+                  /* 🔥 PERBAIKAN: placeholder:tracking-normal agar jarak spasi huruf "Ulangi Password" normal rapat */
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 tracking-wider placeholder:tracking-normal"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                  className="absolute right-3.5 flex items-center justify-center text-[#00634b] hover:opacity-80 transition-opacity"
+                >
+                  {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                </button>
+              </div>
               {error.confirmPassword && <p className="text-[11px] text-red-500 mt-1 font-semibold">{error.confirmPassword}</p>}
             </div>
 
             <div className="md:col-span-2 relative" ref={dropdownRef}>
-              <label className="mb-2 block text-[13px] font-bold text-slate-900">Pilih Unit</label>
+              <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Pilih Unit</label>
               <div 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none cursor-pointer flex justify-between items-center font-medium focus:ring-2 focus:ring-[#00634b]/40 transition-colors"
+                className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[13px] outline-none cursor-pointer flex justify-between items-center font-medium focus:ring-2 focus:ring-[#00634b]/30 transition-colors"
               >
-                <span className={selectedUnit ? "text-slate-900" : "text-slate-500 font-normal"}>
+                <span className={selectedUnit ? "text-slate-900 font-semibold" : "text-slate-500"}>
                   {selectedUnit || "pilih unit"}
                 </span>
                 <FaChevronDown className={`text-slate-600 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </div>
 
+              {/* 🔥 PERBAIKAN DROPDOWN: Apple Style (Mengambang, animasi scale text, background biru, sekat kecil) */}
               {isDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-[#dce9e3] rounded-xl shadow-xl border border-[#c5d8cf] overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="max-h-52 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[#00634b] scrollbar-track-transparent">
+                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-white/95 backdrop-blur-md rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="max-h-56 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent flex flex-col">
                     {unitList.map((unit, index) => (
-                      <div
-                        key={index}
-                        onClick={() => {
-                          setSelectedUnit(unit);
-                          setIsDropdownOpen(false);
-                          setError({ ...error, unit: "" });
-                        }}
-                        className={`px-4 py-3 my-0.5 rounded-lg text-[13px] font-bold cursor-pointer transition-all duration-200
-                          ${selectedUnit === unit 
-                            ? 'bg-[#0b00ff] text-white shadow-md' 
-                            : 'text-slate-800 hover:bg-[#0b00ff] hover:text-white hover:scale-[1.015] hover:shadow-sm' 
-                          }
-                        `}
-                      >
-                        {unit}
+                      <div key={index} className="flex flex-col">
+                        <div
+                          onClick={() => {
+                            setSelectedUnit(unit);
+                            setIsDropdownOpen(false);
+                            setError({ ...error, unit: "" });
+                          }}
+                          className={`px-3.5 py-2.5 rounded-[8px] cursor-pointer transition-all duration-200 ease-out
+                            ${selectedUnit === unit 
+                              ? 'bg-blue-600 text-white text-[14.5px] font-semibold shadow-sm' 
+                              : 'text-slate-700 text-[13px] font-medium hover:bg-blue-600 hover:text-white hover:text-[14.5px] hover:font-semibold' 
+                            }
+                          `}
+                        >
+                          {unit}
+                        </div>
+                        {/* Garis Sekat Pemisah: Hanya dirender kalau bukan item terakhir */}
+                        {index !== unitList.length - 1 && (
+                          <div className="mx-4 h-[1px] bg-slate-100 my-[1px]" />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -314,15 +333,15 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all duration-300 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-semibold text-white shadow-md shadow-[#00634b]/20 transition-all duration-300 hover:bg-[#004d3a] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? "Memproses Data..." : "Daftar"}
               </button>
             </div>
           </form>
 
-          <p className="mt-7 text-center text-[13px] font-bold text-slate-900">
-            Sudah punya akun? <span onClick={() => navigate('/login')} className="text-[#00634b] hover:underline cursor-pointer">Masuk Sekarang</span>
+          <p className="mt-7 text-center text-[13px] font-medium text-slate-700">
+            Sudah punya akun? <span onClick={() => navigate('/login')} className="font-semibold text-[#00634b] hover:underline cursor-pointer">Masuk Sekarang</span>
           </p>
         </div>
       </section>

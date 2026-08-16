@@ -71,9 +71,11 @@ export default function LoginPage() {
 
         toast.success("Login berhasil!");
 
-        if (userRole === "ADMIN") navigate("/admin");
-        else if (userRole === "MANAGER") navigate("/manager");
-        else navigate("/user");
+        setTimeout(() => {
+          if (userRole === "ADMIN") navigate("/admin");
+          else if (userRole === "MANAGER") navigate("/manager");
+          else navigate("/user");
+        }, 600);
       } else {
         setError({ ...error, password: data.message || "Email atau password salah" });
         toast.error(data.message || "Gagal masuk. Periksa kredensial Anda.");
@@ -201,10 +203,7 @@ export default function LoginPage() {
   };
 
   return (
-    // 🔥 PERBAIKAN FONT: Ditambah font-sans, antialiased, dan text-slate-800
     <main className="relative min-h-screen overflow-hidden bg-slate-100 font-sans antialiased text-slate-800" style={{ fontFamily: "'Poppins', sans-serif" }}>
-      
-      {/* 🔥 CSS SUNTIKAN: Membunuh paksa mata bawaan browser Edge / Chrome */}
       <style>{`
         input::-ms-reveal, input::-ms-clear { display: none !important; }
         input::-webkit-credentials-auto-fill-button { visibility: hidden; position: absolute; right: 0; }
@@ -241,7 +240,6 @@ export default function LoginPage() {
 
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">Password</label>
-                {/* 🔥 PERBAIKAN: Flex container biar mata presisi di tengah, no hardcode top */}
                 <div className="relative flex items-center">
                   <input
                     type={showPassword ? "text" : "password"}
