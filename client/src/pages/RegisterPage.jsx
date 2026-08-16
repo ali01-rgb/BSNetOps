@@ -418,7 +418,7 @@ export default function RegisterPage() {
 
               {isDropdownOpen && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-2 w-full bg-[#d7e2dc] rounded-[14px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 p-1.5 z-30 animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="absolute left-0 right-0 top-full mt-2 w-full bg-[#d7e2dc] rounded-[14px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-150"
                   onMouseLeave={() => setHoveredUnit(null)}
                 >
                   {unitList.map((unit, index) => {
@@ -434,10 +434,10 @@ export default function RegisterPage() {
                           setIsDropdownOpen(false);
                           setError({ ...error, unit: "" });
                         }}
-                        className={`w-full flex items-center cursor-pointer transition-all duration-150 ease-out ${
+                        className={`w-full flex items-center cursor-pointer transition-colors duration-150 ease-out px-4 py-2 ${
                           isActive
-                            ? "bg-[#1A5CFF] text-white font-semibold text-[12px] px-3 py-2 rounded-md"
-                            : `text-slate-800 font-medium text-[11.5px] px-3 py-1.5 ${
+                            ? "bg-[#1A5CFF] text-white font-semibold text-[12px]"
+                            : `text-slate-800 font-medium text-[11.5px] ${
                                 !isLast ? "border-b border-white" : ""
                               }`
                         }`}
