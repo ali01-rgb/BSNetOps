@@ -27,6 +27,11 @@ export default function RegisterPage() {
   const [verifyStatus, setVerifyStatus] = useState(null);
   const [error, setError] = useState({});
 
+  // State untuk fitur Resend Verification
+  const [showResendInput, setShowResendInput] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
+
   const unitList = [
     "KC Semarang",
     "KCP Majapahit",
@@ -70,6 +75,41 @@ export default function RegisterPage() {
       setVerifyStatus("fail");
     } finally {
       window.history.replaceState(null, "", "/register");
+    }
+  };
+
+  // 🔥 Logika Nembak API Resend Verification
+  const handleResendVerification = async () => {
+    if (!resendEmail) {
+      toast.error("Silakan masukkan email Anda terlebih dahulu");
+      return;
+    }
+    
+    setIsResending(true);
+    const loadingToast = toast.loading("Meminta link baru...");
+
+    try {
+      const res = await fetch(`${API_URL}/auth/resend-verification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+
+      const data = await res.json();
+      toast.dismiss(loadingToast);
+
+      if (res.ok) {
+        toast.success("Link verifikasi baru telah dikirim ke email Anda!");
+        setVerifyStatus(null);
+        setShowResendInput(false);
+      } else {
+        toast.error(data.message || "Gagal mengirim link verifikasi baru");
+      }
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Gagal terhubung ke server");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -239,32 +279,57 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* MODAL VERIFIKASI GAGAL */}
-      {verifyStatus === "fail" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-[400px] rounded-[16px] bg-white px-8 py-10 shadow-2xl text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ffccd5] mb-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ff4d4f] shadow-lg shadow-[#ff4d4f]/40">
-                <FaXmark className="h-5 w-5 text-white" />
-              </div>
+      {/* 🔥 MODAL VERIFIKASI GAGAL (Sesuai Figma) */}
+      {verifyStatus === 'fail' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
+            <button onClick={() => setVerifyStatus(null)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-800">
+              <FaXmark size={20} />
+            </button>
+            
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4">
+              <FaXmark className="h-8 w-8 text-red-500" />
             </div>
-            <h2 className="text-[20px] font-bold text-[#ff4d4f]">
-              Verifikasi Gagal
-            </h2>
-            <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed">
+            <h2 className="text-[20px] font-bold text-red-500">Verifikasi Gagal</h2>
+            <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed px-2">
               Link verifikasi sudah kedaluwarsa. Email belum diverifikasi
             </p>
-            <button
-              onClick={() => {
-                setVerifyStatus(null);
-                toast.success(
-                  "Silakan daftar ulang untuk meminta token baru."
-                );
-              }}
-              className="mt-6 w-full rounded-xl bg-[#00634b] py-3 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors"
-            >
-              Tutup
-            </button>
+
+            {/* Logika Switch Tampilan Form / Button */}
+            {!showResendInput ? (
+              <button 
+                onClick={() => setShowResendInput(true)}
+                className="mt-7 w-full rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors"
+              >
+                Kirim Ulang Email Verifikasi
+              </button>
+            ) : (
+              <div className="mt-6 animate-in fade-in slide-in-from-bottom-2 text-left">
+                <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">Masukkan Email Terdaftar</label>
+                <input
+                  type="email"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  placeholder="contoh@bsn.go.id"
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 mb-3"
+                />
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setShowResendInput(false)}
+                    className="w-1/3 rounded-xl bg-slate-200 py-3 text-[13px] font-bold text-slate-700 hover:bg-slate-300 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={handleResendVerification}
+                    disabled={isResending}
+                    className="w-2/3 flex justify-center items-center rounded-xl bg-[#00634b] py-3 text-[13px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
+                  >
+                    {isResending ? "Memproses..." : "Kirim Link Baru"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
