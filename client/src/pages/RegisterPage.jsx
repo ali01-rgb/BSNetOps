@@ -417,34 +417,35 @@ export default function RegisterPage() {
               </div>
 
               {isDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-[#dce9e3] rounded-[18px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div
-                    className="max-h-60 overflow-y-auto flex flex-col"
-                    onMouseLeave={() => setHoveredUnit(null)}
-                  >
-                    {unitList.map((unit, index) => {
-                      const isSelected = selectedUnit === unit;
-                      const isActive = isSelected || hoveredUnit === unit;
-                      return (
-                        <div
-                          key={index}
-                          onMouseEnter={() => setHoveredUnit(unit)}
-                          onClick={() => {
-                            setSelectedUnit(unit);
-                            setIsDropdownOpen(false);
-                            setError({ ...error, unit: "" });
-                          }}
-                          className={`w-full px-4 cursor-pointer flex items-center transition-all duration-200 ease-out ${
-                            isActive
-                              ? "bg-[#1A5CFF] text-white font-bold text-[15px] py-4"
-                              : "text-slate-800 font-medium text-[13px] py-3"
-                          }`}
-                        >
-                          {unit}
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div
+                  className="absolute left-0 right-0 top-full mt-2 w-full bg-[#d7e2dc] rounded-[14px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-150"
+                  onMouseLeave={() => setHoveredUnit(null)}
+                >
+                  {unitList.map((unit, index) => {
+                    const isSelected = selectedUnit === unit;
+                    const isActive = isSelected || hoveredUnit === unit;
+                    const isLast = index === unitList.length - 1;
+                    return (
+                      <div
+                        key={index}
+                        onMouseEnter={() => setHoveredUnit(unit)}
+                        onClick={() => {
+                          setSelectedUnit(unit);
+                          setIsDropdownOpen(false);
+                          setError({ ...error, unit: "" });
+                        }}
+                        className={`w-full px-4 cursor-pointer flex items-center transition-all duration-150 ease-out ${
+                          isActive
+                            ? "bg-[#1A5CFF] text-white font-bold text-[13.5px] py-3"
+                            : `text-slate-800 font-medium text-[13px] py-2.5 ${
+                                !isLast ? "border-b border-white" : ""
+                              }`
+                        }`}
+                      >
+                        {unit}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {error.unit && (
