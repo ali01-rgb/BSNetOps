@@ -21,6 +21,7 @@ export default function RegisterPage() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("");
+  const [hoveredUnit, setHoveredUnit] = useState(null);
   const dropdownRef = useRef(null);
 
   const [verifyStatus, setVerifyStatus] = useState(null);
@@ -416,30 +417,30 @@ export default function RegisterPage() {
               </div>
 
               {isDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-white rounded-[18px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="max-h-56 overflow-y-auto p-2.5 flex flex-col space-y-0.5">
+                <div className="absolute left-0 right-0 top-full mt-2 w-full bg-[#dce9e3] rounded-[18px] shadow-[0_12px_36px_rgba(0,0,0,0.14)] border border-slate-100 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div
+                    className="max-h-60 overflow-y-auto flex flex-col"
+                    onMouseLeave={() => setHoveredUnit(null)}
+                  >
                     {unitList.map((unit, index) => {
                       const isSelected = selectedUnit === unit;
+                      const isActive = isSelected || hoveredUnit === unit;
                       return (
-                        <div key={index} className="flex flex-col">
-                          <div
-                            onClick={() => {
-                              setSelectedUnit(unit);
-                              setIsDropdownOpen(false);
-                              setError({ ...error, unit: "" });
-                            }}
-                            className={`w-full px-4 py-3 cursor-pointer rounded-xl transition-all duration-150 flex items-center ${
-                              isSelected
-                                ? "bg-[#1A5CFF] text-white font-bold text-[13.5px] shadow-sm"
-                                : "text-slate-700 font-medium text-[13px] hover:bg-[#1A5CFF] hover:text-white hover:font-bold"
-                            }`}
-                          >
-                            {unit}
-                          </div>
-
-                          {index !== unitList.length - 1 && !isSelected && (
-                            <div className="h-[1px] bg-slate-100/90 mx-3 my-0.5" />
-                          )}
+                        <div
+                          key={index}
+                          onMouseEnter={() => setHoveredUnit(unit)}
+                          onClick={() => {
+                            setSelectedUnit(unit);
+                            setIsDropdownOpen(false);
+                            setError({ ...error, unit: "" });
+                          }}
+                          className={`w-full px-4 cursor-pointer flex items-center transition-all duration-200 ease-out ${
+                            isActive
+                              ? "bg-[#1A5CFF] text-white font-bold text-[15px] py-4"
+                              : "text-slate-800 font-medium text-[13px] py-3"
+                          }`}
+                        >
+                          {unit}
                         </div>
                       );
                     })}
