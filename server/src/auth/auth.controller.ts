@@ -15,22 +15,25 @@ export class AuthController {
     return this.authService.register(body);
   }
 
-  // 🔥 UBAH LOGIN UNTUK MENERIMA EMAIL SAJA
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     return this.authService.login(body.email, body.password);
   }
 
-  // 🔥 RUTE BARU: VERIFIKASI EMAIL 
   @Get('verify-email')
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
-  // 🔥 RUTE BARU: KIRIM ULANG EMAIL VERIFIKASI
   @Post('resend-verification')
   async resendVerification(@Body() body: { email: string }) {
     return this.authService.resendVerification(body.email);
+  }
+
+  // 🔥 RUTE BARU: KIRIM ULANG EMAIL VIA TOKEN KEDALUWARSA (1-KLIK)
+  @Post('resend-verification-token')
+  async resendVerificationToken(@Body() body: { token: string }) {
+    return this.authService.resendVerificationByExpiredToken(body.token);
   }
 
   @UseGuards(ThrottlerGuard)

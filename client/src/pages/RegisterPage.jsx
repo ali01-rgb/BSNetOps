@@ -27,9 +27,8 @@ export default function RegisterPage() {
   const [verifyStatus, setVerifyStatus] = useState(null);
   const [error, setError] = useState({});
 
-  // State untuk fitur Resend Verification
-  const [showResendInput, setShowResendInput] = useState(false);
-  const [resendEmail, setResendEmail] = useState("");
+  // 🔥 STATE BARU UNTUK MENYIMPAN TOKEN URL
+  const [currentVerifyToken, setCurrentVerifyToken] = useState("");
   const [isResending, setIsResending] = useState(false);
 
   const unitList = [
@@ -57,6 +56,7 @@ export default function RegisterPage() {
     const token = urlParams.get("verifyToken");
 
     if (token) {
+      setCurrentVerifyToken(token); // Simpan token di state
       handleVerifyEmail(token);
     }
   }, [location.search]);
@@ -78,21 +78,16 @@ export default function RegisterPage() {
     }
   };
 
-  // 🔥 Logika Nembak API Resend Verification
+  // 🔥 LOGIKA 1-KLIK RESEND MEMAKAI TOKEN
   const handleResendVerification = async () => {
-    if (!resendEmail) {
-      toast.error("Silakan masukkan email Anda terlebih dahulu");
-      return;
-    }
-    
     setIsResending(true);
     const loadingToast = toast.loading("Meminta link baru...");
 
     try {
-      const res = await fetch(`${API_URL}/auth/resend-verification`, {
+      const res = await fetch(`${API_URL}/auth/resend-verification-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resendEmail }),
+        body: JSON.stringify({ token: currentVerifyToken }),
       });
 
       const data = await res.json();
@@ -101,7 +96,6 @@ export default function RegisterPage() {
       if (res.ok) {
         toast.success("Link verifikasi baru telah dikirim ke email Anda!");
         setVerifyStatus(null);
-        setShowResendInput(false);
       } else {
         toast.error(data.message || "Gagal mengirim link verifikasi baru");
       }
@@ -244,7 +238,6 @@ export default function RegisterPage() {
       />
       <div className="absolute inset-0 bg-black/40" />
 
-      {/* MODAL VERIFIKASI BERHASIL */}
       {verifyStatus === "success" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[400px] rounded-[16px] bg-white px-8 py-10 shadow-2xl text-center">
@@ -279,7 +272,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* 🔥 MODAL VERIFIKASI GAGAL (Sesuai Figma) */}
+      {/* 🔥 MODAL VERIFIKASI GAGAL 1-KLIK (Tanpa Input Teks) */}
       {verifyStatus === 'fail' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
@@ -292,49 +285,20 @@ export default function RegisterPage() {
             </div>
             <h2 className="text-[20px] font-bold text-red-500">Verifikasi Gagal</h2>
             <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed px-2">
-              Link verifikasi sudah kedaluwarsa. Email belum diverifikasi
+              Link verifikasi sudah kedaluwarsa. Email belum diverifikasi.
             </p>
 
-            {/* Logika Switch Tampilan Form / Button */}
-            {!showResendInput ? (
-              <button 
-                onClick={() => setShowResendInput(true)}
-                className="mt-7 w-full rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors"
-              >
-                Kirim Ulang Email Verifikasi
-              </button>
-            ) : (
-              <div className="mt-6 animate-in fade-in slide-in-from-bottom-2 text-left">
-                <label className="mb-1.5 block text-[12px] font-semibold text-slate-800">Masukkan Email Terdaftar</label>
-                <input
-                  type="email"
-                  value={resendEmail}
-                  onChange={(e) => setResendEmail(e.target.value)}
-                  placeholder="contoh@bsn.go.id"
-                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500 mb-3"
-                />
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setShowResendInput(false)}
-                    className="w-1/3 rounded-xl bg-slate-200 py-3 text-[13px] font-bold text-slate-700 hover:bg-slate-300 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={handleResendVerification}
-                    disabled={isResending}
-                    className="w-2/3 flex justify-center items-center rounded-xl bg-[#00634b] py-3 text-[13px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
-                  >
-                    {isResending ? "Memproses..." : "Kirim Link Baru"}
-                  </button>
-                </div>
-              </div>
-            )}
+            <button 
+              onClick={handleResendVerification}
+              disabled={isResending}
+              className="mt-7 w-full flex justify-center items-center rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
+            >
+              {isResending ? "Memproses..." : "Kirim Ulang Email Verifikasi"}
+            </button>
           </div>
         </div>
       )}
 
-      {/* FORM REGISTRASI */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="relative w-full max-w-[650px] rounded-[20px] bg-white px-10 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
           <button
@@ -455,7 +419,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* DROPDOWN PILIH UNIT */}
             <div className="md:col-span-2 relative" ref={dropdownRef}>
               <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">
                 Pilih Unit

@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   async register(data: any) {
-    const { fullName, email, password, unit } = data; // 🔥 username dihapus, unit diambil
+    const { fullName, email, password, unit } = data; 
     const cleanEmail = (email || '').trim().toLowerCase();
 
     const allowedDomains = ['@btn.co.id', '@bankbsn.co.id', '@bsn.co.id', '@gmail.com'];
@@ -29,19 +29,16 @@ export class AuthService {
       throw new BadRequestException('Pendaftaran gagal. Harus menggunakan email resmi instansi.');
     }
 
-    // Cek apakah email sudah ada
     let user = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
 
     if (user) {
       if (user.isVerified) {
         throw new ConflictException('Email sudah terdaftar dan aktif!');
       }
-      // Kalau belum aktif, kita timpa passwordnya dan kirim ulang token (biar gak nyangkut)
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate EmployeeID kalau user baru
     if (!user) {
       const existingUsers = await this.prisma.user.findMany({
         where: { employeeId: { startsWith: 'BSN-USR-' } },
@@ -63,9 +60,9 @@ export class AuthService {
           fullName: fullName,
           email: cleanEmail,
           password: hashedPassword,
-          divisi: unit || 'KC Semarang', // Simpan data dropdown unit ke tabel divisi
+          divisi: unit || 'KC Semarang',
           role: 'USER',
-          isVerified: false, // 🔥 Akun dibuat tapi digembok
+          isVerified: false, 
         },
       });
     } else {
@@ -75,13 +72,11 @@ export class AuthService {
       });
     }
 
-    // 🔥 Buat Token JWT 5 Menit untuk Verifikasi
     const verifyToken = this.jwtService.sign({ sub: user.id, email: user.email }, { 
       secret: process.env.JWT_SECRET || 'rahasia-reset', 
       expiresIn: '5m' 
     });
 
-    // Kirim Email
     await this.mailService.sendVerificationEmail(user.email, verifyToken, user.fullName || 'User');
 
     return { message: 'Registrasi berhasil, silakan periksa email Anda.', employeeId: user.employeeId };
@@ -101,51 +96,50 @@ export class AuthService {
     }
   }
 
-  // 🔥 FUNGSI BARU: KIRIM ULANG VERIFIKASI EMAIL
   async resendVerification(email: string) {
     const cleanEmail = (email || '').trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
 
-    const user = await this.prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    if (!user) throw new NotFoundException('Alamat email tidak terdaftar.');
+    if (user.isVerified) throw new BadRequestException('Akun ini sudah diverifikasi sebelumnya. Silakan login.');
 
-    if (!user) {
-      throw new NotFoundException('Alamat email tidak terdaftar.');
-    }
-
-    if (user.isVerified) {
-      throw new BadRequestException('Akun ini sudah diverifikasi sebelumnya. Silakan login.');
-    }
-
-    // Buat Token Baru 5 Menit
     const verifyToken = this.jwtService.sign(
       { sub: user.id, email: user.email },
-      {
-        secret: process.env.JWT_SECRET || 'rahasia-reset',
-        expiresIn: '5m',
-      }
+      { secret: process.env.JWT_SECRET || 'rahasia-reset', expiresIn: '5m' }
     );
 
     await this.mailService.sendVerificationEmail(user.email, verifyToken, user.fullName || 'User');
-
     return { message: 'Link verifikasi baru berhasil dikirim ke email Anda.' };
   }
 
-  // --- LOGIN HANYA MENGGUNAKAN EMAIL ---
+  // 🔥 FUNGSI BARU: BACA EMAIL DARI TOKEN KEDALUWARSA (1-KLIK)
+  async resendVerificationByExpiredToken(expiredToken: string) {
+    if (!expiredToken) throw new BadRequestException('Token tidak ditemukan.');
+
+    const decoded: any = this.jwtService.decode(expiredToken);
+    if (!decoded || !decoded.email) throw new BadRequestException('Format token tidak valid.');
+
+    const cleanEmail = decoded.email.toLowerCase().trim();
+    const user = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
+
+    if (!user) throw new NotFoundException('User tidak ditemukan.');
+    if (user.isVerified) throw new BadRequestException('Akun ini sudah aktif. Silakan login.');
+
+    const newToken = this.jwtService.sign(
+      { sub: user.id, email: user.email },
+      { secret: process.env.JWT_SECRET || 'rahasia-reset', expiresIn: '5m' }
+    );
+
+    await this.mailService.sendVerificationEmail(user.email, newToken, user.fullName || 'User');
+    return { message: 'Link verifikasi baru berhasil dikirim ke email Anda.' };
+  }
+
   async login(email: string, pass: string) {
     const cleanEmail = (email || '').trim().toLowerCase();
-
-    const user = await this.prisma.user.findUnique({
-      where: { email: cleanEmail }
-    });
+    const user = await this.prisma.user.findUnique({ where: { email: cleanEmail } });
 
     if (!user) throw new HttpException('Email tidak terdaftar', HttpStatus.UNAUTHORIZED);
-    
-    // 🔥 CEK VERIFIKASI SEBELUM MASUK
-    if (!user.isVerified) {
-      throw new HttpException('Email belum diverifikasi. Cek kotak masuk Anda!', HttpStatus.FORBIDDEN);
-    }
-    
+    if (!user.isVerified) throw new HttpException('Email belum diverifikasi. Cek kotak masuk Anda!', HttpStatus.FORBIDDEN);
     if (user.is_suspended) throw new HttpException('Akses Ditolak! Akun Anda ditangguhkan.', HttpStatus.FORBIDDEN);
     if (user.deleted_at) throw new HttpException('Akses Ditolak! Akun ini telah dihapus.', HttpStatus.FORBIDDEN);
     if (!user.password) throw new HttpException('Password tidak valid.', HttpStatus.UNAUTHORIZED);
