@@ -15,16 +15,11 @@ export class InventoryService {
     try {
       return await this.prisma.asset.findMany({
         orderBy: { kode_barang: 'asc' },
-        include: {
-          category: true,
-        },
+        include: { category: true },
       });
     } catch (error) {
       console.error("🔥 Error pada getAllAssets():", error);
-      throw new HttpException(
-        'Gagal mengambil data aset dari database.',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Gagal mengambil data aset dari database.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -49,9 +44,7 @@ export class InventoryService {
 
   async updateAsset(idParam: string, data: any) {
     const existingAsset = await this.prisma.asset.findFirst({
-      where: {
-        OR: [{ id: idParam }, { kode_barang: idParam }],
-      },
+      where: { OR: [{ id: idParam }, { kode_barang: idParam }] },
     });
 
     if (!existingAsset) {
@@ -66,18 +59,12 @@ export class InventoryService {
     if (data.stok !== undefined || data.stock !== undefined) {
       updatePayload.stok = parseInt(data.stok ?? data.stock, 10);
     }
-    if (data.location !== undefined) {
-      updatePayload.location = data.location;
-    }
-    if (data.status !== undefined) {
-      updatePayload.status = data.status;
-    }
+    if (data.location !== undefined) updatePayload.location = data.location;
+    if (data.status !== undefined) updatePayload.status = data.status;
     if (data.image_url !== undefined || data.image !== undefined) {
       updatePayload.image_url = data.image_url || data.image;
     }
-    if (data.categoryId !== undefined) {
-      updatePayload.categoryId = data.categoryId || null;
-    }
+    if (data.categoryId !== undefined) updatePayload.categoryId = data.categoryId || null;
     if (data.deleted_at !== undefined) {
       updatePayload.deleted_at = data.deleted_at ? new Date(data.deleted_at) : null;
     }
@@ -91,18 +78,14 @@ export class InventoryService {
 
   async deleteAsset(idParam: string) {
     const existingAsset = await this.prisma.asset.findFirst({
-      where: {
-        OR: [{ id: idParam }, { kode_barang: idParam }],
-      },
+      where: { OR: [{ id: idParam }, { kode_barang: idParam }] },
     });
 
     if (!existingAsset) {
       throw new NotFoundException(`Asset dengan ID atau Kode '${idParam}' tidak ditemukan.`);
     }
 
-    return await this.prisma.asset.delete({
-      where: { id: existingAsset.id },
-    });
+    return await this.prisma.asset.delete({ where: { id: existingAsset.id } });
   }
 
   // ================= REQUESTS =================
@@ -117,9 +100,7 @@ export class InventoryService {
       status: 'Pending',
     }));
 
-    const newRequests = await this.prisma.request.createMany({
-      data: requestData,
-    });
+    const newRequests = await this.prisma.request.createMany({ data: requestData });
 
     this.prisma.user
       .findUnique({ where: { id: userId } })
@@ -128,7 +109,6 @@ export class InventoryService {
           where: { role: { in: ['ADMIN', 'admin', 'Admin'] } },
         });
 
-        // 🔥 PERBAIKAN: username dihapus, pakai email/fullName
         const notifPromises = adminUsers.map((admin) =>
           this.notificationsService.createNotification({
             userId: admin.id,
@@ -158,12 +138,8 @@ export class InventoryService {
     const assetNames = [...new Set(requests.map((r) => r.nama_aset).filter(Boolean))];
 
     const assets = await this.prisma.asset.findMany({
-      where: {
-        nama_barang: { in: assetNames },
-      },
-      include: {
-        category: true,
-      },
+      where: { nama_barang: { in: assetNames } },
+      include: { category: true },
     });
 
     return requests.map((req) => {
@@ -184,7 +160,6 @@ export class InventoryService {
 
     return requests.map((req) => ({
       ...req,
-      // 🔥 PERBAIKAN: username dihapus
       user: req.user || { fullName: 'User Terhapus', email: 'deleted_user@system', divisi: '-' },
     }));
   }
@@ -203,13 +178,7 @@ export class InventoryService {
       },
       include: {
         user: {
-          // 🔥 PERBAIKAN: username dihapus dari select
-          select: {
-            id: true,
-            fullName: true,
-            divisi: true,
-            email: true,
-          },
+          select: { id: true, fullName: true, divisi: true, email: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -239,13 +208,7 @@ export class InventoryService {
       return { count: 0, message: 'Tidak ada ID yang diberikan.' };
     }
 
-    const result = await this.prisma.request.deleteMany({
-      where: {
-        id: {
-          in: ids,
-        },
-      },
-    });
+    const result = await this.prisma.request.deleteMany({ where: { id: { in: ids } } });
 
     return {
       success: true,
@@ -255,21 +218,37 @@ export class InventoryService {
   }
 
   // ================= UPDATE STATUS & PEMOTONGAN STOK OTOMATIS =================
-  async updateRequestStatus(id: string, status: string, currentUser?: any) {
+  // 🔥 FIX UTAMA: parameter kedua sekarang diterima sebagai 'payload' (bisa string ATAU object),
+  // dan di-parse dengan benar. Sebelumnya, controller mengirim seluruh body object
+  // { status, jumlah_disetujui, catatan_admin } tapi function ini menganggapnya string murni,
+  // menyebabkan .toUpperCase() crash dan field jumlah_disetujui/catatan_admin tidak pernah tersimpan.
+  async updateRequestStatus(id: string, payload: any, currentUser?: any) {
+    // Dukung dua format: string biasa (lama) atau object { status, jumlah_disetujui, catatan_admin } (baru)
+    const status = typeof payload === 'string' ? payload : payload?.status;
+    const jumlahDisetujuiInput = typeof payload === 'object' ? payload?.jumlah_disetujui : undefined;
+    const catatanAdminInput = typeof payload === 'object' ? payload?.catatan_admin : undefined;
+
     const statusUpper = (status || 'PENDING').toUpperCase();
     const updateData: any = { status: status };
+
+    // 🔥 FIX: field ini sebelumnya dikirim dari frontend tapi TIDAK PERNAH disimpan ke database
+    if (jumlahDisetujuiInput !== undefined && jumlahDisetujuiInput !== null) {
+      updateData.jumlah_disetujui = parseInt(jumlahDisetujuiInput, 10);
+    }
+    if (catatanAdminInput !== undefined) {
+      updateData.catatan_admin = catatanAdminInput;
+    }
 
     if (currentUser && currentUser.sub) {
       try {
         const userDb = await this.prisma.user.findUnique({ where: { id: currentUser.sub } });
         if (userDb) {
           const roleUpper = (userDb.role || '').toUpperCase();
-          // 🔥 PERBAIKAN: username dihapus, rekam jejak menggunakan email/fullName
           if (roleUpper === 'ADMIN' && statusUpper === 'DITERUSKAN') {
-             updateData.adminName = userDb.fullName || userDb.email;
+            updateData.adminName = userDb.fullName || userDb.email;
           }
           if (roleUpper === 'MANAGER' && ['DISETUJUI', 'DITOLAK', 'SELESAI'].includes(statusUpper)) {
-             updateData.managerName = userDb.fullName || userDb.email;
+            updateData.managerName = userDb.fullName || userDb.email;
           }
         }
       } catch (e) {
@@ -287,23 +266,19 @@ export class InventoryService {
 
     if (isApproving && !wasAlreadyApproved) {
       const matchedAsset = await this.prisma.asset.findFirst({
-        where: {
-          nama_barang: { equals: existingRequest.nama_aset, mode: 'insensitive' }
-        }
+        where: { nama_barang: { equals: existingRequest.nama_aset, mode: 'insensitive' } },
       });
 
       if (matchedAsset) {
-        const jumlahDiminta = existingRequest.jumlah || 1;
+        // Pakai jumlah_disetujui kalau ada, kalau tidak fallback ke jumlah yang diminta
+        const jumlahDiminta = updateData.jumlah_disetujui ?? existingRequest.jumlah ?? 1;
         const stokSekarang = matchedAsset.stok || 0;
         const sisaStok = Math.max(0, stokSekarang - jumlahDiminta);
         const newStatusStok = sisaStok <= 3 ? 'Kritis' : 'Aman';
 
         await this.prisma.asset.update({
           where: { id: matchedAsset.id },
-          data: {
-            stok: sisaStok,
-            status: newStatusStok
-          }
+          data: { stok: sisaStok, status: newStatusStok },
         });
       }
     }
@@ -358,19 +333,12 @@ export class InventoryService {
 
   // ================= KATEGORI BARANG (PRISMA) =================
   async getAllCategories() {
-    return await this.prisma.category.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    return await this.prisma.category.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   async createCategory(data: any) {
     const existingCategory = await this.prisma.category.findFirst({
-      where: {
-        name: {
-          equals: data.name,
-          mode: 'insensitive',
-        },
-      },
+      where: { name: { equals: data.name, mode: 'insensitive' } },
     });
 
     if (existingCategory) {
@@ -400,14 +368,8 @@ export class InventoryService {
     });
 
     await this.prisma.asset.updateMany({
-      where: {
-        categoryId: null,
-        kategori_sebelumnya: { equals: data.name, mode: 'insensitive' },
-      },
-      data: {
-        categoryId: newCategory.id,
-        kategori_sebelumnya: null,
-      },
+      where: { categoryId: null, kategori_sebelumnya: { equals: data.name, mode: 'insensitive' } },
+      data: { categoryId: newCategory.id, kategori_sebelumnya: null },
     });
 
     return newCategory;
@@ -429,36 +391,20 @@ export class InventoryService {
     if (category) {
       await this.prisma.asset.updateMany({
         where: { categoryId: id },
-        data: { 
-          kategori_sebelumnya: category.name,
-          categoryId: null
-        },
+        data: { kategori_sebelumnya: category.name, categoryId: null },
       });
     }
 
-    return await this.prisma.category.delete({
-      where: { id: id },
-    });
+    return await this.prisma.category.delete({ where: { id: id } });
   }
 
   // ================= MANAJEMEN USER / HAK AKSES STAF (PRISMA) =================
   async getAllUsers() {
     return await this.prisma.user.findMany({
-      // 🔥 PERBAIKAN: username dihapus dari select, isVerified ditambahkan
       select: {
-        id: true,
-        employeeId: true,
-        email: true,
-        fullName: true,
-        divisi: true,
-        phone: true,
-        role: true,
-        hasSignedUp: true,
-        isVerified: true,
-        createdAt: true,
-        updatedAt: true,
-        is_suspended: true,
-        deleted_at: true, 
+        id: true, employeeId: true, email: true, fullName: true, divisi: true,
+        phone: true, role: true, hasSignedUp: true, isVerified: true,
+        createdAt: true, updatedAt: true, is_suspended: true, deleted_at: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -467,7 +413,6 @@ export class InventoryService {
   async createUserByAdmin(data: any) {
     const cleanEmail = (data.email || '').trim().toLowerCase();
 
-    // 🔥 PERBAIKAN: Cek duplikasi murni dari email saja karena username dihapus
     const existingEmployee = await this.prisma.user.findFirst({
       where: { email: { equals: cleanEmail, mode: 'insensitive' } },
     });
@@ -491,9 +436,7 @@ export class InventoryService {
       if (u.employeeId) {
         const parts = u.employeeId.split('-');
         const num = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(num) && num > maxNumber) {
-          maxNumber = num;
-        }
+        if (!isNaN(num) && num > maxNumber) maxNumber = num;
       }
     });
 
@@ -514,16 +457,9 @@ export class InventoryService {
         divisi: data.divisi || data.unit || 'KC Semarang',
         role: roleString === 'STAFF' ? 'USER' : roleString,
         hasSignedUp: data.hasSignedUp ?? true,
-        isVerified: true, // 🔥 Akun buatan admin otomatis Verified
+        isVerified: true,
       },
-      // 🔥 PERBAIKAN: username dihapus dari select
-      select: {
-        id: true,
-        employeeId: true,
-        email: true,
-        fullName: true,
-        role: true,
-      },
+      select: { id: true, employeeId: true, email: true, fullName: true, role: true },
     });
   }
 
@@ -531,24 +467,15 @@ export class InventoryService {
     const updatePayload: any = {};
 
     if (data.fullName !== undefined) updatePayload.fullName = data.fullName;
-    
-    if (data.email !== undefined) {
-        updatePayload.email = data.email.trim().toLowerCase();
-    }
-    
+    if (data.email !== undefined) updatePayload.email = data.email.trim().toLowerCase();
     if (data.divisi !== undefined) updatePayload.divisi = data.divisi;
     if (data.phone !== undefined) updatePayload.phone = data.phone;
     if (data.role !== undefined) updatePayload.role = data.role.toUpperCase();
     if (data.employeeId !== undefined) updatePayload.employeeId = data.employeeId;
-
-    if (data.is_suspended !== undefined) {
-      updatePayload.is_suspended = data.is_suspended;
-    }
-    
+    if (data.is_suspended !== undefined) updatePayload.is_suspended = data.is_suspended;
     if (data.deleted_at !== undefined) {
       updatePayload.deleted_at = data.deleted_at ? new Date(data.deleted_at) : null;
     }
-
     if (data.password) {
       updatePayload.password = await bcrypt.hash(data.password, 10);
     }
@@ -556,24 +483,14 @@ export class InventoryService {
     return await this.prisma.user.update({
       where: { id: id },
       data: updatePayload,
-      // 🔥 PERBAIKAN: username dihapus dari select
       select: {
-        id: true,
-        employeeId: true,
-        email: true,
-        fullName: true,
-        role: true,
-        divisi: true,
-        phone: true,
-        is_suspended: true, 
-        deleted_at: true, 
+        id: true, employeeId: true, email: true, fullName: true, role: true,
+        divisi: true, phone: true, is_suspended: true, deleted_at: true,
       },
     });
   }
 
   async deleteUserByAdmin(id: string) {
-    return await this.prisma.user.delete({
-      where: { id: id },
-    });
+    return await this.prisma.user.delete({ where: { id: id } });
   }
 }
