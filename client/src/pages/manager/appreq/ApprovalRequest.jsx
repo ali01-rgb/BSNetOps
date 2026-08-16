@@ -161,47 +161,51 @@ export default function ApprovalRequest() {
     setIsConfirmOpen(true);
   };
 
-  const handleFinalAction = async () => {
-    const loadingToast = toast.loading('Memproses persetujuan data...');
+const handleFinalAction = async () => {
+  const loadingToast = toast.loading('Memproses persetujuan data...');
 
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      
-      const targetItemIds = [];
-      confirmTargets.forEach(prettyId => {
-        const foundGroup = requests.find(r => r.id === prettyId);
-        if (foundGroup) {
-          foundGroup.items.forEach(item => targetItemIds.push(item.idItem));
-        }
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    
+    const targetItemIds = [];
+    confirmTargets.forEach(prettyId => {
+      const foundGroup = requests.find(r => r.id === prettyId);
+      if (foundGroup) {
+        foundGroup.items.forEach(item => targetItemIds.push(item.idItem));
+      }
+    });
+
+    for (const reqId of targetItemIds) {
+      const res = await fetch(`${API_URL}/inventory/admin/requests/${reqId}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: confirmType === 'Selesai' ? 'Disetujui' : 'Ditolak' })
       });
 
-      for (const reqId of targetItemIds) {
-        const res = await fetch(`${API_URL}/inventory/admin/requests/${reqId}/status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: confirmType === 'Selesai' ? 'Disetujui' : 'Ditolak' })
-        });
-
-        if (!res.ok) throw new Error(`Gagal memproses request ${reqId}`);
+      // Ini sebenernya udah ada pengecekan res.ok, sudah benar
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Gagal memproses request ${reqId}`);
       }
-
-      toast.dismiss(loadingToast); 
-      toast.success(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
-
-      setSelectedRows([]);
-      setIsConfirmOpen(false);
-      setIsModalOpen(false);
-      fetchRequestsFromAPI(); 
-
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      console.error('Gagal memproses:', error.message);
-      toast.error('Terjadi kesalahan saat memproses data ke database server.');
     }
-  };
+
+    toast.dismiss(loadingToast); 
+    toast.success(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
+
+    setSelectedRows([]);
+    setIsConfirmOpen(false);
+    setIsModalOpen(false);
+    fetchRequestsFromAPI(); 
+
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    console.error('Gagal memproses:', error.message);
+    toast.error('Terjadi kesalahan saat memproses data ke database server.');
+  }
+};
 
   const handleDownloadPDF = () => {
     const element = printRef.current;

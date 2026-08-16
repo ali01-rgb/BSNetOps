@@ -148,49 +148,62 @@ export default function PenyetujuanBarang() {
     });
   };
 
-  const handleApproveAndHandover = async () => {
-    const isInvalid = selectedRequest.items.some(
-      item => item.jmlDisetujui > item.stokGudang || item.jmlDisetujui > item.jmlDiminta
-    );
+const handleApproveAndHandover = async () => {
+  const isInvalid = selectedRequest.items.some(
+    item => item.jmlDisetujui > item.stokGudang || item.jmlDisetujui > item.jmlDiminta
+  );
 
-    if (isInvalid) {
-      toast.error("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
-      return;
-    }
+  if (isInvalid) {
+    toast.error("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
+    return;
+  }
 
-    const loadingToast = toast.loading('Menyimpan persetujuan...');
+  const loadingToast = toast.loading('Menyimpan persetujuan...');
 
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    let hasError = false;
 
-      for (const item of selectedRequest.items) {
-        await fetch(`${API_URL}/inventory/admin/requests/${item.idItem}/status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ 
-            status: 'Diteruskan',
-            jumlah_disetujui: item.jmlDisetujui,
-            catatan_admin: item.remark 
-          })
-        });
+    for (const item of selectedRequest.items) {
+      const res = await fetch(`${API_URL}/inventory/admin/requests/${item.idItem}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          status: 'Diteruskan',
+          jumlah_disetujui: item.jmlDisetujui,
+          catatan_admin: item.remark 
+        })
+      });
+
+      // 🔥 FIX: cek response, jangan diemin error
+      if (!res.ok) {
+        hasError = true;
+        const errData = await res.json().catch(() => ({}));
+        console.error(`Gagal update item ${item.idItem}:`, errData.message || res.status);
       }
-
-      toast.dismiss(loadingToast);
-      toast.success(`Permintaan ${selectedRequest.id} berhasil disetujui dan diteruskan ke Manager.`);
-      
-      setIsModalOpen(false);
-      setSelectedRequest(null);
-      fetchRequestsFromAPI(); 
-
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      console.error('Gagal memperbarui status penyerahan:', error.message);
-      toast.error('Terjadi kesalahan saat menyimpan ke database.');
     }
-  };
+
+    toast.dismiss(loadingToast);
+
+    if (hasError) {
+      toast.error('Sebagian data gagal disimpan ke server. Cek console untuk detail.');
+    } else {
+      toast.success(`Permintaan ${selectedRequest.id} berhasil disetujui dan diteruskan ke Manager.`);
+    }
+    
+    setIsModalOpen(false);
+    setSelectedRequest(null);
+    fetchRequestsFromAPI(); 
+
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    console.error('Gagal memperbarui status penyerahan:', error.message);
+    toast.error('Terjadi kesalahan saat menyimpan ke database.');
+  }
+};
 
   const handleDownloadPDF = () => {
     const element = printRef.current;
