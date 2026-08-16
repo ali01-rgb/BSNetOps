@@ -75,36 +75,37 @@ export default function ApprovalRequest() {
             const prettyId = `REQ-${tglFormatId}-${padId}`; 
 
             acc[groupKey] = {
-              id: prettyId, 
-              namaPemohon: pemohonName,
-              unit: divisiPemohon,
-              prioritas: curr.prioritas || 'Rendah',
-              tanggal: tglStr,
-              jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-              status: currentStatus,
-              keperluan: curr.alasan || '-',
-              adminName: curr.adminName || '',     
-              managerName: curr.managerName || '', 
-              items: []
-            };
-          } else {
-            const currentGroupPriority = acc[groupKey].prioritas;
-            const newItemPriority = curr.prioritas || 'Rendah';
-            
-            if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
-               acc[groupKey].prioritas = newItemPriority; 
-            }
+             id: prettyId, 
+             namaPemohon: pemohonName,
+             unit: divisiPemohon,
+             prioritas: curr.prioritas || 'Rendah',
+             tanggal: tglStr,
+             jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+             status: currentStatus,
+             rawStatus: curr.status, // 🔥 FIX: simpan status ASLI dari backend, buat dikirim ke bon
+             keperluan: curr.alasan || '-',
+             adminName: curr.adminName || '',     
+             managerName: curr.managerName || '', 
+             items: []
+           };
+         } else {
+           const currentGroupPriority = acc[groupKey].prioritas;
+           const newItemPriority = curr.prioritas || 'Rendah';
+  
+           if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
+              acc[groupKey].prioritas = newItemPriority; 
           }
+        }
 
           acc[groupKey].items.push({
             idItem: curr.id, 
             kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-', 
             namaBarang: curr.nama_aset || 'Barang Logistik',
             jumlahDiminta: curr.jumlah || 1,
-            jumlahDisetujui: curr.jumlah || 1, 
+            jumlahDisetujui: curr.jumlah_disetujui ?? curr.jumlah ?? 1, //  baca jumlah_disetujui yang beneran diinput admin
             prioritas: curr.prioritas || 'Rendah', 
             remark: curr.alasan || ''
-          });
+         });
 
           return acc;
         }, {});
@@ -232,14 +233,14 @@ const handleFinalAction = async () => {
 
   const activeDetail = requests.find(item => item.id === selectedId);
 
-  const mappedFormData = activeDetail ? {
-    divisi: activeDetail.unit,
-    alasanDibutuhkan: activeDetail.keperluan,
-    namaLengkap: activeDetail.namaPemohon,
-    status: activeDetail.status,
-    adminName: activeDetail.adminName || 'Admin Gudang',
-    managerName: activeDetail.managerName || 'Manager Operasional'
-  } : {};
+ const mappedFormData = activeDetail ? {
+   divisi: activeDetail.unit,
+   alasanDibutuhkan: activeDetail.keperluan,
+   namaLengkap: activeDetail.namaPemohon,
+   status: activeDetail.rawStatus || activeDetail.status, //  FIX: pakai status asli, bukan label UI
+   adminName: activeDetail.adminName || 'Admin Gudang',
+   managerName: activeDetail.managerName || 'Manager Operasional'
+ } : {};
 
   const mappedDaftarBarang = activeDetail ? activeDetail.items.map(item => ({
     namaAset: item.namaBarang,
