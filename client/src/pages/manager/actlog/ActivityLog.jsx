@@ -132,6 +132,63 @@ export default function ActivityLogManager() {
     toast.success("Laporan berhasil diunduh. Fitur hapus riwayat terbuka.");
   };
 
+  // 🔥 FUNGSI BARU UNTUK EXPORT LAPORAN OPNAME (STOK BARANG)
+  const handleExportOpname = async () => {
+    const loadingToast = toast.loading("Mengambil data stok dari gudang...");
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const res = await fetch(`${API_URL}/inventory/assets`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const resJson = await res.json();
+        let data = resJson.data || resJson || [];
+        if (!Array.isArray(data)) data = [];
+
+        // Filter menyesuaikan input kotak pencarian di halaman Activity Log
+        const filteredData = data.filter(item => {
+          const name = item.nama_barang || item.nama_aset || item.name || '';
+          const kode = item.kode_barang || item.id || '';
+          return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                 kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
+        });
+
+        if (filteredData.length === 0) {
+          toast.dismiss(loadingToast);
+          toast.error("Tidak ada data stok yang sesuai dengan pencarian.");
+          return;
+        }
+
+        const dataToExport = filteredData.map(item => ({
+          "Kode Barang": item.kode_barang || '-',
+          "Nama Barang": item.nama_barang || item.nama_aset || item.name || '-',
+          "Kategori": item.category?.name || '-',
+          "Sisa Stok (Unit)": item.stok ?? item.stock ?? 0,
+          "Lokasi": item.location || '-'
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const columnWidths = [
+          { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 20 }
+        ];
+        worksheet['!cols'] = columnWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Opname");
+        XLSX.writeFile(workbook, "Laporan_Opname_Stok_BSN.xlsx");
+
+        toast.dismiss(loadingToast);
+        toast.success("Laporan Opname berhasil diunduh.");
+      } else {
+        throw new Error("Gagal mengambil data");
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Gagal mengunduh Laporan Opname.");
+    }
+  };
+
   const handleDeleteHistory = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk dihapus!");
@@ -199,16 +256,24 @@ export default function ActivityLogManager() {
           <p className="text-xs text-white mt-0.5">Pantau arus barang masuk/keluar dan rekapitulasi data logistik BSN</p>
         </div>
 
+        {/* 🔥 PERUBAHAN TOMBOL DAN URUTANNYA DI SINI */}
         <div className="flex items-center gap-3 self-start md:self-auto">
           <button 
             onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 p-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+            title="Hapus Riwayat"
           >
-            <Trash2 size={16} /> Hapus Riwayat
+            <Trash2 size={18} />
+          </button>
+          <button 
+            onClick={handleExportOpname}
+            className="flex items-center justify-center gap-2 bg-white text-zinc-800 border border-zinc-200 hover:bg-zinc-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
+          >
+            <Download size={16} /> Laporan Opname
           </button>
           <button 
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-white text-zinc-800 border border-zinc-200 hover:bg-zinc-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Export Laporan
           </button>
@@ -224,7 +289,7 @@ export default function ActivityLogManager() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] focus:bg-white transition-colors"
             />
           </div>
           
@@ -232,7 +297,7 @@ export default function ActivityLogManager() {
             <select 
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Transaksi</option>
               <option value="Masuk">Barang Masuk</option>
@@ -242,7 +307,7 @@ export default function ActivityLogManager() {
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Status</option>
               <option value="Approved">Approved / Selesai</option>
@@ -260,7 +325,7 @@ export default function ActivityLogManager() {
           <select 
             value={periodType}
             onChange={(e) => setPeriodType(e.target.value)}
-            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer"
+            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer"
           >
             <option value="Semua">Semua Waktu</option>
             <option value="Bulan">Berdasarkan Bulan</option>
@@ -271,7 +336,7 @@ export default function ActivityLogManager() {
             <select 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer font-medium"
             >
               <option value="01">Januari</option>
               <option value="02">Februari</option>
@@ -292,7 +357,7 @@ export default function ActivityLogManager() {
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer font-medium"
             >
               <option value="2025">2025</option>
               <option value="2026">2026</option>

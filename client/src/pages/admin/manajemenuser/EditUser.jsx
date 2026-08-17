@@ -76,7 +76,7 @@ export default function EditUser({ userData, onClose, onSave }) {
               <select 
                 value={formData.role} 
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] bg-white cursor-pointer"
               >
                 <option value="Staff">Staff</option>
                 <option value="Admin">Admin</option>
@@ -88,7 +88,7 @@ export default function EditUser({ userData, onClose, onSave }) {
               <select 
                 value={formData.unit} 
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })} 
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] bg-white cursor-pointer"
               >
                 <option value="KC Semarang">KC Semarang</option>
                 <option value="KCP Majapahit">KCP Majapahit</option>
@@ -106,7 +106,7 @@ export default function EditUser({ userData, onClose, onSave }) {
             <select 
               value={formData.isSuspended ? "suspended" : "active"} 
               onChange={(e) => setFormData({ ...formData, isSuspended: e.target.value === "suspended" })} 
-              className={`w-full px-4 py-2 border rounded-lg text-sm font-semibold focus:outline-none cursor-pointer ${
+              className={`w-full px-4 py-2 border rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer ${
                 formData.isSuspended ? 'bg-red-50 border-red-300 text-red-600' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
               }`}
             >

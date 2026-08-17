@@ -327,7 +327,7 @@ export default function AjukanPermintaan() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
+                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer" required>
                         <option value="" disabled hidden>Pilih Unit</option>
                         <option value="KC Semarang">KC Semarang</option>
                         <option value="KCP Majapahit">KCP Majapahit</option>
