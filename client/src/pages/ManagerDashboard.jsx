@@ -98,8 +98,8 @@ export default function ManagerDashboard() {
       );
       const totalBarangKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
 
-      // C. Restock Segera
-      const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) <= 3).length;
+      // 🔥 C. Restock Segera: Stok kritis diubah menjadi < 10
+      const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) < 10).length;
 
       setStats({
         antreanApproval: antreanApprovalCount,
@@ -160,10 +160,10 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Antrean Approval</h3>
-              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
+              {/* 🔥 Menggunakan font-bold (angka) dan font-medium (teks) */}
               <div className="flex items-baseline gap-1.5 mt-2">
-                <span className="text-4xl font-extrabold text-zinc-900 tracking-tight leading-none">{stats.antreanApproval}</span>
-                <span className="text-sm font-semibold text-zinc-600">Pengajuan</span>
+                <span className="text-4xl font-bold text-zinc-900 tracking-tight leading-none">{stats.antreanApproval}</span>
+                <span className="text-sm font-medium text-zinc-600">Tiket</span>
               </div>
               <p className="text-[11px] text-amber-600 mt-2 font-medium">Buka menu Approval Request untuk memproses</p>
             </div>
@@ -176,10 +176,9 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Barang Keluar</h3>
-              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
               <div className="flex items-baseline gap-1.5 mt-2">
-                <span className="text-4xl font-extrabold text-zinc-900 tracking-tight leading-none">{stats.barangKeluar}</span>
-                <span className="text-sm font-semibold text-zinc-600">Unit</span>
+                <span className="text-4xl font-bold text-zinc-900 tracking-tight leading-none">{stats.barangKeluar}</span>
+                <span className="text-sm font-medium text-zinc-600">Unit</span>
               </div>
               <p className="text-[11px] text-zinc-400 mt-2">Total barang yang telah disetujui & didistribusikan</p>
             </div>
@@ -192,12 +191,11 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Restock Segera</h3>
-              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
               <div className="flex items-baseline gap-1.5 mt-2">
-                <span className="text-4xl font-extrabold text-red-600 tracking-tight leading-none">{stats.restockSegera}</span>
-                <span className="text-sm font-semibold text-red-500">Kategori</span>
+                <span className="text-4xl font-bold text-red-600 tracking-tight leading-none">{stats.restockSegera}</span>
+                <span className="text-sm font-medium text-red-500">Kategori</span>
               </div>
-              <p className="text-[11px] text-red-500 mt-2 font-medium">Stok kritis di bawah batas minimum</p>
+              <p className="text-[11px] text-red-500 mt-2 font-medium">Stok kritis di bawah batas minimum (&lt; 10)</p>
             </div>
             <div className="p-2.5 bg-red-50 text-red-600 rounded-lg"><AlertTriangle size={20} /></div>
           </div>

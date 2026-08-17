@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriangle, Download, Calendar } from 'lucide-react';
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast'; 
+import * as XLSX from 'xlsx'; // 🔥 IMPORT XLSX UNTUK EXPORT EXCEL
 import { API_URL } from '@/api';
 
 export default function StokBarang({ role = 'admin' }) {
@@ -18,6 +19,27 @@ export default function StokBarang({ role = 'admin' }) {
   const [showTrash, setShowTrash] = useState(false);
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, item: null });
+
+  // 🔥 STATE BARU UNTUK MODAL LAPORAN OPNAME
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+  
+  const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
+  const [opnameType, setOpnameType] = useState('bulanan'); // 'bulanan' | 'tahunan'
+  const [opnameMonth, setOpnameMonth] = useState(currentMonth);
+  const [opnameYear, setOpnameYear] = useState(String(currentYear));
+
+  // Menghasilkan rentang 5 tahun (2 tahun sebelum, tahun ini, 2 tahun sesudah)
+  const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  const months = [
+    { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' }, { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' }, { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
+  ];
 
   useEffect(() => {
     fetchItems();
@@ -76,7 +98,7 @@ export default function StokBarang({ role = 'admin' }) {
 
         if (res.ok) {
           setItems(items.map(item => item.id === id ? { ...item, deleted_at: timestamp } : item));
-          toast.success("Barang dipindahkan ke Trash."); // 🔥 UX MANIS
+          toast.success("Barang dipindahkan ke Trash.");
         } else {
           setItems(items.filter(item => item.id !== id));
         }
@@ -89,7 +111,7 @@ export default function StokBarang({ role = 'admin' }) {
 
         if (res.ok) {
           setItems(items.filter(item => item.id !== id));
-          toast.success("Barang dihapus permanen."); // 🔥 UX MANIS
+          toast.success("Barang dihapus permanen.");
         }
       }
     } catch (error) {
@@ -114,12 +136,67 @@ export default function StokBarang({ role = 'admin' }) {
 
       if (res.ok) {
         setItems(items.map(item => item.id === id ? { ...item, deleted_at: null } : item));
-        toast.success("Barang berhasil dipulihkan."); // 🔥 UX MANIS
+        toast.success("Barang berhasil dipulihkan.");
       }
     } catch (error) {
       console.error('Gagal memulihkan item:', error.message);
       toast.error('Gagal memulihkan barang.');
     }
+  };
+
+  // 🔥 FUNGSI EKSEKUSI EXPORT LAPORAN OPNAME
+  const handleExportOpname = () => {
+    const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
+    
+    // Ambil data yang aktif saja (tidak di tong sampah)
+    let dataToFilter = items.filter(item => !item.deleted_at);
+
+    // Terapkan Filter Periode
+    dataToFilter = dataToFilter.filter(item => {
+      const itemDate = new Date(item.createdAt || item.date || Date.now());
+      if (isNaN(itemDate.getTime())) return true;
+      
+      const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
+      const itemYear = String(itemDate.getFullYear());
+
+      if (opnameType === 'bulanan') {
+        return itemMonth === opnameMonth && itemYear === opnameYear;
+      } else {
+        return itemYear === opnameYear;
+      }
+    });
+
+    if (dataToFilter.length === 0) {
+      toast.dismiss(loadingToast);
+      toast.error("Tidak ada data stok masuk pada periode tersebut.");
+      return;
+    }
+
+    const dataToExport = dataToFilter.map(item => ({
+      "Kode Barang": item.kode_barang || '-',
+      "Nama Barang": item.nama_barang || item.nama_aset || item.name || '-',
+      "Kategori": item.category?.name || '-',
+      "Sisa Stok (Unit)": item.stok ?? item.stock ?? 0,
+      "Lokasi": item.location || '-',
+      "Tanggal Masuk": formatDate(item.createdAt || item.date)
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const columnWidths = [
+      { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Opname");
+    
+    // Penamaan file cerdas berdasarkan filter
+    const fileName = `Laporan_Opname_Stok_${opnameType === 'bulanan' ? opnameMonth + '-' : ''}${opnameYear}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast.dismiss(loadingToast);
+    toast.success("Laporan Opname berhasil diunduh.");
+    setIsOpnameModalOpen(false);
   };
 
   const formatDate = (dateString) => {
@@ -162,6 +239,14 @@ export default function StokBarang({ role = 'admin' }) {
               <Trash2 size={16} /> 
             </button>
           )}
+
+          {/* 🔥 TOMBOL LAPORAN OPNAME DITAMBAHKAN DI SINI */}
+          {!showTrash && (
+            <button onClick={() => setIsOpnameModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-emerald-50 hover:text-[#00664b] transition-all cursor-pointer shadow-md">
+              <Download size={16} /> Laporan Opname
+            </button>
+          )}
+
           {isAdmin && !showTrash && (
             <button onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 bg-[#00664b] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:bg-[#00553e] transition-all cursor-pointer">
               <Plus size={16} /> Tambah Item Baru
@@ -252,6 +337,98 @@ export default function StokBarang({ role = 'admin' }) {
           </table>
         </div>
       </div>
+
+      {/* 🔥 MODAL POP-UP PILIH PERIODE LAPORAN */}
+      {isOpnameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl p-7 animate-in zoom-in-95 duration-200">
+            
+            {/* Header Modal */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-[#dce9e3] flex items-center justify-center text-[#00634b] shrink-0">
+                <Calendar size={22} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-bold text-slate-900 leading-tight">Pilih Periode Laporan</h3>
+                <p className="text-[13px] text-slate-500 mt-0.5">Rekapitulasi masuk & keluar.</p>
+              </div>
+            </div>
+
+            {/* Konten Form */}
+            <div className="space-y-5">
+              {/* Jenis Rekap */}
+              <div>
+                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Jenis Rekap</label>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setOpnameType('bulanan')}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
+                      opnameType === 'bulanan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
+                    }`}
+                  >
+                    Bulanan
+                  </button>
+                  <button 
+                    onClick={() => setOpnameType('tahunan')}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
+                      opnameType === 'tahunan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
+                    }`}
+                  >
+                    Tahunan (Per Tahun)
+                  </button>
+                </div>
+              </div>
+
+              {/* Pilihan Bulan (Hanya muncul jika bulanan) */}
+              {opnameType === 'bulanan' && (
+                <div>
+                  <label className="block text-[13px] font-semibold text-slate-800 mb-2">Bulan</label>
+                  <select 
+                    value={opnameMonth}
+                    onChange={(e) => setOpnameMonth(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
+                  >
+                    {months.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Pilihan Tahun (Dinamis 5 Tahun) */}
+              <div>
+                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Tahun</label>
+                <select 
+                  value={opnameYear}
+                  onChange={(e) => setOpnameYear(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
+                >
+                  {yearRange.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-5 mt-8">
+              <button 
+                onClick={() => setIsOpnameModalOpen(false)}
+                className="text-slate-500 hover:text-slate-800 text-[14px] font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleExportOpname}
+                className="bg-[#00664b] hover:bg-[#004d3a] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold flex items-center gap-2 shadow-md transition-all active:scale-95"
+              >
+                <Download size={18} /> Unduh Excel
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {deleteModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
