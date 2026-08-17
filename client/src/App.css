@@ -1,3 +1,9 @@
+/* 🔥 CONTROLLER WARNA GLOBAL 🔥 */
+:root {
+  /* Ubah hex di bawah ini, dan semua warna highlight di web akan ikut berubah */
+  --color-primary: #1A5CFF; 
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

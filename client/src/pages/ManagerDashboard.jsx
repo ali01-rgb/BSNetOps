@@ -15,18 +15,15 @@ const CustomLegend = (props) => {
 
         return (
           <div key={`item-${index}`} className="flex items-center gap-3 text-sm font-semibold">
-            {/* Efek Double Border: Pembungkus Luar */}
             <div 
               className="w-6 h-6 rounded-[6px] border flex items-center justify-center p-[2px] shrink-0"
               style={{ borderColor: borderColor }}
             >
-              {/* Kotak Warna Dalam */}
               <div 
                 className="w-4 h-4 rounded-[4px]"
                 style={{ backgroundColor: baseColor }}
               />
             </div>
-            {/* Teks Label Legend */}
             <span style={{ color: isKeluar ? '#1f2937' : '#1e3a8a' }}>
               {entry.value}
             </span>
@@ -38,7 +35,6 @@ const CustomLegend = (props) => {
 };
 
 export default function ManagerDashboard() {
-  // 🔥 DAFTAR TEMPLATE UNIT Tetap Sama Seperti UI Asli
   const [unitData, setUnitData] = useState([
     { name: 'KC Semarang', Diminta: 0, Keluar: 0 },
     { name: 'KCP Majapahit', Diminta: 0, Keluar: 0 },
@@ -59,14 +55,12 @@ export default function ManagerDashboard() {
     fetchDashboardData();
   }, []);
 
-// 🔥 AMBIL DATA DARI BACKEND DENGAN TRACKING PER KC/UNIT
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const headers = { "Authorization": `Bearer ${token}` };
 
       const [reqRes, assetsRes] = await Promise.all([
-        // Gunakan endpoint admin agar bisa menarik semua data untuk analitik chart
         fetch(`${API_URL}/inventory/admin/requests`, { headers }),
         fetch(`${API_URL}/inventory/assets`, { headers })
       ]);
@@ -84,16 +78,11 @@ export default function ManagerDashboard() {
         rawAssets = assetsJson.data || assetsJson || [];
       }
 
-      // ==========================================
-      // 1. HITUNG STATISTIK 3 CARD ATAS (REVISI)
-      // ==========================================
-      
-      // A. Antrean Approval: Hanya cari barang yang 'DITERUSKAN' oleh Admin ke Manager
+      // A. Antrean Approval
       const pendingItemsForManager = rawRequests.filter(r => 
         ['DITERUSKAN', 'DITERUSKAN KE MANAGER'].includes((r.status || '').toUpperCase())
       );
       
-      // Mengelompokkan barang menjadi 1 "Surat Laporan" berdasarkan Tanggal & ID Pemohon
       const uniquePendingReports = new Set(
         pendingItemsForManager.map(r => {
           const rawDate = new Date(r.createdAt || Date.now());
@@ -101,15 +90,15 @@ export default function ManagerDashboard() {
           return `${tglStr}-${r.userId}`;
         })
       );
-      const antreanApprovalCount = uniquePendingReports.size; // Hasilnya akan akurat (misal: 2 Pengajuan)
+      const antreanApprovalCount = uniquePendingReports.size;
 
-      // B. Barang Keluar: HANYA yang sudah ACC Final (Disetujui/Selesai/Diterima)
+      // B. Barang Keluar
       const approvedRequests = rawRequests.filter(r => 
         ['DISETUJUI', 'SELESAI', 'APPROVED', 'DISERAHKAN', 'DITERIMA'].includes((r.status || '').toUpperCase())
       );
       const totalBarangKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
 
-      // C. Restock Segera: Stok barang yang tersisa <= 3
+      // C. Restock Segera
       const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) <= 3).length;
 
       setStats({
@@ -118,9 +107,6 @@ export default function ManagerDashboard() {
         restockSegera: restockCount
       });
 
-      // ==========================================
-      // 2. LOGIKA GRAFIK DISTRIBUSI (REVISI)
-      // ==========================================
       const baseUnits = [
         { name: 'KC Semarang', Diminta: 0, Keluar: 0 },
         { name: 'KCP Majapahit', Diminta: 0, Keluar: 0 },
@@ -143,10 +129,8 @@ export default function ManagerDashboard() {
           baseUnits.push(targetUnit);
         }
 
-        // Semua request dihitung ke "Diminta" (Termasuk yang ditolak)
         targetUnit.Diminta += jumlahBarang;
 
-        // "Keluar" hanya dihitung kalau barang benar-benar sudah ACC Final & Diambil
         if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DISERAHKAN', 'DITERIMA'].includes(statusUpper)) {
           targetUnit.Keluar += jumlahBarang;
         }
@@ -176,7 +160,11 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Antrean Approval</h3>
-              <p className="text-3xl font-bold text-zinc-900 mt-2">{stats.antreanApproval} Pengajuan</p>
+              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
+              <div className="flex items-baseline gap-1.5 mt-2">
+                <span className="text-4xl font-extrabold text-zinc-900 tracking-tight leading-none">{stats.antreanApproval}</span>
+                <span className="text-sm font-semibold text-zinc-600">Pengajuan</span>
+              </div>
               <p className="text-[11px] text-amber-600 mt-2 font-medium">Buka menu Approval Request untuk memproses</p>
             </div>
             <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><ClipboardList size={20} /></div>
@@ -188,7 +176,11 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Barang Keluar</h3>
-              <p className="text-3xl font-bold text-zinc-900 mt-2">{stats.barangKeluar} Unit</p>
+              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
+              <div className="flex items-baseline gap-1.5 mt-2">
+                <span className="text-4xl font-extrabold text-zinc-900 tracking-tight leading-none">{stats.barangKeluar}</span>
+                <span className="text-sm font-semibold text-zinc-600">Unit</span>
+              </div>
               <p className="text-[11px] text-zinc-400 mt-2">Total barang yang telah disetujui & didistribusikan</p>
             </div>
             <div className="p-2.5 bg-green-50 text-[#00664b] rounded-lg"><CheckSquare size={20} /></div>
@@ -200,7 +192,11 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Restock Segera</h3>
-              <p className="text-3xl font-bold text-red-600 mt-2">{stats.restockSegera} Kategori</p>
+              {/* 🔥 Tampilan tipografi angka & teks terpisah menggunakan items-baseline */}
+              <div className="flex items-baseline gap-1.5 mt-2">
+                <span className="text-4xl font-extrabold text-red-600 tracking-tight leading-none">{stats.restockSegera}</span>
+                <span className="text-sm font-semibold text-red-500">Kategori</span>
+              </div>
               <p className="text-[11px] text-red-500 mt-2 font-medium">Stok kritis di bawah batas minimum</p>
             </div>
             <div className="p-2.5 bg-red-50 text-red-600 rounded-lg"><AlertTriangle size={20} /></div>

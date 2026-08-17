@@ -286,13 +286,13 @@ const handleFinalAction = async () => {
                 placeholder="Cari ID, pemohon, atau barang..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] transition-colors"
+                className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:outline-none focus:border-[#00664b] transition-colors"
               />
             </div>
             <select 
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="w-full sm:w-auto bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer"
+              className="w-full sm:w-auto bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 focus:outline-none focus:border-[#00664b] cursor-pointer"
             >
               <option>Semua Prioritas</option>
               <option>Tinggi</option>

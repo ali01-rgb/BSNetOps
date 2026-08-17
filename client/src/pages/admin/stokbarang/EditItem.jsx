@@ -175,7 +175,7 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
                 required
                 value={formData.categoryId} 
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })} 
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF] cursor-pointer"
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] cursor-pointer"
               >
                 <option value="" disabled>-- Pilih Kategori --</option>
                 {categories.map(cat => (
@@ -194,7 +194,7 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
                   const val = parseInt(e.target.value, 10);
                   setFormData({ ...formData, stock: isNaN(val) ? '' : (val < 0 ? 0 : val) });
                 }}
-                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:ring-2 focus:ring-[#1A5CFF]"
+                className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b]" 
               />
             </div>
           </div>

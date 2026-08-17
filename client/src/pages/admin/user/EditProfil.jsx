@@ -228,7 +228,7 @@ export default function EditProfil() {
                   name="divisi" 
                   value={profile.divisi} 
                   onChange={handleChange} 
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:ring-2 focus:ring-[#1A5CFF] focus:bg-white font-medium text-zinc-800 transition-colors cursor-pointer" 
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors cursor-pointer" 
                   required
                 >
                   <option value="" disabled hidden>Pilih Unit</option>
