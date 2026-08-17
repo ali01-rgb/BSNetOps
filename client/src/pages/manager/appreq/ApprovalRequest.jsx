@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertical, Download } from 'lucide-react';
+import { Search, Check, X, AlertCircle, X as CloseIcon, CheckSquare, MoreVertical, Download, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import TemplateDokumenA4 from '../../user/permintaan/TemplateDokumenA4'; 
 import toast from 'react-hot-toast'; 
@@ -15,6 +15,10 @@ export default function ApprovalRequest() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('Semua Prioritas');
   const [selectedRows, setSelectedRows] = useState([]);
+
+  // 🔥 STATE PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -48,7 +52,6 @@ export default function ApprovalRequest() {
         const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
 
         const groupedData = rawRequests.reduce((acc, curr) => {
-          // 🔥 PELINDUNG TANGGAL
           let rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
           if (isNaN(rawDate.getTime())) rawDate = new Date();
 
@@ -82,7 +85,7 @@ export default function ApprovalRequest() {
              tanggal: tglStr,
              jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
              status: currentStatus,
-             rawStatus: curr.status, // 🔥 FIX: simpan status ASLI dari backend, buat dikirim ke bon
+             rawStatus: curr.status, 
              keperluan: curr.alasan || '-',
              adminName: curr.adminName || '',     
              managerName: curr.managerName || '', 
@@ -91,7 +94,7 @@ export default function ApprovalRequest() {
          } else {
            const currentGroupPriority = acc[groupKey].prioritas;
            const newItemPriority = curr.prioritas || 'Rendah';
-  
+ 
            if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
               acc[groupKey].prioritas = newItemPriority; 
           }
@@ -102,7 +105,7 @@ export default function ApprovalRequest() {
             kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-', 
             namaBarang: curr.nama_aset || 'Barang Logistik',
             jumlahDiminta: curr.jumlah || 1,
-            jumlahDisetujui: curr.jumlah_disetujui ?? curr.jumlah ?? 1, //  baca jumlah_disetujui yang beneran diinput admin
+            jumlahDisetujui: curr.jumlah_disetujui ?? curr.jumlah ?? 1,
             prioritas: curr.prioritas || 'Rendah', 
             remark: curr.alasan || ''
          });
@@ -121,15 +124,17 @@ export default function ApprovalRequest() {
     }
   };
 
+  // 🔥 RESET PAGINATION SAAT FILTER BERUBAH
   useEffect(() => {
     setSelectedRows([]);
-  }, [activeTab]);
+    setCurrentPage(1);
+  }, [activeTab, searchQuery, selectedPriority]);
 
   const filteredRequests = requests.filter(r => {
-    const matchTab = r.status?.toLowerCase() === activeTab.toLowerCase();
+    // Perubahan untuk tab "Semua"
+    const matchTab = activeTab === 'Semua' ? true : r.status?.toLowerCase() === activeTab.toLowerCase();
     const matchPriority = selectedPriority === 'Semua Prioritas' ? true : r.prioritas === selectedPriority;
     
-    // 🔥 PELINDUNG PENCARIAN (NULL-SAFETY)
     const matchSearch = 
       (r.namaPemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (r.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,6 +143,11 @@ export default function ApprovalRequest() {
     return matchTab && matchPriority && matchSearch;
   });
 
+  // 🔥 LOGIKA PAGINATION
+  const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const handleSelectRow = (e, id) => {
     e.stopPropagation(); 
     setSelectedRows(prev => prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]);
@@ -145,7 +155,8 @@ export default function ApprovalRequest() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedRows(filteredRequests.map(r => r.id));
+      // Hanya men-select data yang sedang tampil di halaman ini
+      setSelectedRows(paginatedRequests.map(r => r.id));
     } else {
       setSelectedRows([]);
     }
@@ -162,51 +173,61 @@ export default function ApprovalRequest() {
     setIsConfirmOpen(true);
   };
 
-const handleFinalAction = async () => {
-  const loadingToast = toast.loading('Memproses persetujuan data...');
+  const handleFinalAction = async () => {
+    const loadingToast = toast.loading('Memproses persetujuan data...');
 
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    const targetItemIds = [];
-    confirmTargets.forEach(prettyId => {
-      const foundGroup = requests.find(r => r.id === prettyId);
-      if (foundGroup) {
-        foundGroup.items.forEach(item => targetItemIds.push(item.idItem));
-      }
-    });
-
-    for (const reqId of targetItemIds) {
-      const res = await fetch(`${API_URL}/inventory/admin/requests/${reqId}/status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: confirmType === 'Selesai' ? 'Disetujui' : 'Ditolak' })
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
+      const targetItemIds = [];
+      confirmTargets.forEach(prettyId => {
+        const foundGroup = requests.find(r => r.id === prettyId);
+        if (foundGroup) {
+          foundGroup.items.forEach(item => targetItemIds.push(item.idItem));
+        }
       });
 
-      // Ini sebenernya udah ada pengecekan res.ok, sudah benar
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || `Gagal memproses request ${reqId}`);
+      for (const reqId of targetItemIds) {
+        const res = await fetch(`${API_URL}/inventory/admin/requests/${reqId}/status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: confirmType === 'Selesai' ? 'Disetujui' : 'Ditolak' })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal memproses request ${reqId}`);
+        }
       }
+
+      toast.dismiss(loadingToast); 
+      
+      // 🔥 CUSTOM TOAST SESUAI GAMBAR
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-in fade-in slide-in-from-bottom-5' : 'animate-out fade-out slide-out-to-bottom-5'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-zinc-100 p-4 flex items-center gap-3`}>
+          <div className="w-8 h-8 rounded-full bg-[#00664b] flex items-center justify-center shrink-0">
+            <Check size={18} className="text-white" strokeWidth={3} />
+          </div>
+          <p className="text-[13px] font-bold text-zinc-800 leading-tight">
+            {confirmType === 'Selesai' ? 'Permintaan berhasil disetujui & stok berhasil dipotong' : 'Permintaan berhasil ditolak!'}
+          </p>
+        </div>
+      ), { position: 'bottom-center', duration: 4000 });
+
+      setSelectedRows([]);
+      setIsConfirmOpen(false);
+      setIsModalOpen(false);
+      fetchRequestsFromAPI(); 
+
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('Gagal memproses:', error.message);
+      toast.error('Terjadi kesalahan saat memproses data ke database server.');
     }
-
-    toast.dismiss(loadingToast); 
-    toast.success(`Permintaan berhasil ${confirmType === 'Selesai' ? 'di-ACC Final & stok dipotong' : 'ditolak'}!`);
-
-    setSelectedRows([]);
-    setIsConfirmOpen(false);
-    setIsModalOpen(false);
-    fetchRequestsFromAPI(); 
-
-  } catch (error) {
-    toast.dismiss(loadingToast);
-    console.error('Gagal memproses:', error.message);
-    toast.error('Terjadi kesalahan saat memproses data ke database server.');
-  }
-};
+  };
 
   const handleDownloadPDF = () => {
     const element = printRef.current;
@@ -233,14 +254,15 @@ const handleFinalAction = async () => {
 
   const activeDetail = requests.find(item => item.id === selectedId);
 
- const mappedFormData = activeDetail ? {
+  // 🔥 LOGIKA QR MANAGER: Dikosongkan jika belum ACC (Selesai)
+  const mappedFormData = activeDetail ? {
    divisi: activeDetail.unit,
    alasanDibutuhkan: activeDetail.keperluan,
    namaLengkap: activeDetail.namaPemohon,
-   status: activeDetail.rawStatus || activeDetail.status, //  FIX: pakai status asli, bukan label UI
+   status: activeDetail.rawStatus || activeDetail.status, 
    adminName: activeDetail.adminName || 'Admin Gudang',
-   managerName: activeDetail.managerName || 'Manager Operasional'
- } : {};
+   managerName: activeDetail.status === 'Selesai' ? (activeDetail.managerName || 'Manager Operasional') : ''
+  } : {};
 
   const mappedDaftarBarang = activeDetail ? activeDetail.items.map(item => ({
     namaAset: item.namaBarang,
@@ -258,19 +280,21 @@ const handleFinalAction = async () => {
           <p className="text-xs text-white font-medium mt-0.5">Tinjau permohonan yang telah diproses Admin dan berikan ACC Final.</p>
         </div>
 
-        {/* Tab Filter */}
+        {/* 🔥 TAB FILTER DIPERBARUI DENGAN "SEMUA" */}
         <div className="flex items-center gap-6 border-b border-[#00664b]/20 text-sm">
-          {['Menunggu Manager', 'Selesai', 'Ditolak'].map((status) => (
+          {['Menunggu Manager', 'Selesai', 'Ditolak', 'Semua'].map((status) => (
             <button 
               key={status}
               onClick={() => setActiveTab(status)}
               className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer text-white capitalize ${
-                activeTab === status ? 'border-white font-bold' : 'border-transparent opacity-75'
+                activeTab === status ? 'border-white font-bold' : 'border-transparent opacity-75 hover:opacity-100'
               }`}
             >
-              <span>{status === 'Menunggu Manager' ? 'Menunggu ACC' : status}</span>
+              <span>{status === 'Menunggu Manager' ? 'Menunggu Persetujuan' : status}</span>
               <span className="bg-[#00664b] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                {requests.filter(r => r.status?.toLowerCase() === status.toLowerCase()).length}
+                {status === 'Semua' 
+                  ? requests.length 
+                  : requests.filter(r => r.status?.toLowerCase() === status.toLowerCase()).length}
               </span>
             </button>
           ))}
@@ -303,7 +327,7 @@ const handleFinalAction = async () => {
 
           <div 
             className={`transition-all duration-500 ease-out overflow-hidden flex items-center ${
-              selectedRows.length > 0 && activeTab === 'Menunggu Manager' 
+              selectedRows.length > 0 && (activeTab === 'Menunggu Manager' || activeTab === 'Semua') 
                 ? 'opacity-100 translate-x-0 max-w-[500px] ml-4' 
                 : 'opacity-0 translate-x-12 max-w-0 ml-0 pointer-events-none'
             }`}
@@ -329,16 +353,16 @@ const handleFinalAction = async () => {
         </div>
 
         {/* Tabel Request */}
-        <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-100 text-[11px] font-bold text-white uppercase bg-[#58a27d]">
                   <th className="py-3 px-4 w-12 text-center">
-                    {activeTab === 'Menunggu Manager' && (
+                    {(activeTab === 'Menunggu Manager' || activeTab === 'Semua') && (
                       <input 
                         type="checkbox"
-                        checked={selectedRows.length === filteredRequests.length && filteredRequests.length > 0}
+                        checked={selectedRows.length === paginatedRequests.length && paginatedRequests.length > 0}
                         onChange={handleSelectAll}
                         className="w-3.5 h-3.5 rounded border-zinc-300 text-[#00664b] focus:ring-[#00664b] cursor-pointer accent-[#00664b]"
                       />
@@ -347,7 +371,7 @@ const handleFinalAction = async () => {
                   <th className="py-3 px-2">ID Permintaan</th>
                   <th className="py-3 px-4">Pemohon</th>
                   <th className="py-3 px-4">Daftar Barang</th>
-                  <th className="py-3 px-4 text-center">Prioritas Utama (Urgent)</th>
+                  <th className="py-3 px-4 text-center">Prioritas Utama</th>
                   <th className="py-3 px-4">Tanggal Pengajuan</th>
                   <th className="py-3 px-4 text-center">Status</th>
                 </tr>
@@ -360,14 +384,14 @@ const handleFinalAction = async () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredRequests.map((item) => (
+                  paginatedRequests.map((item) => (
                     <tr 
                       key={item.id}
                       onClick={() => handleOpenModal(item.id)}
                       className={`hover:bg-zinc-50/80 transition-colors cursor-pointer ${selectedRows.includes(item.id) ? 'bg-emerald-50/40' : ''}`}
                     >
                       <td className="py-4 px-4 text-center">
-                        {activeTab === 'Menunggu Manager' && (
+                        {(activeTab === 'Menunggu Manager' || activeTab === 'Semua') && (
                           <input 
                             type="checkbox"
                             checked={selectedRows.includes(item.id)}
@@ -426,6 +450,32 @@ const handleFinalAction = async () => {
               </tbody>
             </table>
           </div>
+          
+          {/* 🔥 CONTROLS PAGINATION */}
+          {!loading && filteredRequests.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t border-zinc-100 bg-white">
+              <span className="text-[11px] font-medium text-zinc-500">
+                Menampilkan <span className="font-bold">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredRequests.length)}</span> dari <span className="font-bold">{filteredRequests.length}</span> laporan
+              </span>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-[11px] font-bold text-zinc-700">Hal {currentPage} / {totalPages}</span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -516,7 +566,7 @@ const handleFinalAction = async () => {
                     onClick={() => setShowBonPreview(true)}
                     className="flex-1 py-2.5 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Lihat Bon
+                    Likat Bon Sementara
                   </button>
                   <button 
                     onClick={() => triggerConfirmation('Selesai', [activeDetail.id])}
@@ -540,7 +590,7 @@ const handleFinalAction = async () => {
                     onClick={() => setShowBonPreview(true)}
                     className="px-6 py-2.5 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Lihat Bon
+                    Lihat Bon Final
                   </button>
                 </div>
               )}
@@ -549,36 +599,39 @@ const handleFinalAction = async () => {
         </div>
       )}
 
+      {/* 🔥 MODAL KONFIRMASI ACC/TOLAK DIPERBARUI */}
       {isConfirmOpen && confirmTargets.length > 0 && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4 animate-in zoom-in-95 duration-150 text-center">
-            <div className={`mx-auto w-12 h-12 flex items-center justify-center rounded-full shadow-sm border ${confirmType === 'Selesai' ? 'bg-emerald-50 border-emerald-100 text-[#00664b]' : 'bg-red-50 border-red-100 text-red-500'}`}>
-              <AlertCircle size={24} />
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-7 space-y-5 animate-in zoom-in-95 duration-150 text-center relative">
+            
+            <div className={`mx-auto w-14 h-14 flex items-center justify-center rounded-full border-2 ${confirmType === 'Selesai' ? 'bg-emerald-50 border-[#00664b] text-[#00664b]' : 'bg-red-50 border-red-500 text-red-500'}`}>
+              <AlertCircle size={28} strokeWidth={2.5} />
             </div>
             
-            <div className="space-y-1">
-              <h4 className="text-sm font-black text-zinc-900">Konfirmasi ACC Final</h4>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Apakah Anda yakin ingin <span className={`font-bold ${confirmType === 'Selesai' ? 'text-[#00664b]' : 'text-red-500'}`}>
-                  {confirmType === 'Selesai' ? 'menyetujui (ACC)' : 'menolak'}
-                </span>{' '}
-                {confirmTargets.length > 1 ? (
-                  <span className="font-bold text-zinc-800">{confirmTargets.length} permintaan terpilih</span>
-                ) : (
-                  <span>permintaan dari <span className="font-bold text-zinc-800">{requests.find(r => r.id === confirmTargets[0])?.namaPemohon}</span></span>
-                )}?
-                {confirmType === 'Selesai' && (
-                  <span className="block mt-2 text-[11px] text-amber-600 font-semibold bg-amber-50 p-1.5 rounded border border-amber-200">
-                    ⚠️ ACC ini bersifat final. Stok barang akan dipotong secara otomatis di sisi server.
-                  </span>
-                )}
+            <div className="space-y-2">
+              <h4 className="text-lg font-black text-zinc-900">
+                {confirmType === 'Selesai' ? 'Konfirmasi Persetujuan Final' : 'Konfirmasi Penolakan Final'}
+              </h4>
+              <p className="text-[13px] text-zinc-600 font-medium">
+                Apakah anda yakin ingin <span className={`font-bold ${confirmType === 'Selesai' ? 'text-[#00664b]' : 'text-red-500'}`}>
+                  {confirmType === 'Selesai' ? 'menyetujui' : 'menolak'}
+                </span> <span className="font-bold text-zinc-900">{confirmTargets.length}</span> permintaan terpilih?
               </p>
             </div>
 
-            <div className="flex gap-2.5 pt-2">
+            {confirmType === 'Selesai' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 flex items-start gap-3 text-left">
+                <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-700 font-semibold leading-relaxed">
+                  Tindakan ini bersifat final. Stok barang akan otomatis dipotong dari gudang berdasarkan jumlah yang disetujui.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
               <button 
                 onClick={handleFinalAction}
-                className={`flex-1 py-2.5 text-white text-xs font-bold rounded-lg cursor-pointer shadow-md transition-colors ${
+                className={`flex-1 py-2.5 text-white text-[13px] font-bold rounded-xl cursor-pointer shadow-md transition-colors ${
                   confirmType === 'Selesai' ? 'bg-[#00664b] hover:bg-[#004d38]' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
@@ -586,7 +639,7 @@ const handleFinalAction = async () => {
               </button>
               <button 
                 onClick={() => setIsConfirmOpen(false)}
-                className="flex-1 py-2.5 bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                className="flex-1 py-2.5 bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 text-[13px] font-bold rounded-xl cursor-pointer transition-colors"
               >
                 Batal
               </button>

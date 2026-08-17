@@ -1,8 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
+
+// 🔥 KOMPONEN DROPDOWN CUSTOM (Menyatu dalam file, tidak perlu dipisah)
+function CustomDropdown({ value, onChange, options, triggerClassName, minWidth = "min-w-[160px]" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hoveredValue, setHoveredValue] = useState(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || value;
+
+  return (
+    <div className={`relative ${minWidth}`} ref={dropdownRef}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex justify-between items-center text-sm rounded-lg px-3 cursor-pointer font-medium transition-all ${
+          isOpen ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]" : "border-zinc-200 hover:border-[var(--color-primary)]"
+        } ${triggerClassName}`}
+      >
+        <span className="truncate mr-3">{selectedLabel}</span>
+        <ChevronDown size={14} className={`shrink-0 opacity-70 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+
+      {isOpen && (
+        <div
+          className="absolute left-0 top-full mt-1.5 w-full min-w-max bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+          onMouseLeave={() => setHoveredValue(null)}
+        >
+          {options.map((opt, index) => {
+            const isSelected = value === opt.value;
+            const isActive = isSelected || hoveredValue === opt.value;
+            const isLast = index === options.length - 1;
+
+            return (
+              <div
+                key={opt.value}
+                onMouseEnter={() => setHoveredValue(opt.value)}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 cursor-pointer text-[13px] transition-colors duration-150 flex items-center whitespace-nowrap ${
+                  isActive
+                    ? "bg-[var(--color-primary)] text-white font-semibold shadow-sm" 
+                    : `text-zinc-700 font-medium ${!isLast ? "border-b border-zinc-100" : ""}`
+                }`}
+              >
+                {opt.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ActivityLogManager() {
   const [history, setHistory] = useState([]);
@@ -43,13 +107,19 @@ export default function ActivityLogManager() {
         const data = resJson.data || resJson;
 
         if (Array.isArray(data)) {
-          const formatted = data.map(req => {
-            // 🔥 PELINDUNG TANGGAL (Cegah crash .toISOString)
+          const formatted = data.map((req, index) => {
             let rawDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
             if (isNaN(rawDate.getTime())) rawDate = new Date();
 
+            // 🔥 LOGIKA PEMBUATAN ID REQ-YYYYMMDD-XXX
+            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            // Gunakan no_urut dari DB, atau buat angka urut palsu dari ID/Index jika no_urut tidak ada
+            const urut = req.no_urut || String(req.id).replace(/\D/g, '').substring(0,3) || (index + 1);
+            const padId = String(urut).padStart(3, '0');
+            const prettyId = `REQ-${tglFormatId}-${padId}`;
+
             return {
-              id: req.no_urut ? `REQ-${rawDate.toISOString().slice(0,10).replace(/-/g, '')}-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
+              id: prettyId, // ID sudah seragam
               originalId: req.id, 
               requester: req.user?.fullName || req.user?.username || 'user',
               unit: req.user?.divisi || req.unit || 'KC Semarang',
@@ -78,7 +148,7 @@ export default function ActivityLogManager() {
       if (periodType === 'Semua') return true;
       
       const itemDate = new Date(item.date);
-      if (isNaN(itemDate.getTime())) return true; // Bypass kalau date aneh
+      if (isNaN(itemDate.getTime())) return true; 
 
       const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
       const itemYear = String(itemDate.getFullYear());
@@ -90,7 +160,6 @@ export default function ActivityLogManager() {
       }
       return true;
     })
-    // 🔥 PELINDUNG PENCARIAN (NULL-SAFETY)
     .filter(item =>
       (item.requester || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,7 +201,6 @@ export default function ActivityLogManager() {
     toast.success("Laporan berhasil diunduh. Fitur hapus riwayat terbuka.");
   };
 
-  // 🔥 FUNGSI BARU UNTUK EXPORT LAPORAN OPNAME (STOK BARANG)
   const handleExportOpname = async () => {
     const loadingToast = toast.loading("Mengambil data stok dari gudang...");
     try {
@@ -146,7 +214,6 @@ export default function ActivityLogManager() {
         let data = resJson.data || resJson || [];
         if (!Array.isArray(data)) data = [];
 
-        // Filter menyesuaikan input kotak pencarian di halaman Activity Log
         const filteredData = data.filter(item => {
           const name = item.nama_barang || item.nama_aset || item.name || '';
           const kode = item.kode_barang || item.id || '';
@@ -230,14 +297,29 @@ export default function ActivityLogManager() {
     }
   };
 
+  // 🔥 STATUS BADGE (Selesai -> Approved, Ditolak -> Rejected)
   const getStatusBadge = (status) => {
     const statLower = String(status).toLowerCase();
+    
     if (statLower === 'approved' || statLower === 'disetujui' || statLower === 'selesai') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20"><CheckCircle2 size={13} /> Selesai</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20">
+          <Clock size={13} /> Selesai
+        </span>
+      );
     } else if (statLower === 'rejected' || statLower === 'ditolak') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200"><XCircle size={13} /> Ditolak</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200">
+          <Clock size={13} /> Ditolak
+        </span>
+      );
     }
-    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200"><Clock size={13} /> {status}</span>;
+    
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
+        <Clock size={13} /> Pending
+      </span>
+    );
   };
 
   const getTypeIcon = (type) => {
@@ -256,7 +338,6 @@ export default function ActivityLogManager() {
           <p className="text-xs text-white mt-0.5">Pantau arus barang masuk/keluar dan rekapitulasi data logistik BSN</p>
         </div>
 
-        {/* 🔥 PERUBAHAN TOMBOL DAN URUTANNYA DI SINI */}
         <div className="flex items-center gap-3 self-start md:self-auto">
           <button 
             onClick={() => setIsDeleteModalOpen(true)}
@@ -289,135 +370,140 @@ export default function ActivityLogManager() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:bg-white transition-colors"
             />
           </div>
           
-          <div className="flex gap-2">
-            <select 
+          <div className="flex gap-2 relative z-40">
+            <CustomDropdown 
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
-            >
-              <option value="Semua">Semua Transaksi</option>
-              <option value="Masuk">Barang Masuk</option>
-              <option value="Keluar">Barang Keluar</option>
-            </select>
-
-            <select 
+              onChange={setTypeFilter}
+              triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2.5"
+              options={[
+                { label: 'Semua Transaksi', value: 'Semua' },
+                { label: 'Barang Masuk', value: 'Masuk' },
+                { label: 'Barang Keluar', value: 'Keluar' }
+              ]}
+            />
+            <CustomDropdown 
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
-            >
-              <option value="Semua">Semua Status</option>
-              <option value="Approved">Approved / Selesai</option>
-              <option value="Pending">Pending</option>
-              <option value="Rejected">Rejected / Ditolak</option>
-            </select>
+              onChange={setStatusFilter}
+              triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2.5"
+              options={[
+                { label: 'Semua Status', value: 'Semua' },
+                { label: 'Approved / Selesai', value: 'Approved' },
+                { label: 'Pending', value: 'Pending' },
+                { label: 'Rejected / Ditolak', value: 'Rejected' }
+              ]}
+            />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-100">
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-100 relative z-30">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-600">
             <Calendar size={16} /> Filter Periode:
           </div>
           
-          <select 
+          <CustomDropdown 
             value={periodType}
-            onChange={(e) => setPeriodType(e.target.value)}
-            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer"
-          >
-            <option value="Semua">Semua Waktu</option>
-            <option value="Bulan">Berdasarkan Bulan</option>
-            <option value="Tahun">Berdasarkan Tahun</option>
-          </select>
+            onChange={setPeriodType}
+            triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2"
+            minWidth="min-w-[170px]"
+            options={[
+              { label: 'Semua Waktu', value: 'Semua' },
+              { label: 'Berdasarkan Bulan', value: 'Bulan' },
+              { label: 'Berdasarkan Tahun', value: 'Tahun' }
+            ]}
+          />
 
           {periodType === 'Bulan' && (
-            <select 
+            <CustomDropdown 
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
-            >
-              <option value="01">Januari</option>
-              <option value="02">Februari</option>
-              <option value="03">Maret</option>
-              <option value="04">April</option>
-              <option value="05">Mei</option>
-              <option value="06">Juni</option>
-              <option value="07">Juli</option>
-              <option value="08">Agustus</option>
-              <option value="09">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">Desember</option>
-            </select>
+              onChange={setSelectedMonth}
+              triggerClassName="bg-blue-50 border-blue-200 text-blue-800 py-2"
+              minWidth="min-w-[140px]"
+              options={[
+                { label: 'Januari', value: '01' }, { label: 'Februari', value: '02' },
+                { label: 'Maret', value: '03' }, { label: 'April', value: '04' },
+                { label: 'Mei', value: '05' }, { label: 'Juni', value: '06' },
+                { label: 'Juli', value: '07' }, { label: 'Agustus', value: '08' },
+                { label: 'September', value: '09' }, { label: 'Oktober', value: '10' },
+                { label: 'November', value: '11' }, { label: 'Desember', value: '12' }
+              ]}
+            />
           )}
 
           {(periodType === 'Bulan' || periodType === 'Tahun') && (
-            <select 
+            <CustomDropdown 
               value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
-            >
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-            </select>
+              onChange={setSelectedYear}
+              triggerClassName="bg-blue-50 border-blue-200 text-blue-800 py-2"
+              minWidth="min-w-[120px]"
+              options={[
+                { label: '2025', value: '2025' },
+                { label: '2026', value: '2026' }
+              ]}
+            />
           )}
         </div>
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
+        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200 relative z-0">
           Memuat data log dari database...
         </div>
       ) : filteredHistory.length === 0 ? (
-        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
+        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200 relative z-0">
           Tidak ditemukan riwayat yang sesuai dengan filter.
         </div>
       ) : (
-        filteredHistory.map((item) => (
-          <div key={item.id} className="relative mb-4 pl-14 group">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
-              {getTypeIcon(item.type)}
-            </div>
+        <div className="relative z-0">
+          {filteredHistory.map((item) => (
+            <div key={item.id} className="relative mb-4 pl-14 group">
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
+                {getTypeIcon(item.type)}
+              </div>
 
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="space-y-1.5">
-                  <p className="text-sm text-zinc-700">
-                    <span className="font-bold text-zinc-900">{item.requester}</span> 
-                    {item.type === 'Masuk' 
-                      ? ' mendaftarkan barang masuk/restock berupa ' 
-                      : ' melakukan pengambilan barang untuk dikirim ke '}
-                    {item.type !== 'Masuk' && (
-                      <span className="font-bold text-zinc-900 underline decoration-zinc-300 underline-offset-2 mr-1">
-                        {item.unit}
+              <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
+                  <div className="space-y-1.5">
+                    {/* 🔥 REDAKSI & STYLING TEXT SESUAI GAMBAR KE-2 */}
+                    <p className="text-sm text-zinc-700">
+                      <span className="font-bold text-zinc-900">{item.requester}</span> 
+                      {item.type === 'Masuk' 
+                        ? ' mendaftarkan barang masuk/restock berupa ' 
+                        : ' mengajukan permintaan aset inventaris untuk dikirim ke '}
+                      {item.type !== 'Masuk' && (
+                        <span className="font-bold text-zinc-900 mr-1">
+                          {item.unit}
+                        </span>
+                      )}
+                      berupa <span className="font-bold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium pt-1">
+                      <span className="text-zinc-400"><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
+                      <span className="text-zinc-400"><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
+                      {/* 🔥 MAP PIN HIGHLIGHT HIJAU DIHILANGKAN, JADI TEKS ABU-ABU */}
+                      <span className="flex items-center gap-1 text-zinc-500 font-medium">
+                        <MapPin size={12} /> {item.unit}
                       </span>
-                    )}
-                    berupa <span className="font-bold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
-                    <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
-                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
-                    <span className="text-[#00664b] font-bold flex items-center gap-1 bg-[#e7f0ec] px-2 py-0.5 rounded-md">
-                      <MapPin size={12} /> {item.unit}
-                    </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
-                  <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
-                    item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
-                  }`}>
-                    <Package size={13} /> {item.type}
+                  <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
+                    <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
+                      item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
+                    }`}>
+                      <Package size={13} /> {item.type}
+                    </div>
+                    {getStatusBadge(item.managerStatus)}
                   </div>
-                  {getStatusBadge(item.managerStatus)}
                 </div>
               </div>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
 
       {/* MODAL KONFIRMASI HAPUS RIWAYAT */}
