@@ -226,7 +226,7 @@ export default function LogAktifitasAdmin() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#1A5CFF] focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
           
@@ -234,7 +234,7 @@ export default function LogAktifitasAdmin() {
             <select 
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1A5CFF] cursor-pointer font-medium"
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Transaksi</option>
               <option value="Masuk">Barang Masuk</option>
@@ -244,7 +244,7 @@ export default function LogAktifitasAdmin() {
             <select 
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1A5CFF] cursor-pointer font-medium"
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Status</option>
               <option value="Approved">Approved / Selesai</option>
@@ -262,7 +262,7 @@ export default function LogAktifitasAdmin() {
           <select 
             value={periodType}
             onChange={(e) => setPeriodType(e.target.value)}
-            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A5CFF] cursor-pointer"
+            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer"
           >
             <option value="Semua">Semua Waktu</option>
             <option value="Bulan">Berdasarkan Bulan</option>
@@ -273,7 +273,7 @@ export default function LogAktifitasAdmin() {
             <select 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-[#1A5CFF]/10 border border-[#1A5CFF]/20 text-sm text-[#1A5CFF] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A5CFF] cursor-pointer font-medium"
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="01">Januari</option>
               <option value="02">Februari</option>
@@ -294,7 +294,7 @@ export default function LogAktifitasAdmin() {
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-[#1A5CFF]/10 border border-[#1A5CFF]/20 text-sm text-[#1A5CFF] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A5CFF] cursor-pointer font-medium"
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="2025">2025</option>
               <option value="2026">2026</option>

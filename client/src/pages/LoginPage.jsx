@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: "", password: "", remember: false });
   const [error, setError] = useState({ username: "", password: "" });
 
+  // 🔥 STATE BARU UNTUK MODAL KEDALUWARSA LUPA PASSWORD
+  const [resetExpired, setResetExpired] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
@@ -142,6 +146,53 @@ export default function LoginPage() {
     }
   };
 
+  // 🔥 FUNGSI BARU UNTUK 1-KLIK RESEND LINK RESET
+  const handleResendExpiredReset = async () => {
+    setIsResending(true);
+    const loadingToast = toast.loading("Mengirim link baru...");
+
+    try {
+      // Kita panggil ulang API forgot-password pake email yang udah ada di memori
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await res.json();
+      toast.dismiss(loadingToast);
+
+      if (res.ok) {
+        setResetExpired(false);
+        setForgotEmailStep(0); // Balikin ke halaman login awal
+        setForgotEmail(""); 
+        setResetToken("");
+        
+        toast.custom((t) => (
+          <div className={`${t.visible ? 'animate-in slide-in-from-top-2 fade-in' : 'animate-out slide-out-to-top-2 fade-out'} max-w-[340px] w-full bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-[12px] border border-slate-100 p-4 flex items-center gap-4`}>
+            <div className="flex items-center justify-center shrink-0">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <p className="text-[14px] font-semibold text-[#00634b] leading-tight">Link Baru Terkirim!</p>
+              <p className="text-[12px] text-slate-700 leading-tight mt-1">silahkan cek kotak masuk email anda.</p>
+            </div>
+          </div>
+        ), { position: "top-center", duration: 5000 });
+      } else {
+        toast.error(data.message || "Gagal mengirim link baru.");
+      }
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Gagal terhubung ke server.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
 
@@ -194,7 +245,8 @@ export default function LoginPage() {
         ), { position: "top-center", duration: 5000 });
 
       } else {
-        toast.error(data.message || "Gagal memperbarui password.");
+        // 🔥 Kalau error gara-gara kedaluwarsa atau token tidak valid, pop-up dimunculkan
+        setResetExpired(true);
       }
     } catch (err) {
       toast.dismiss(loadingToast);
@@ -211,6 +263,33 @@ export default function LoginPage() {
 
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/40" /> 
+
+      {/* 🔥 MODAL LUPA PASSWORD KEDALUWARSA 1-KLIK (Tanpa Input Teks) */}
+      {resetExpired && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
+            <button onClick={() => setResetExpired(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-800">
+              <FaXmark size={20} />
+            </button>
+            
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4">
+              <FaXmark className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-[20px] font-bold text-red-500">Verifikasi Gagal</h2>
+            <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed px-2">
+              Link verifikasi sudah kadaluarsa.
+            </p>
+
+            <button 
+              onClick={handleResendExpiredReset}
+              disabled={isResending}
+              className="mt-7 w-full flex justify-center items-center rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
+            >
+              {isResending ? "Memproses..." : "Kirim Ulang Email Verifikasi"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ================= STEP 0: LOGIN ================= */}
       {forgotStep === 0 && (
