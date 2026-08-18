@@ -15,7 +15,6 @@ const generateRandomColor = (index) => {
   return color;
 };
 
-// 🔥 FUNGSI FORMAT TANGGAL LENGKAP (YYYY-MM-DD)
 const formatFullDate = (rawDate) => {
   if (!rawDate) return '-';
   const d = new Date(rawDate);
@@ -43,7 +42,6 @@ export default function AdminDashboard({ role = 'admin' }) {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         const headers = { "Authorization": `Bearer ${token}` };
 
-        // 1. Fetch data murni dari API
         const [reqRes, assetsRes] = await Promise.all([
           fetch(`${API_URL}/inventory/admin/requests`, { headers }),
           fetch(`${API_URL}/inventory/assets`, { headers })
@@ -62,16 +60,24 @@ export default function AdminDashboard({ role = 'admin' }) {
           assets = assetsJson.data || assetsJson || [];
         }
 
-        // ----------------------------------------------------
-        // 2. HITUNG STATISTIK (LOGIKA MATEMATIKA DIPERBAIKI)
-        // ----------------------------------------------------
-        const totalTersedia = assets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
+        // 🔥 PERBAIKAN 1: Filter aset agar yang di-TRASH (deleted_at) tidak ikut terhitung!
+        const activeAssets = assets.filter(item => !item.deleted_at);
 
-        const approvedRequests = requests.filter(r => 
-          ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
-        );
-        const totalKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
+        // ----------------------------------------------------
+        // 2. HITUNG STATISTIK (Hukum Kekekalan Stok)
+        // ----------------------------------------------------
         
+        // A. Total Tersedia (Sisa Gudang Asli)
+        const totalTersedia = activeAssets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
+
+        // B. Total Keluar (Hanya yang berstatus SELESAI / APPROVED)
+        const approvedRequests = requests.filter(r => 
+          ['APPROVED', 'SELESAI', 'DISETUJUI', 'DITERIMA', 'DISERAHKAN'].includes((r.status || '').toUpperCase())
+        );
+        // Penting: Gunakan jumlah_disetujui jika ada, jika tidak gunakan jumlah
+        const totalKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah_disetujui) || parseInt(curr.jumlah) || 0), 0);
+        
+        // C. Total Masuk (Barang Sisa + Barang Keluar)
         const totalMasuk = totalTersedia + totalKeluar;
 
         setStats({
@@ -81,10 +87,10 @@ export default function AdminDashboard({ role = 'admin' }) {
         });
 
         // ----------------------------------------------------
-        // 3. CHART KATEGORI (FIX BUGS [object Object])
+        // 3. CHART KATEGORI (Hanya dari activeAssets)
         // ----------------------------------------------------
         const categoryMap = {};
-        assets.forEach(asset => {
+        activeAssets.forEach(asset => {
           let katName = 'Tanpa Kategori';
           
           if (asset.category && typeof asset.category.name === 'string') {
@@ -105,25 +111,33 @@ export default function AdminDashboard({ role = 'admin' }) {
           color: generateRandomColor(idx)
         }));
 
-        setCategoryData(formattedCategories);
+        // Filter untuk membuang kategori yang stoknya 0 (opsional tapi lebih rapi)
+        setCategoryData(formattedCategories.filter(c => c.value > 0));
 
         // ----------------------------------------------------
-        // 4. LOG AKTIVITAS (FIX TANGGAL + TAHUN)
+        // 4. LOG AKTIVITAS 
         // ----------------------------------------------------
-        const requestLogs = requests.map(req => ({
-          id: req.id,
-          item: req.nama_aset || 'Barang Logistik',
-          unit: req.user?.divisi || req.user?.fullName || 'User BSN',
-          type: ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes((req.status || '').toUpperCase()) ? 'Keluar' : 'Pending',
-          rawDate: new Date(req.createdAt || Date.now()),
-          date: formatFullDate(req.createdAt || Date.now())
-        }));
+        const requestLogs = requests
+          .filter(req => !['DITOLAK', 'REJECTED'].includes((req.status || '').toUpperCase())) // Jangan tampilkan yang ditolak
+          .map(req => {
+            const isDone = ['APPROVED', 'SELESAI', 'DISETUJUI', 'DITERIMA', 'DISERAHKAN'].includes((req.status || '').toUpperCase());
+            return {
+              id: req.id,
+              item: req.nama_aset || 'Barang Logistik',
+              unit: req.user?.divisi || req.user?.fullName || 'User BSN',
+              type: isDone ? 'Keluar' : 'Keluar', // Semua request adalah niat keluar
+              status: isDone ? 'Selesai' : 'Pending', // Status asli di log mini
+              rawDate: new Date(req.createdAt || Date.now()),
+              date: formatFullDate(req.createdAt || Date.now())
+            };
+          });
 
-        const assetLogs = assets.map(ast => ({
+        const assetLogs = activeAssets.map(ast => ({
           id: ast.id || ast.kode_barang,
           item: ast.nama_barang || 'Aset Baru',
           unit: 'Gudang Utama',
           type: 'Masuk',
+          status: 'Selesai', // Barang masuk otomatis selesai
           rawDate: new Date(ast.createdAt || Date.now()),
           date: formatFullDate(ast.createdAt || Date.now())
         }));
@@ -146,7 +160,6 @@ export default function AdminDashboard({ role = 'admin' }) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header Utama */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-white capitalize">Admin Overview</h2>
@@ -154,7 +167,6 @@ export default function AdminDashboard({ role = 'admin' }) {
         </div>
       </div>
 
-      {/* Ringkasan Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md transition-all hover:scale-[1.01]">
           <h3 className="text-zinc-500 text-sm font-medium">Total Barang Tersedia</h3>
@@ -176,10 +188,9 @@ export default function AdminDashboard({ role = 'admin' }) {
         </div>
       </div>
 
-      {/* Konten Utama */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* CHART DONUT SETENGAH LINGKARAN */}
+        {/* CHART DONUT */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md flex flex-col justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">Distribusi Stok per Kategori</h2>
           
@@ -187,7 +198,7 @@ export default function AdminDashboard({ role = 'admin' }) {
             {isLoading ? (
               <div className="h-full flex items-center justify-center text-xs text-zinc-400">Memuat chart...</div>
             ) : categoryData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-zinc-400">Belum ada data.</div>
+              <div className="h-full flex items-center justify-center text-xs text-zinc-400">Belum ada data stok barang aktif.</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
@@ -210,7 +221,6 @@ export default function AdminDashboard({ role = 'admin' }) {
             )}
           </div>
 
-          {/* LEGEND CUSTOM */}
           {!isLoading && categoryData.length > 0 && (
             <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 pt-4 border-t border-zinc-100 mt-2">
               {categoryData.map((cat, idx) => (
@@ -230,7 +240,6 @@ export default function AdminDashboard({ role = 'admin' }) {
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">Aktivitas Terbaru</h2>
           <div className="overflow-x-auto">
-            {/* 🔥 TABLE-FIXED MENGUNCI LEBAR TABEL */}
             <table className="w-full text-sm text-left table-fixed">
               <thead>
                 <tr className="text-zinc-500 border-b bg-zinc-50/50 text-xs uppercase font-semibold">
@@ -248,7 +257,6 @@ export default function AdminDashboard({ role = 'admin' }) {
                 ) : (
                   activityLogs.map((log, idx) => (
                     <tr key={idx} className="hover:bg-zinc-50/40 transition-colors">
-                      {/* 🔥 NAMA BARANG DIRINGKAS DENGAN (...) SECARA OTOMATIS */}
                       <td className="py-3 px-2 font-semibold text-zinc-800 truncate" title={log.item}>
                         {log.item}
                       </td>
@@ -256,14 +264,13 @@ export default function AdminDashboard({ role = 'admin' }) {
                         {log.unit}
                       </td> 
                       <td className="py-3 px-2">
+                        {/* Menyesuaikan badge agar konsisten dengan warna status */}
                         <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md border ${
-                          log.type === 'Masuk'
+                          log.status === 'Selesai'
                             ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                            : log.type === 'Keluar'
-                            ? 'bg-red-50 text-red-600 border-red-100'
-                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                            : 'bg-orange-50 text-orange-600 border-orange-100'
                         }`}>
-                          {log.type}
+                          {log.status === 'Selesai' && log.type === 'Masuk' ? 'Masuk' : log.status === 'Selesai' ? 'Selesai' : 'Pending'}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-xs text-zinc-500 font-mono">{log.date}</td>
