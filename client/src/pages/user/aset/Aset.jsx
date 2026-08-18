@@ -172,7 +172,8 @@ export default function Aset({ setCurrentView }) {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {cart.map((item) => (
                   <span key={item.kodeAset} className="inline-flex items-center gap-1 bg-white border border-zinc-200 text-zinc-700 font-medium text-[10px] px-2 py-0.5 rounded-full capitalize">
-                    {item.namaAset}
+                    {/* 🔥 Truncate pada badge nama di keranjang atas supaya nggak ngerusak navbar jika super panjang */}
+                    <span className="truncate max-w-[120px] inline-block align-bottom">{item.namaAset}</span>
                     <button onClick={() => handleRemoveFromCart(item.kodeAset)} className="text-red-500 hover:text-red-700 ml-0.5 font-bold cursor-pointer">×</button>
                   </span>
                 ))}
@@ -301,30 +302,34 @@ export default function Aset({ setCurrentView }) {
                   </div>
                 )}
 
-                {/* 🔥 PERBAIKAN: Gambar List - Hapus padding, ubah jadi object-cover */}
                 <div className="w-28 h-28 rounded-2xl border border-zinc-100 shrink-0 overflow-hidden relative">
                   <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-cover" />
                 </div>
 
-                <div className="flex flex-col justify-between flex-1 py-1">
-                  <div>
-                    <h3 className="font-bold text-sm capitalize text-zinc-700 border-b border-zinc-900 pb-1 tracking-tight pr-14">
+                {/* 🔥 FITUR TRUNCATE YANG SUDAH DIPERBAIKI UNTUK CARD DI HALAMAN ASET */}
+                {/* overflow-hidden dan min-w-0 pada container penting agar flexbox tidak melar ke samping */}
+                <div className="flex flex-col justify-between flex-1 py-1 min-w-0">
+                  <div className="overflow-hidden">
+                    <h3 
+                      className="font-bold text-sm capitalize text-zinc-700 border-b border-zinc-900 pb-1 w-full truncate block" 
+                      title={aset.nama}
+                    >
                       {aset.nama}
                     </h3>
                     <div className="mt-2.5 space-y-1.5 text-[11px] font-bold text-zinc-700">
                       <div className="flex items-center gap-2.5">
-                        <Calendar size={13} className="text-zinc-500" />
-                        <span className="text-zinc-400 font-normal">|</span>
+                        <Calendar size={13} className="text-zinc-500 shrink-0" />
+                        <span className="text-zinc-400 font-normal shrink-0">|</span>
                         <span>{aset.tglUpdate}</span>
                       </div>
                       <div className="flex items-center gap-2.5">
-                        <Package size={13} className="text-zinc-500" />
-                        <span className="text-zinc-400 font-normal">|</span>
+                        <Package size={13} className="text-zinc-500 shrink-0" />
+                        <span className="text-zinc-400 font-normal shrink-0">|</span>
                         <span className={isHabis ? 'text-red-500' : ''}>{aset.stok}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="inline-block self-start text-[11px] font-bold px-3 py-0.5 border border-emerald-600/40 text-[#00664b] bg-emerald-50/30 rounded-full mt-2">
+                  <div className="inline-block self-start text-[11px] font-bold px-3 py-0.5 border border-emerald-600/40 text-[#00664b] bg-emerald-50/30 rounded-full mt-2 truncate max-w-full">
                     {aset.kode}
                   </div>
                 </div>
@@ -343,7 +348,6 @@ export default function Aset({ setCurrentView }) {
             </button>
 
             <div className="w-44 flex flex-col items-center justify-center gap-4 shrink-0">
-              {/* 🔥 PERBAIKAN: Gambar Modal Popup - Hapus padding, ubah jadi object-cover */}
               <div className="w-full h-40 rounded-2xl border border-zinc-100 overflow-hidden">
                 <img src={selectedAsset.gambar} alt={selectedAsset.nama} className="w-full h-full object-cover" />
               </div>
@@ -352,9 +356,14 @@ export default function Aset({ setCurrentView }) {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col justify-between py-1">
-              <div>
-                <h3 className="font-extrabold text-xl capitalize text-zinc-900 border-b border-zinc-900 pb-1.5 tracking-tight">
+            {/* 🔥 FITUR TEXT WRAPPING / BREAK-WORDS DI MODAL POPUP */}
+            {/* min-w-0 pada kolom flex ini memaksa kontainer untuk mengikuti ukuran parent, 
+                lalu break-all / break-words membuat teks panjang yg ga ada spasi akan patah ke bawah */}
+            <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
+              <div className="min-w-0">
+                <h3 
+                  className="font-extrabold text-xl capitalize text-zinc-900 border-b border-zinc-900 pb-1.5 tracking-tight w-full break-words"
+                >
                   {selectedAsset.nama}
                 </h3>
 
@@ -371,7 +380,7 @@ export default function Aset({ setCurrentView }) {
                           handleRemoveFromCart(selectedAsset.kode);
                           setSelectedAsset(null);
                         }} 
-                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center flex items-center justify-center gap-2"
                       >
                         Hapus dari Permintaan
                       </button>
@@ -379,7 +388,7 @@ export default function Aset({ setCurrentView }) {
                       <button 
                         type="button" 
                         onClick={handleAddToCart} 
-                        className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center flex items-center justify-center gap-2"
                       >
                         <ShoppingCart size={14} /> Masukkan ke Permintaan
                       </button>

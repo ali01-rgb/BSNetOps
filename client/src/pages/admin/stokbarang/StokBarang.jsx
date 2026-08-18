@@ -102,18 +102,6 @@ export default function StokBarang({ role = 'admin' }) {
         }
       } 
       else if (deleteModal.type === 'hard') {
-        // 🔥 VALIDASI: CEK JIKA BARANG INI PERNAH DIPINJAM/DIMINTA
-        // Untuk sekarang, kita deteksi apakah barang punya field `status` 
-        // atau info tambahan yang menandakan barang sudah ada riwayatnya.
-        // Jika iya, hentikan proses Hapus Permanen.
-        
-        // (Ini contoh sederhana, misal jika item punya properti isUsed atau jika stok awalnya berkurang)
-        if (deleteModal.item.hasHistory || deleteModal.item.stok < deleteModal.item.stokAsli) {
-           toast.error("Barang ini sudah memiliki riwayat permintaan. Tidak dapat dihapus permanen, hanya bisa dipindahkan ke Trash.");
-           setDeleteModal({ isOpen: false, type: null, item: null });
-           return;
-        }
-
         const res = await fetch(`${API_URL}/inventory/assets/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
@@ -123,18 +111,13 @@ export default function StokBarang({ role = 'admin' }) {
           setItems(items.filter(item => item.id !== id));
           toast.success("Barang dihapus permanen.");
         } else {
-            // Tangkap jika database menolak hard-delete karena constraint foreign key
-             const errorData = await res.json().catch(() => ({}));
-             if(res.status === 400 || res.status === 500) {
-                 toast.error(errorData.message || "Barang ini memiliki riwayat. Tidak dapat dihapus permanen.");
-             } else {
-                 throw new Error("Gagal hard delete");
-             }
+          // 🔥 JIKA GAGAL (KARENA ADA RIWAYAT TRANSAKSI / FOREIGN KEY), TAMPILKAN ERROR INI
+          toast.error("Gagal! Barang ini sudah pernah diajukan/memiliki riwayat. Tidak dapat dihapus permanen demi audit data.");
         }
       }
     } catch (error) {
       console.error('Gagal memproses penghapusan:', error.message);
-      toast.error('Gagal memproses penghapusan');
+      toast.error('Terjadi kesalahan saat memproses penghapusan');
     } finally {
       setDeleteModal({ isOpen: false, type: null, item: null });
     }
@@ -283,15 +266,17 @@ export default function StokBarang({ role = 'admin' }) {
 
       <div className="bg-white border border-zinc-200 rounded-xl shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          {/* 🔥 TABLE-FIXED: Mengunci tabel agar lebar kolom tidak bergeser */}
+          <table className="w-full text-sm text-left table-fixed">
             <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
               <tr>
+                {/* 🔥 PEMBAGIAN PERSENTASE KOLOM YANG PAS (Total 100%) */}
                 <th className="p-4 w-[15%]">Kode Barang</th>
-                <th className="p-4 w-[25%] max-w-[250px]">Nama Barang</th>
+                <th className="p-4 w-[28%]">Nama Barang</th>
                 <th className="p-4 w-[15%]">Kategori</th>
                 <th className="p-4 w-[10%]">Stok</th>
-                <th className="p-4 w-[15%]">Lokasi</th>
-                <th className="p-4 w-[15%]">Tanggal Masuk</th>
+                <th className="p-4 w-[12%]">Lokasi</th>
+                <th className="p-4 w-[10%]">Tanggal</th>
                 {isAdmin && <th className="p-4 w-[10%] text-right">Aksi</th>}
               </tr>
             </thead>
@@ -309,23 +294,22 @@ export default function StokBarang({ role = 'admin' }) {
               ) : (
                 processedItems.map((item) => (
                   <tr key={item.id || item.kode_barang} className="hover:bg-zinc-50/40 transition-colors">
-                    <td className="p-4 font-mono font-bold text-zinc-900">{item.kode_barang || '-'}</td>
-                    <td className="p-4 font-semibold text-zinc-900">
-                      <div 
-                        className="truncate max-w-[160px] lg:max-w-[250px]" 
-                        title={item.nama_barang || item.nama_aset || item.name}
-                      >
-                        {item.nama_barang || item.nama_aset || item.name}
-                      </div>
+                    <td className="p-4 font-mono font-bold text-zinc-900 truncate" title={item.kode_barang}>
+                      {item.kode_barang || '-'}
                     </td>
                     
-                    <td className="p-4 text-zinc-600">
+                    {/* 🔥 TRUNCATE BISA BEKERJA KARENA TABLE SUDAH FIXED */}
+                    <td className="p-4 font-semibold text-zinc-900 truncate" title={item.nama_barang || item.nama_aset || item.name}>
+                      {item.nama_barang || item.nama_aset || item.name}
+                    </td>
+                    
+                    <td className="p-4 text-zinc-600 truncate" title={item.category && !item.category.deleted_at ? item.category.name : '-'}>
                       {item.category && !item.category.deleted_at ? item.category.name : '-'}
                     </td>
                     
-                    <td className="p-4 font-bold text-[#00664b]">{item.stok ?? item.stock ?? 0} Unit</td>
-                    <td className="p-4 text-zinc-600">{item.location || '-'}</td>
-                    <td className="p-4 text-zinc-500 text-xs">{formatDate(item.createdAt || item.date)}</td>
+                    <td className="p-4 font-bold text-[#00664b] truncate">{item.stok ?? item.stock ?? 0} Unit</td>
+                    <td className="p-4 text-zinc-600 truncate" title={item.location || '-'}>{item.location || '-'}</td>
+                    <td className="p-4 text-zinc-500 text-xs truncate">{formatDate(item.createdAt || item.date)}</td>
                     
                     {isAdmin && (
                       <td className="p-4 text-right space-x-2">
@@ -456,10 +440,7 @@ export default function StokBarang({ role = 'admin' }) {
               {deleteModal.type === 'soft' ? (
                 <>
                   Apakah Anda yakin ingin memindahkan item 
-                  <span 
-                    className="font-bold text-zinc-800 inline-block max-w-[150px] truncate align-bottom px-1" 
-                    title={deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
-                  >
+                  <span className="font-bold text-zinc-800 mx-1">
                     "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
                   </span> 
                   ({deleteModal.item?.kode_barang}) ke tempat sampah?
@@ -467,10 +448,7 @@ export default function StokBarang({ role = 'admin' }) {
               ) : (
                 <>
                   PERINGATAN: Hapus PERMANEN 
-                  <span 
-                    className="font-bold text-zinc-800 inline-block max-w-[150px] truncate align-bottom px-1" 
-                    title={deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
-                  >
+                  <span className="font-bold text-zinc-800 mx-1">
                     "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
                   </span> 
                   ? Data ini tidak dapat dibatalkan, dan memori barang akan dihapus selamanya.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../../../supabaseClient'; 
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast'; 
 import { API_URL } from '@/api';
 
 export default function EditItem({ itemData, onClose, onSuccess }) {
@@ -22,7 +22,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
 
-  // Fetch daftar kategori
   useEffect(() => {
     let isMounted = true;
     const fetchCategories = async () => {
@@ -43,7 +42,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
     return () => { isMounted = false; };
   }, []);
 
-  // Pre-fill data lama ke form & set preview gambar lama
   useEffect(() => {
     if (itemData) {
       const imgUrl = itemData.image_url || itemData.image || null;
@@ -66,7 +64,7 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        toast.error("Ukuran gambar cukup besar (>2MB), proses simpan mungkin memerlukan waktu ekstra."); // 🔥 GANTI ALERT
+        toast.error("Ukuran gambar cukup besar (>2MB), proses simpan mungkin memerlukan waktu ekstra."); 
       }
       setFormData(prev => ({ ...prev, image: file }));
       const reader = new FileReader();
@@ -82,7 +80,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
     try {
       let finalImageUrl = formData.existingImageUrl;
 
-      // 1. Upload Gambar Baru ke Supabase jika user memilih file baru
       if (formData.image) {
         setLoadingStatus('Mengunggah foto baru...');
         const file = formData.image;
@@ -101,7 +98,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
         }
       }
 
-      // 2. Update Data ke Backend NestJS
       setLoadingStatus('Menyimpan perubahan...');
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const jumlahStok = parseInt(formData.stock, 10) || 0;
@@ -124,14 +120,14 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
 
       if (!res.ok) throw new Error("Gagal memperbarui item ke database.");
 
-      toast.success(`Sukses! Data item berhasil diperbarui.`); // 🔥 GANTI ALERT
+      toast.success(`Sukses! Data item berhasil diperbarui.`); 
       
       if (onSuccess) onSuccess(); 
       onClose(); 
 
     } catch (error) {
       console.error('Gagal memperbarui item:', error.message);
-      toast.error('Terjadi kesalahan saat memperbarui database: ' + error.message); // 🔥 GANTI ALERT
+      toast.error('Terjadi kesalahan saat memperbarui database: ' + error.message); 
     } finally {
       setLoading(false);
       setLoadingStatus('');
@@ -142,7 +138,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl border border-zinc-200 overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* HEADER */}
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
             <h3 className="text-lg font-bold text-zinc-900">Ubah Data Barang</h3>
@@ -155,7 +150,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
           </button>
         </div>
 
-        {/* FORM */}
         <form onSubmit={handleUpdate} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Nama Barang</label>
@@ -220,7 +214,6 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* DRAG & DROP / UPLOAD FOTO BARANG */}
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Foto Barang <span className="text-xs text-zinc-400 font-normal">(Opsional)</span></label>
             <div className="relative mt-1 flex justify-center px-6 pt-4 pb-5 border-2 border-zinc-300 border-dashed rounded-xl hover:border-[#00664b] transition-colors bg-zinc-50 hover:bg-zinc-100/50 group cursor-pointer overflow-hidden">
@@ -246,10 +239,10 @@ export default function EditItem({ itemData, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* FOOTER ACTION */}
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100 mt-2">
             <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
-            <button type="submit" disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50">
+            {/* 🔥 TOMBOL PERBARUI DATA SUDAH HIJAU */}
+            <button type="submit" disabled={loading} className="flex items-center gap-2 bg-[#00664b] hover:bg-[#004d3a] text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50">
               <Check size={16} /> {loading ? (loadingStatus || 'Memperbarui...') : 'Perbarui Data'}
             </button>
           </div>
