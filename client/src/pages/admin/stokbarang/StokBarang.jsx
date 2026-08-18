@@ -3,7 +3,7 @@ import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriang
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
 import toast from 'react-hot-toast'; 
-import * as XLSX from 'xlsx'; // 🔥 IMPORT XLSX UNTUK EXPORT EXCEL
+import * as XLSX from 'xlsx';
 import { API_URL } from '@/api';
 
 export default function StokBarang({ role = 'admin' }) {
@@ -20,16 +20,14 @@ export default function StokBarang({ role = 'admin' }) {
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, item: null });
 
-  // 🔥 STATE BARU UNTUK MODAL LAPORAN OPNAME
   const currentYear = new Date().getFullYear();
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
   
   const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
-  const [opnameType, setOpnameType] = useState('bulanan'); // 'bulanan' | 'tahunan'
+  const [opnameType, setOpnameType] = useState('bulanan'); 
   const [opnameMonth, setOpnameMonth] = useState(currentMonth);
   const [opnameYear, setOpnameYear] = useState(String(currentYear));
 
-  // Menghasilkan rentang 5 tahun (2 tahun sebelum, tahun ini, 2 tahun sesudah)
   const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const months = [
@@ -104,6 +102,18 @@ export default function StokBarang({ role = 'admin' }) {
         }
       } 
       else if (deleteModal.type === 'hard') {
+        // 🔥 VALIDASI: CEK JIKA BARANG INI PERNAH DIPINJAM/DIMINTA
+        // Untuk sekarang, kita deteksi apakah barang punya field `status` 
+        // atau info tambahan yang menandakan barang sudah ada riwayatnya.
+        // Jika iya, hentikan proses Hapus Permanen.
+        
+        // (Ini contoh sederhana, misal jika item punya properti isUsed atau jika stok awalnya berkurang)
+        if (deleteModal.item.hasHistory || deleteModal.item.stok < deleteModal.item.stokAsli) {
+           toast.error("Barang ini sudah memiliki riwayat permintaan. Tidak dapat dihapus permanen, hanya bisa dipindahkan ke Trash.");
+           setDeleteModal({ isOpen: false, type: null, item: null });
+           return;
+        }
+
         const res = await fetch(`${API_URL}/inventory/assets/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
@@ -112,6 +122,14 @@ export default function StokBarang({ role = 'admin' }) {
         if (res.ok) {
           setItems(items.filter(item => item.id !== id));
           toast.success("Barang dihapus permanen.");
+        } else {
+            // Tangkap jika database menolak hard-delete karena constraint foreign key
+             const errorData = await res.json().catch(() => ({}));
+             if(res.status === 400 || res.status === 500) {
+                 toast.error(errorData.message || "Barang ini memiliki riwayat. Tidak dapat dihapus permanen.");
+             } else {
+                 throw new Error("Gagal hard delete");
+             }
         }
       }
     } catch (error) {
@@ -144,14 +162,11 @@ export default function StokBarang({ role = 'admin' }) {
     }
   };
 
-  // 🔥 FUNGSI EKSEKUSI EXPORT LAPORAN OPNAME
   const handleExportOpname = () => {
     const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
     
-    // Ambil data yang aktif saja (tidak di tong sampah)
     let dataToFilter = items.filter(item => !item.deleted_at);
 
-    // Terapkan Filter Periode
     dataToFilter = dataToFilter.filter(item => {
       const itemDate = new Date(item.createdAt || item.date || Date.now());
       if (isNaN(itemDate.getTime())) return true;
@@ -190,7 +205,6 @@ export default function StokBarang({ role = 'admin' }) {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Opname");
     
-    // Penamaan file cerdas berdasarkan filter
     const fileName = `Laporan_Opname_Stok_${opnameType === 'bulanan' ? opnameMonth + '-' : ''}${opnameYear}.xlsx`;
     XLSX.writeFile(workbook, fileName);
 
@@ -240,7 +254,6 @@ export default function StokBarang({ role = 'admin' }) {
             </button>
           )}
 
-          {/* 🔥 TOMBOL LAPORAN OPNAME DITAMBAHKAN DI SINI */}
           {!showTrash && (
             <button onClick={() => setIsOpnameModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-emerald-50 hover:text-[#00664b] transition-all cursor-pointer shadow-md">
               <Download size={16} /> Laporan Opname
@@ -273,13 +286,13 @@ export default function StokBarang({ role = 'admin' }) {
           <table className="w-full text-sm text-left">
             <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
               <tr>
-                <th className="p-4">Kode Barang</th>
-                <th className="p-4">Nama Barang</th>
-                <th className="p-4">Kategori</th>
-                <th className="p-4">Stok</th>
-                <th className="p-4">Lokasi</th>
-                <th className="p-4">Tanggal Masuk</th>
-                {isAdmin && <th className="p-4 text-right">Aksi</th>}
+                <th className="p-4 w-[15%]">Kode Barang</th>
+                <th className="p-4 w-[25%] max-w-[250px]">Nama Barang</th>
+                <th className="p-4 w-[15%]">Kategori</th>
+                <th className="p-4 w-[10%]">Stok</th>
+                <th className="p-4 w-[15%]">Lokasi</th>
+                <th className="p-4 w-[15%]">Tanggal Masuk</th>
+                {isAdmin && <th className="p-4 w-[10%] text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -297,7 +310,14 @@ export default function StokBarang({ role = 'admin' }) {
                 processedItems.map((item) => (
                   <tr key={item.id || item.kode_barang} className="hover:bg-zinc-50/40 transition-colors">
                     <td className="p-4 font-mono font-bold text-zinc-900">{item.kode_barang || '-'}</td>
-                    <td className="p-4 font-semibold text-zinc-900">{item.nama_barang || item.nama_aset || item.name}</td>
+                    <td className="p-4 font-semibold text-zinc-900">
+                      <div 
+                        className="truncate max-w-[160px] lg:max-w-[250px]" 
+                        title={item.nama_barang || item.nama_aset || item.name}
+                      >
+                        {item.nama_barang || item.nama_aset || item.name}
+                      </div>
+                    </td>
                     
                     <td className="p-4 text-zinc-600">
                       {item.category && !item.category.deleted_at ? item.category.name : '-'}
@@ -338,12 +358,9 @@ export default function StokBarang({ role = 'admin' }) {
         </div>
       </div>
 
-      {/* 🔥 MODAL POP-UP PILIH PERIODE LAPORAN */}
       {isOpnameModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl p-7 animate-in zoom-in-95 duration-200">
-            
-            {/* Header Modal */}
             <div className="flex items-start gap-4 mb-6">
               <div className="w-12 h-12 rounded-full bg-[#dce9e3] flex items-center justify-center text-[#00634b] shrink-0">
                 <Calendar size={22} strokeWidth={2.5} />
@@ -354,9 +371,7 @@ export default function StokBarang({ role = 'admin' }) {
               </div>
             </div>
 
-            {/* Konten Form */}
             <div className="space-y-5">
-              {/* Jenis Rekap */}
               <div>
                 <label className="block text-[13px] font-semibold text-slate-800 mb-2">Jenis Rekap</label>
                 <div className="flex gap-3">
@@ -379,7 +394,6 @@ export default function StokBarang({ role = 'admin' }) {
                 </div>
               </div>
 
-              {/* Pilihan Bulan (Hanya muncul jika bulanan) */}
               {opnameType === 'bulanan' && (
                 <div>
                   <label className="block text-[13px] font-semibold text-slate-800 mb-2">Bulan</label>
@@ -395,7 +409,6 @@ export default function StokBarang({ role = 'admin' }) {
                 </div>
               )}
 
-              {/* Pilihan Tahun (Dinamis 5 Tahun) */}
               <div>
                 <label className="block text-[13px] font-semibold text-slate-800 mb-2">Tahun</label>
                 <select 
@@ -410,7 +423,6 @@ export default function StokBarang({ role = 'admin' }) {
               </div>
             </div>
 
-            {/* Footer Buttons */}
             <div className="flex items-center justify-end gap-5 mt-8">
               <button 
                 onClick={() => setIsOpnameModalOpen(false)}
@@ -425,7 +437,6 @@ export default function StokBarang({ role = 'admin' }) {
                 <Download size={18} /> Unduh Excel
               </button>
             </div>
-
           </div>
         </div>
       )}
@@ -443,9 +454,27 @@ export default function StokBarang({ role = 'admin' }) {
             
             <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
               {deleteModal.type === 'soft' ? (
-                <>Apakah Anda yakin ingin memindahkan item <b>"{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"</b> ({deleteModal.item?.kode_barang}) ke tempat sampah?</>
+                <>
+                  Apakah Anda yakin ingin memindahkan item 
+                  <span 
+                    className="font-bold text-zinc-800 inline-block max-w-[150px] truncate align-bottom px-1" 
+                    title={deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
+                  >
+                    "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
+                  </span> 
+                  ({deleteModal.item?.kode_barang}) ke tempat sampah?
+                </>
               ) : (
-                <>PERINGATAN: Hapus PERMANEN <b>"{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"</b>? Data ini tidak dapat dibatalkan, dan memori barang akan dihapus selamanya.</>
+                <>
+                  PERINGATAN: Hapus PERMANEN 
+                  <span 
+                    className="font-bold text-zinc-800 inline-block max-w-[150px] truncate align-bottom px-1" 
+                    title={deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
+                  >
+                    "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
+                  </span> 
+                  ? Data ini tidak dapat dibatalkan, dan memori barang akan dihapus selamanya.
+                </>
               )}
             </p>
             
