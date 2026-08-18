@@ -162,11 +162,7 @@ export default function AjukanPermintaan() {
         toast.error("Belum ada barang yang diajukan. Silakan pilih kembali dari katalog.");
         return;
       }
-      const isEmptyKeterangan = daftarBarang.some(b => !b.keterangan || b.keterangan.trim() === '');
-      if (isEmptyKeterangan) {
-        toast.error("Alasan permintaan barang wajib diisi untuk semua item.");
-        return;
-      }
+      // 🔥 Validasi Keterangan WAJIB DIHAPUS (Alasan sekarang opsional)
       setCurrentStep(3);
     }
   };
@@ -407,31 +403,36 @@ export default function AjukanPermintaan() {
                         
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                           <div>
+                            {/* 🔥 FONT DIPERBAIKI (TIDAK TERLALU TEBAL) */}
                             <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
                             <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
                           </div>
                           
                           <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2 text-[13px] font-semibold text-zinc-600">
+                            <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
                               Prioritas: 
-                              <span className={`px-2.5 py-1 rounded text-[11px] font-bold tracking-wide ${
+                              {/* 🔥 WARNA PRIORITAS DISAMAKAN: RENDAH(HIJAU), SEDANG(ORANYE), TINGGI(MERAH) */}
+                              <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${
                                 barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
-                                barang.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600' : 'bg-zinc-100 text-zinc-600'
+                                barang.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
                               }`}>
                                 {barang.prioritas}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-[13px] font-semibold text-zinc-600">
+                            <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
                               Kuantitas:
-                              <input 
-                                type="number" 
-                                min="1" 
-                                value={barang.jumlah} 
-                                onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                                className="w-14 border border-zinc-300 text-center rounded-md py-1 px-1.5 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
-                                required
-                              />
+                              <div className="flex items-center gap-1.5">
+                                <input 
+                                  type="number" 
+                                  min="1" 
+                                  value={barang.jumlah} 
+                                  onChange={(e) => handleQtyChange(idx, e.target.value)} 
+                                  className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
+                                  required
+                                />
+                                <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ - Stok</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -439,14 +440,14 @@ export default function AjukanPermintaan() {
                         <hr className="border-zinc-100 mb-4" />
 
                         <div>
-                          <label className="block text-[11px] font-bold text-zinc-600 mb-2">Alasan Permintaan Barang Ini:</label>
+                          <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
+                          {/* 🔥 ALASAN SEKARANG OPSIONAL (TIDAK ADA REQUIRED) */}
                           <input 
                             type="text" 
                             placeholder="Contoh: Stok alat tulis habis..." 
                             value={barang.keterangan || ''}
                             onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
                             className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
-                            required
                           />
                         </div>
 
@@ -510,9 +511,10 @@ export default function AjukanPermintaan() {
                         <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug">Alasan: {b.keterangan || '-'}</span>
                       </div>
                       <div className="text-center">
-                        <span className={`px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block ${
+                        {/* 🔥 WARNA PRIORITAS DISAMAKAN DENGAN STEP 2 */}
+                        <span className={`px-2 py-1 rounded text-[11px] font-bold inline-block ${
                           b.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
-                          b.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600' : 'bg-zinc-100 text-zinc-600'
+                          b.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
                         }`}>
                           {b.prioritas}
                         </span>
