@@ -25,6 +25,7 @@ export default function AjukanPermintaan() {
   });
 
   const [daftarBarang, setDaftarBarang] = useState(savedDraft?.daftarBarang || []);
+  const [masterAssets, setMasterAssets] = useState([]); // 🔥 STATE BARU UNTUK MENAMPUNG STOK ADMIN
 
   // 1. HITUNG PRIORITAS BERDASARKAN HISTORY
   useEffect(() => {
@@ -102,14 +103,39 @@ export default function AjukanPermintaan() {
     fetchUserProfile();
   }, []);
 
-  // 3. SET BARANG DARI KERANJANG ASET
+  // 🔥 3. FETCH DATA ASET ADMIN UNTUK COCOKAN STOK ASLI
+  useEffect(() => {
+    const fetchMasterAssets = async () => {
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        if (!token) return;
+
+        const res = await fetch(`${API_URL}/inventory/assets`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const resJson = await res.json();
+          const assets = resJson.data || resJson;
+          if (Array.isArray(assets)) {
+            setMasterAssets(assets);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil master aset:", err);
+      }
+    };
+
+    fetchMasterAssets();
+  }, []);
+
+  // 4. SET BARANG DARI KERANJANG ASET
   useEffect(() => {
     if (isMultiItem) {
       const items = savedAssets.map(asset => ({
         namaAset: asset.namaAset,
         kodeAset: asset.kodeAset,
         jumlah: asset.jumlah || 1,
-        stokAsli: asset.rawStok || '-', // Ambil stok asli dari keranjang jika ada
         keterangan: '', 
         prioritas: calculatedPriority
       }));
@@ -124,7 +150,7 @@ export default function AjukanPermintaan() {
     }
   }, [isMultiItem, calculatedPriority]);
 
-  // 4. AUTO SAVE DRAFT
+  // 5. AUTO SAVE DRAFT
   useEffect(() => {
     if (currentStep < 4 && (daftarBarang.length > 0 || formData.tanggalDibutuhkan || currentStep > 1)) {
       const draftData = {
@@ -380,10 +406,11 @@ export default function AjukanPermintaan() {
               {/* STEP 2: DETAIL DAFTAR BARANG */}
               {currentStep === 2 && (
                 <>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6">
+                  {/* 🔥 PERBAIKAN ALIGNMENT TANGGAL DIBUTUHKAN */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h2 className="text-xl font-bold text-zinc-900">Detail Daftar Barang</h2>
-                    <div className="flex flex-col items-start sm:items-end mt-4 sm:mt-0 w-full sm:w-auto">
-                      <label className="text-xs font-bold text-zinc-700 mb-1.5">Tanggal Dibutuhkan</label>
+                    <div className="flex flex-col items-start mt-4 sm:mt-0">
+                      <label className="text-xs font-bold text-zinc-700 mb-1.5 text-left w-full">Tanggal Dibutuhkan</label>
                       <input 
                         type="date" 
                         name="tanggalDibutuhkan" 
@@ -397,58 +424,65 @@ export default function AjukanPermintaan() {
                   </div>
 
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 pb-2">
-                    {daftarBarang.map((barang, idx) => (
-                      <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
-                        
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                          <div>
-                            <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
-                            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
-                          </div>
-                          
-                          <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
-                              Prioritas: 
-                              <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${
-                                barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
-                                barang.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
-                              }`}>
-                                {barang.prioritas}
-                              </span>
-                            </div>
+                    {daftarBarang.map((barang, idx) => {
+                      // 🔥 PENCARIAN STOK DINAMIS DARI TABEL MASTER ASSETS
+                      const matchedAsset = masterAssets.find(a => a.kode_barang === barang.kodeAset || a.id === barang.kodeAset || a.nama_barang === barang.namaAset);
+                      const stokTersedia = matchedAsset ? (matchedAsset.stok ?? matchedAsset.stock ?? 0) : '-';
 
-                            <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
-                              Kuantitas:
-                              <div className="flex items-center gap-1.5">
-                                <input 
-                                  type="number" 
-                                  min="1" 
-                                  value={barang.jumlah} 
-                                  onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                                  className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
-                                  required
-                                />
-                                <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ {barang.stokAsli || '-'} Stok</span>
+                      return (
+                        <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                            <div>
+                              <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
+                              <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+                                Prioritas: 
+                                <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${
+                                  barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
+                                  barang.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
+                                }`}>
+                                  {barang.prioritas}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+                                Kuantitas:
+                                <div className="flex items-center gap-1.5">
+                                  <input 
+                                    type="number" 
+                                    min="1" 
+                                    max={stokTersedia !== '-' ? stokTersedia : undefined}
+                                    value={barang.jumlah} 
+                                    onChange={(e) => handleQtyChange(idx, e.target.value)} 
+                                    className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
+                                    required
+                                  />
+                                  {/* 🔥 LOGIKA STOK MENAMPILKAN DATA ASLI */}
+                                  <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ {stokTersedia} Stok</span>
+                                </div>
                               </div>
                             </div>
                           </div>
+
+                          <hr className="border-zinc-100 mb-4" />
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
+                            <input 
+                              type="text" 
+                              placeholder="Contoh: Stok alat tulis habis..." 
+                              value={barang.keterangan || ''}
+                              onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
+                              className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                            />
+                          </div>
+
                         </div>
-
-                        <hr className="border-zinc-100 mb-4" />
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
-                          <input 
-                            type="text" 
-                            placeholder="Contoh: Stok alat tulis habis..." 
-                            value={barang.keterangan || ''}
-                            onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                            className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
-                          />
-                        </div>
-
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   <div className="text-center text-xs text-gray-500 mt-6">2/3</div>
