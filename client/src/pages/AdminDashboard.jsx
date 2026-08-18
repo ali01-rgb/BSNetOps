@@ -60,24 +60,17 @@ export default function AdminDashboard({ role = 'admin' }) {
           assets = assetsJson.data || assetsJson || [];
         }
 
-        // 🔥 PERBAIKAN 1: Filter aset agar yang di-TRASH (deleted_at) tidak ikut terhitung!
         const activeAssets = assets.filter(item => !item.deleted_at);
 
         // ----------------------------------------------------
-        // 2. HITUNG STATISTIK (Hukum Kekekalan Stok)
+        // 1. STATISTIK AKUMULASI
         // ----------------------------------------------------
-        
-        // A. Total Tersedia (Sisa Gudang Asli)
         const totalTersedia = activeAssets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
 
-        // B. Total Keluar (Hanya yang berstatus SELESAI / APPROVED)
         const approvedRequests = requests.filter(r => 
           ['APPROVED', 'SELESAI', 'DISETUJUI', 'DITERIMA', 'DISERAHKAN'].includes((r.status || '').toUpperCase())
         );
-        // Penting: Gunakan jumlah_disetujui jika ada, jika tidak gunakan jumlah
         const totalKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah_disetujui) || parseInt(curr.jumlah) || 0), 0);
-        
-        // C. Total Masuk (Barang Sisa + Barang Keluar)
         const totalMasuk = totalTersedia + totalKeluar;
 
         setStats({
@@ -87,7 +80,7 @@ export default function AdminDashboard({ role = 'admin' }) {
         });
 
         // ----------------------------------------------------
-        // 3. CHART KATEGORI (Hanya dari activeAssets)
+        // 2. CHART KATEGORI
         // ----------------------------------------------------
         const categoryMap = {};
         activeAssets.forEach(asset => {
@@ -111,33 +104,27 @@ export default function AdminDashboard({ role = 'admin' }) {
           color: generateRandomColor(idx)
         }));
 
-        // Filter untuk membuang kategori yang stoknya 0 (opsional tapi lebih rapi)
         setCategoryData(formattedCategories.filter(c => c.value > 0));
 
         // ----------------------------------------------------
-        // 4. LOG AKTIVITAS 
+        // 3. AKTIVITAS TERAKHIR (HANYA MASUK & KELUAR RESMI)
         // ----------------------------------------------------
-        const requestLogs = requests
-          .filter(req => !['DITOLAK', 'REJECTED'].includes((req.status || '').toUpperCase())) // Jangan tampilkan yang ditolak
-          .map(req => {
-            const isDone = ['APPROVED', 'SELESAI', 'DISETUJUI', 'DITERIMA', 'DISERAHKAN'].includes((req.status || '').toUpperCase());
-            return {
-              id: req.id,
-              item: req.nama_aset || 'Barang Logistik',
-              unit: req.user?.divisi || req.user?.fullName || 'User BSN',
-              type: isDone ? 'Keluar' : 'Keluar', // Semua request adalah niat keluar
-              status: isDone ? 'Selesai' : 'Pending', // Status asli di log mini
-              rawDate: new Date(req.createdAt || Date.now()),
-              date: formatFullDate(req.createdAt || Date.now())
-            };
-          });
+        // Request: HANYA yang sudah di-ACC Manager (Selesai/Disetujui)
+        const requestLogs = approvedRequests.map(req => ({
+          id: req.id,
+          item: req.nama_aset || 'Barang Logistik',
+          unit: req.user?.divisi || req.user?.fullName || req.unit || 'KC Semarang',
+          type: 'Keluar',
+          rawDate: new Date(req.createdAt || Date.now()),
+          date: formatFullDate(req.createdAt || Date.now())
+        }));
 
+        // Asset: Barang masuk aktif
         const assetLogs = activeAssets.map(ast => ({
           id: ast.id || ast.kode_barang,
-          item: ast.nama_barang || 'Aset Baru',
-          unit: 'Gudang Utama',
+          item: ast.nama_barang || ast.nama_aset || 'Aset Baru',
+          unit: 'Gudang Pusat',
           type: 'Masuk',
-          status: 'Selesai', // Barang masuk otomatis selesai
           rawDate: new Date(ast.createdAt || Date.now()),
           date: formatFullDate(ast.createdAt || Date.now())
         }));
@@ -190,7 +177,7 @@ export default function AdminDashboard({ role = 'admin' }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* CHART DONUT */}
+        {/* CHART DONUT KATEGORI */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md flex flex-col justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">Distribusi Stok per Kategori</h2>
           
@@ -236,24 +223,24 @@ export default function AdminDashboard({ role = 'admin' }) {
           )}
         </div>
 
-        {/* Tabel Aktivitas Terakhir */}
+        {/* TABEL AKTIVITAS TERAKHIR */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">Aktivitas Terbaru</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 mb-4">Aktivitas Terakhir</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-fixed">
               <thead>
                 <tr className="text-zinc-500 border-b bg-zinc-50/50 text-xs uppercase font-semibold">
-                  <th className="pb-3 pt-2 px-2 w-[40%]">Barang</th>
-                  <th className="pb-3 pt-2 px-2 w-[22%]">Unit</th>
-                  <th className="pb-3 pt-2 px-2 w-[18%]">Status</th>
-                  <th className="pb-3 pt-2 px-2 w-[20%]">Tanggal</th>
+                  <th className="pb-3 pt-2 px-2 w-[38%]">Barang</th>
+                  <th className="pb-3 pt-2 px-2 w-[24%]">Unit</th>
+                  <th className="pb-3 pt-2 px-2 w-[18%] text-center">Status</th>
+                  <th className="pb-3 pt-2 px-2 w-[20%] text-center">Tanggal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {isLoading ? (
                   <tr><td colSpan="4" className="py-6 text-center text-zinc-400 text-xs">Memuat data aktivitas...</td></tr>
                 ) : activityLogs.length === 0 ? (
-                  <tr><td colSpan="4" className="py-6 text-center text-zinc-400 text-xs">Belum ada aktivitas.</td></tr>
+                  <tr><td colSpan="4" className="py-6 text-center text-zinc-400 text-xs">Belum ada aktivitas transaksi.</td></tr>
                 ) : (
                   activityLogs.map((log, idx) => (
                     <tr key={idx} className="hover:bg-zinc-50/40 transition-colors">
@@ -263,17 +250,16 @@ export default function AdminDashboard({ role = 'admin' }) {
                       <td className="py-3 px-2 text-[#00664b] font-bold text-xs truncate" title={log.unit}>
                         {log.unit}
                       </td> 
-                      <td className="py-3 px-2">
-                        {/* Menyesuaikan badge agar konsisten dengan warna status */}
-                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md border ${
-                          log.status === 'Selesai'
-                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                            : 'bg-orange-50 text-orange-600 border-orange-100'
+                      <td className="py-3 px-2 text-center">
+                        <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border ${
+                          log.type === 'Masuk'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-red-50 text-red-600 border-red-200'
                         }`}>
-                          {log.status === 'Selesai' && log.type === 'Masuk' ? 'Masuk' : log.status === 'Selesai' ? 'Selesai' : 'Pending'}
+                          {log.type}
                         </span>
                       </td>
-                      <td className="py-3 px-2 text-xs text-zinc-500 font-mono">{log.date}</td>
+                      <td className="py-3 px-2 text-xs text-zinc-500 font-mono text-center">{log.date}</td>
                     </tr>
                   ))
                 )}
