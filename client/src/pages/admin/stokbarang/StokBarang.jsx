@@ -299,8 +299,8 @@ export default function StokBarang({ role = 'admin' }) {
                     </td>
                     
                     {/* 🔥 TRUNCATE BISA BEKERJA KARENA TABLE SUDAH FIXED */}
-                    <td className="p-4 font-semibold text-zinc-900 truncate" title={item.nama_barang || item.nama_aset || item.name}>
-                      {item.nama_barang || item.nama_aset || item.name}
+                    <td className="p-4 font-semibold text-zinc-900 truncate block max-w-full" title={item.nama_barang || item.nama_aset || item.name}>
+                      <span className="block truncate max-w-full">{item.nama_barang || item.nama_aset || item.name}</span>
                     </td>
                     
                     <td className="p-4 text-zinc-600 truncate" title={item.category && !item.category.deleted_at ? item.category.name : '-'}>
@@ -436,20 +436,20 @@ export default function StokBarang({ role = 'admin' }) {
               {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Barang?'}
             </h3>
             
-            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {deleteModal.type === 'soft' ? (
                 <>
                   Apakah Anda yakin ingin memindahkan item 
-                  <span className="font-bold text-zinc-800 mx-1">
-                    "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
+                  <span className="font-bold text-zinc-800 mx-1 break-all pr-8 inline-block">
+                    {deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
                   </span> 
                   ({deleteModal.item?.kode_barang}) ke tempat sampah?
                 </>
               ) : (
                 <>
                   PERINGATAN: Hapus PERMANEN 
-                  <span className="font-bold text-zinc-800 mx-1">
-                    "{deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}"
+                  <span className="font-bold text-zinc-800 mx-1 break-all pr-8 inline-block">
+                    {deleteModal.item?.nama_barang || deleteModal.item?.nama_aset || deleteModal.item?.name}
                   </span> 
                   ? Data ini tidak dapat dibatalkan, dan memori barang akan dihapus selamanya.
                 </>

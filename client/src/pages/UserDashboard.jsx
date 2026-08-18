@@ -201,9 +201,9 @@ export default function UserDashboard({ setCurrentView }) {
                 {/* 🔥 PERUBAHAN PEWARNAAN TEKS SESUAI GAMBAR */}
                 <p className="text-[17px] font-bold text-zinc-900 leading-tight tracking-tight mb-1">{lastRequest.id}</p>
                 
-                <p className="text-[14px]">
+                <p className="text-[14px] min-w-0">
                   <span className="text-zinc-500">Barang : </span>
-                  <span className="font-medium text-zinc-700">{lastRequest.barangValue}</span>
+                  <span className="font-medium text-zinc-700 block truncate max-w-full" title={lastRequest.barangValue}>{lastRequest.barangValue}</span>
                 </p>
                 
                 <p className="text-[14px]">

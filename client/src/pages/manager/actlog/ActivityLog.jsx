@@ -466,10 +466,10 @@ export default function ActivityLogManager() {
 
               <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                     {/* 🔥 REDAKSI & STYLING TEXT SESUAI GAMBAR KE-2 */}
                     <p className="text-sm text-zinc-700">
-                      <span className="font-bold text-zinc-900">{item.requester}</span> 
+                      <span className="font-bold text-zinc-900 block truncate max-w-full">{item.requester}</span> 
                       {item.type === 'Masuk' 
                         ? ' mendaftarkan barang masuk/restock berupa ' 
                         : ' mengajukan permintaan peminjaman inventaris untuk dikirim ke '}
@@ -478,7 +478,7 @@ export default function ActivityLogManager() {
                           {item.unit}
                         </span>
                       )}
-                      berupa <span className="font-bold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
+                      berupa <span className="font-bold text-[#00664b]"><span className="truncate block max-w-full">{item.qty} Unit {item.itemName}</span></span>.
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs font-medium pt-1">

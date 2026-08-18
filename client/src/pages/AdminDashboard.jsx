@@ -251,7 +251,9 @@ export default function AdminDashboard({ role = 'admin' }) {
                 ) : (
                   activityLogs.map((log, idx) => (
                     <tr key={idx} className="hover:bg-zinc-50/40 transition-colors">
-                      <td className="py-3 px-2 font-semibold text-zinc-800">{log.item}</td>
+                      <td className="py-3 px-2 font-semibold text-zinc-800 min-w-0">
+                        <span className="block truncate max-w-full" title={log.item}>{log.item}</span>
+                      </td>
                       <td className="py-3 px-2 text-[#00664b] font-bold text-xs">{log.unit}</td> 
                       <td className="py-3 px-2">
                         <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md border ${

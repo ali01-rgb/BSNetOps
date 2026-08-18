@@ -432,10 +432,10 @@ export default function AjukanPermintaan() {
                       return (
                         <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                            <div>
-                              <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
-                              <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
-                            </div>
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight truncate block max-w-full">{barang.namaAset}</h4>
+                                <p className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate block max-w-full">ID: {barang.kodeAset}</p>
+                              </div>
                             
                             <div className="flex items-center gap-6">
                               <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
@@ -469,16 +469,16 @@ export default function AjukanPermintaan() {
 
                           <hr className="border-zinc-100 mb-4" />
 
-                          <div>
-                            <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
-                            <input 
-                              type="text" 
-                              placeholder="Contoh: Stok alat tulis habis..." 
-                              value={barang.keterangan || ''}
-                              onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                              className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
-                            />
-                          </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
+                                <input 
+                                  type="text" 
+                                  placeholder="Contoh: Stok alat tulis habis..." 
+                                  value={barang.keterangan || ''}
+                                  onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
+                                  className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                                />
+                              </div>
 
                         </div>
                       )

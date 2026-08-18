@@ -410,10 +410,8 @@ export default function ApprovalRequest() {
                           <span className="text-[10px] text-zinc-400 font-medium">{item.unit}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className="font-semibold text-zinc-700 block truncate max-w-[200px]">
-                          {item.items.map(i => i.namaBarang).join(', ')}
-                        </span>
+                      <td className="py-4 px-4 min-w-0">
+                        <span className="font-semibold text-zinc-700 block truncate max-w-[200px]">{item.items.map(i => i.namaBarang).join(', ')}</span>
                         <span className="text-[10px] text-zinc-400 font-medium">Total: {item.items.length} jenis barang</span>
                       </td>
                       <td className="py-4 px-4 text-center">
@@ -539,7 +537,9 @@ export default function ApprovalRequest() {
                       {activeDetail.items.map((item, index) => (
                         <tr key={index} className="hover:bg-zinc-50">
                           <td className="p-3 text-center text-zinc-400 font-mono">{index + 1}</td>
-                          <td className="p-3 font-bold text-zinc-700">{item.namaBarang}</td>
+                          <td className="p-3 font-bold text-zinc-700 min-w-0">
+                            <span className="block truncate max-w-full" title={item.namaBarang}>{item.namaBarang}</span>
+                          </td>
                           <td className="p-3 text-center">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               item.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :

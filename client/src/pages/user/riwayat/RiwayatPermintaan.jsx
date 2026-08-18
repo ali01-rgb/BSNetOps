@@ -285,7 +285,9 @@ export default function RiwayatPermintaan() {
                   {activeLaporan.items.map((item, index) => (
                     <tr key={item.idItem} className="hover:bg-zinc-50 transition-colors">
                       <td className="py-4 px-4 text-center text-zinc-400 font-mono">{index + 1}</td>
-                      <td className="py-4 px-4 text-zinc-900 capitalize">{item.barang}</td>
+                      <td className="py-4 px-4 text-zinc-900 capitalize min-w-0">
+                        <span className="block truncate max-w-full">{item.barang}</span>
+                      </td>
                       <td className="py-4 px-4 text-center">
                         <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${
                           item.prioritasItem === 'Tinggi' ? 'bg-red-50 text-red-600 border-red-100' :
