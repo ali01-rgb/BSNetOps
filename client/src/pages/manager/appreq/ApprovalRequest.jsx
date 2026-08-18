@@ -454,9 +454,6 @@ export default function ApprovalRequest() {
           {/* 🔥 CONTROLS PAGINATION */}
           {!loading && filteredRequests.length > 0 && (
             <div className="flex items-center justify-between p-4 border-t border-zinc-100 bg-white">
-              <span className="text-[11px] font-medium text-zinc-500">
-                Menampilkan <span className="font-bold">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredRequests.length)}</span> dari <span className="font-bold">{filteredRequests.length}</span> laporan
-              </span>
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

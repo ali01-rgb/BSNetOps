@@ -19,6 +19,14 @@ export default function RiwayatPermintaan() {
     fetchUserRequests();
   }, []);
 
+  const getStatusLabel = (rawStatus) => {
+    const s = (rawStatus || '').toUpperCase();
+    if (['DITOLAK', 'REJECTED'].includes(s)) return 'Ditolak';
+    if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(s)) return 'Selesai';
+    if (['DITERUSKAN', 'FORWARDED', 'MENUNGGU MANAGER'].includes(s)) return 'Menunggu Manager';
+    return 'Menunggu Admin'; // Default jika PENDING
+  };
+
   const fetchUserRequests = async () => {
     setLoading(true);
     try {
@@ -36,7 +44,6 @@ export default function RiwayatPermintaan() {
         const bobotPrioritas = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
 
         const groupedRequests = data.reduce((acc, curr) => {
-          // 🔥 PERBAIKAN: Safely parse Date
           let rawDate = new Date(curr.createdAt || Date.now());
           if (isNaN(rawDate.getTime())) rawDate = new Date();
 
@@ -57,8 +64,6 @@ export default function RiwayatPermintaan() {
               pemohon: 'Anda', 
               unit: '-', 
               statusDb: curr.status,
-              isDiserahkan: ['Diserahkan', 'Disetujui', 'Selesai'].includes(curr.status),
-              tanggalDiserahkan: '',
               keperluan: curr.alasan || '-',
               prioritasUtama: curr.prioritas || 'Rendah',
               adminName: curr.adminName || '',     
@@ -79,7 +84,7 @@ export default function RiwayatPermintaan() {
             jumlahDiminta: curr.jumlah,
             jumlahDisetujui: curr.jumlah, 
             prioritasItem: curr.prioritas || 'Rendah',
-            statusItem: curr.status,
+            statusItem: getStatusLabel(curr.status), // 🔥 Menggunakan logika status baru
             remark: curr.alasan || ''
           });
 
@@ -88,14 +93,15 @@ export default function RiwayatPermintaan() {
 
         const formatted = Object.values(groupedRequests).map(group => {
           const allItems = group.items;
-          const anyRejected = allItems.some(i => i.statusItem?.toUpperCase() === 'DITOLAK' || i.statusItem?.toUpperCase() === 'REJECTED');
-          const allApproved = allItems.every(i => ['SELESAI', 'DISETUJUI', 'APPROVED', 'DITERIMA'].includes(i.statusItem?.toUpperCase()));
-          const allReceived = allItems.every(i => i.statusItem?.toUpperCase() === 'DITERIMA');
+          const anyRejected = allItems.some(i => i.statusItem === 'Ditolak');
+          const allSelesai = allItems.every(i => i.statusItem === 'Selesai');
+          const anyManager = allItems.some(i => i.statusItem === 'Menunggu Manager');
 
-          let currentStatus = 'Pending';
-          if (anyRejected) currentStatus = 'Rejected';
-          else if (allReceived) currentStatus = 'Completed';
-          else if (allApproved) currentStatus = 'Approved'; 
+          // 🔥 Logika Penentuan Status Laporan Keseluruhan
+          let currentStatus = 'Menunggu Admin';
+          if (anyRejected) currentStatus = 'Ditolak';
+          else if (allSelesai) currentStatus = 'Selesai';
+          else if (anyManager) currentStatus = 'Menunggu Manager'; 
 
           return {
             ...group,
@@ -110,40 +116,6 @@ export default function RiwayatPermintaan() {
       console.error('Gagal mengambil riwayat dari database:', err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleTerimaBarang = async (laporanId, itemId) => {
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      await fetch(`${API_URL}/inventory/requests/${itemId}/receive`, {
-        method: "PATCH",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-
-      toast.success('Penerimaan barang berhasil dikonfirmasi!'); 
-
-      setLaporanRiwayat(prevLaporan =>
-        prevLaporan.map(laporan => {
-          if (laporan.id === laporanId) {
-            const updatedItems = laporan.items.map(item =>
-              item.idItem === itemId ? { ...item, statusItem: 'Diterima' } : item
-            );
-            
-            const allDone = updatedItems.every(i => i.statusItem === 'Diterima' || i.statusItem === 'Ditolak');
-            
-            return {
-              ...laporan,
-              items: updatedItems,
-              status: allDone ? 'Completed' : laporan.status 
-            };
-          }
-          return laporan;
-        })
-      );
-    } catch (error) {
-      console.error("Gagal konfirmasi terima barang:", error.message);
-      toast.error("Terjadi kesalahan saat mengkonfirmasi penerimaan barang."); 
     }
   };
 
@@ -232,22 +204,23 @@ export default function RiwayatPermintaan() {
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex justify-center">
-                          {laporan.status === 'Pending' && (
+                          {/* 🔥 STATUS LAPORAN (TAMPILAN UTAMA) */}
+                          {laporan.status === 'Menunggu Admin' && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                              <Clock size={12} /> Menunggu Proses
+                              <Clock size={12} /> Menunggu Admin
                             </span>
                           )}
-                          {laporan.status === 'Approved' && (
+                          {laporan.status === 'Menunggu Manager' && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
+                              <Clock size={12} /> Menunggu Manager
+                            </span>
+                          )}
+                          {laporan.status === 'Selesai' && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
-                              <CheckCircle2 size={12} /> ACC Final (Siap Diambil)
+                              <CheckCircle2 size={12} /> Selesai
                             </span>
                           )}
-                          {laporan.status === 'Completed' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-[#00664b] border border-emerald-100">
-                              <PackageCheck size={12} /> Selesai
-                            </span>
-                          )}
-                          {laporan.status === 'Rejected' && (
+                          {laporan.status === 'Ditolak' && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-100">
                               <XCircle size={12} /> Ditolak
                             </span>
@@ -322,26 +295,23 @@ export default function RiwayatPermintaan() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-[#00664b]">{item.jumlahDiminta} Unit</td>
-                      <td className="py-4 px-4">
+                      
+                      {/* 🔥 STATUS ITEM (TAMPILAN DETAIL) */}
+                      <td className="py-4 px-4 text-center">
                         <div className="flex justify-center">
-                          {(item.statusItem === 'Pending' || item.statusItem?.toLowerCase() === 'menunggu manager') && <span className="text-amber-600 font-bold flex items-center gap-1"><Clock size={12}/> Menunggu ACC</span>}
-                          {(item.statusItem === 'Approved' || item.statusItem?.toLowerCase() === 'disetujui' || item.statusItem?.toLowerCase() === 'selesai') && <span className="text-blue-600 font-bold flex items-center gap-1"><CheckCircle2 size={12}/> Siap Diambil</span>}
-                          {item.statusItem === 'Diterima' && <span className="text-emerald-600 font-bold flex items-center gap-1"><PackageCheck size={12}/> Diterima</span>}
-                          {item.statusItem === 'Ditolak' && <span className="text-red-600 font-bold flex items-center gap-1"><XCircle size={12}/> Ditolak</span>}
+                          {item.statusItem === 'Menunggu Admin' && <span className="text-amber-500 font-bold flex items-center gap-1"><Clock size={12}/> Menunggu Admin</span>}
+                          {item.statusItem === 'Menunggu Manager' && <span className="text-amber-500 font-bold flex items-center gap-1"><Clock size={12}/> Menunggu Manager</span>}
+                          {item.statusItem === 'Selesai' && <span className="text-[#00664b] font-bold flex items-center gap-1"><CheckCircle2 size={12}/> Selesai</span>}
+                          {item.statusItem === 'Ditolak' && <span className="text-red-500 font-bold flex items-center gap-1"><XCircle size={12}/> Ditolak</span>}
                         </div>
                       </td>
+
+                      {/* 🔥 AKSI PENERIMAAN KETERANGAN (TAMPILAN DETAIL) */}
                       <td className="py-4 px-4 text-center">
-                        {(item.statusItem === 'Pending' || item.statusItem?.toLowerCase() === 'menunggu manager') && <span className="text-zinc-400 text-[10px] italic">Menunggu ACC...</span>}
-                        {item.statusItem === 'Ditolak' && <span className="text-zinc-400 text-[10px] italic">-</span>}
-                        {item.statusItem === 'Diterima' && <span className="text-[#00664b] text-[10px] font-bold">Terverifikasi ✓</span>}
-                        {(item.statusItem === 'Approved' || item.statusItem?.toLowerCase() === 'disetujui' || item.statusItem?.toLowerCase() === 'selesai') && (
-                          <button
-                            onClick={() => handleTerimaBarang(activeLaporan.id, item.idItem)}
-                            className="px-3 py-1.5 bg-[#58a27d] hover:bg-[#4a8a69] text-white text-[10px] font-bold rounded-lg transition-colors shadow-sm active:scale-95 cursor-pointer"
-                          >
-                            Konfirmasi Terima
-                          </button>
-                        )}
+                        {item.statusItem === 'Menunggu Admin' && <span className="text-zinc-400 italic">Menunggu persetujuan Admin...</span>}
+                        {item.statusItem === 'Menunggu Manager' && <span className="text-zinc-400 italic">Menunggu persetujuan Manager...</span>}
+                        {item.statusItem === 'Selesai' && <span className="text-[#00664b] font-bold">Barang siap diambil di R.ATK</span>}
+                        {item.statusItem === 'Ditolak' && <span className="text-red-600 font-bold">Permintaan ditolak</span>}
                       </td>
                     </tr>
                   ))}

@@ -55,7 +55,7 @@ export default function UserDashboard({ setCurrentView }) {
 
                 acc[groupKey] = {
                   id: `REQ-${tglFormatId}-${padId}`, 
-                  category: namaKategori,
+                  category: namaKategori, // Mengambil kategori dari barang pertama yang masuk array
                   createdAt: curr.createdAt || curr.created_at || Date.now(),
                   items: []
                 };
@@ -74,13 +74,14 @@ export default function UserDashboard({ setCurrentView }) {
             formattedList.sort((a, b) => b.id.localeCompare(a.id));
             const terbaru = formattedList[0];
 
-            // 🔥 LOGIKA FORMAT NAMA ITEM (Memasukkan ID + Array Barang)
-            const uniqueItems = [...new Set(terbaru.items.map(i => i.nama))];
-            let displayItems = uniqueItems.slice(0, 3).join(', ');
-            if (uniqueItems.length > 3) {
-              displayItems += ', dll';
+            // 🔥 LOGIKA FORMAT NAMA ITEM (Barang pertama + X lainnya)
+            const firstItemName = terbaru.items[0]?.nama || 'Barang';
+            const sisaBarang = terbaru.items.length - 1;
+            
+            let barangText = `Barang : ${firstItemName}`;
+            if (sisaBarang > 0) {
+              barangText += `, ${sisaBarang} lainnya`;
             }
-            const namaItemFormat = `${terbaru.id} [ ${displayItems} ]`;
 
             // 2. STATUS STEP MAPPING (Mengecek keseluruhan item)
             const anyRejected = terbaru.items.some(i => i.status?.toUpperCase() === 'DITOLAK' || i.status?.toUpperCase() === 'REJECTED');
@@ -104,7 +105,7 @@ export default function UserDashboard({ setCurrentView }) {
 
             setLastRequest({
               id: terbaru.id,
-              item: namaItemFormat, 
+              barangText: barangText, 
               category: terbaru.category,
               statusText: statusText,
               date: new Date(terbaru.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
@@ -195,12 +196,16 @@ export default function UserDashboard({ setCurrentView }) {
           <p className="text-sm text-center text-zinc-500 py-6">⏳ Memuat data...</p>
         ) : lastRequest ? (
           <>
-            <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-center">
+            <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-start md:items-center">
               <div>
-                <p className="text-sm font-semibold text-zinc-900">{lastRequest.item}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Kategori dominan: <span className="font-medium text-zinc-700">{lastRequest.category}</span></p>
+                {/* 🔥 PERUBAHAN TATA LETAK TEKS SESUAI GAMBAR */}
+                <p className="text-[15px] font-bold text-zinc-900 leading-tight">{lastRequest.id}</p>
+                <p className="text-[13px] font-medium text-zinc-700 mt-1">{lastRequest.barangText}</p>
+                <p className="text-[12px] text-zinc-500 mt-0.5">Kategori : <span className="font-medium text-zinc-700">{lastRequest.category}</span></p>
               </div>
-              {renderStatusBadge(lastRequest.currentStep, lastRequest.statusText)}
+              <div className="mt-2 md:mt-0 shrink-0">
+                {renderStatusBadge(lastRequest.currentStep, lastRequest.statusText)}
+              </div>
             </div>
 
             {lastRequest.currentStep === -1 ? (

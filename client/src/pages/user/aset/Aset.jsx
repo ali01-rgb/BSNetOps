@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Calendar, Package, X, Check, ShoppingCart, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast'; 
 import { API_URL } from '@/api';
 
 export default function Aset({ setCurrentView }) {
@@ -96,7 +96,7 @@ export default function Aset({ setCurrentView }) {
         } else {
           console.error("Gagal ambil data aset. HTTP Status:", res.status);
           if (res.status === 401) {
-            toast.error("Sesi Anda telah berakhir atau Token tidak valid. Silakan relogin."); // 🔥 GANTI ALERT
+            toast.error("Sesi Anda telah berakhir atau Token tidak valid. Silakan relogin."); 
           }
         }
       } catch (error) {
@@ -139,7 +139,7 @@ export default function Aset({ setCurrentView }) {
           jumlah: 1
         }];
         setCart(updatedCart);
-        toast.success(`${selectedAsset.nama} dimasukkan ke permintaan.`); // 🔥 TAMBAHAN UX MANIS
+        toast.success(`${selectedAsset.nama} dimasukkan ke permintaan.`);
       }
       setSelectedAsset(null);
     }
@@ -154,7 +154,7 @@ export default function Aset({ setCurrentView }) {
     if (cart.length > 0) {
       setCurrentView('ajukan-permintaan');
     } else {
-      toast.error("Keranjang belanja Anda masih kosong. Silakan pilih aset terlebih dahulu!"); // 🔥 GANTI ALERT
+      toast.error("Keranjang belanja Anda masih kosong. Silakan pilih aset terlebih dahulu!");
     }
   };
 
@@ -301,8 +301,9 @@ export default function Aset({ setCurrentView }) {
                   </div>
                 )}
 
-                <div className="w-28 h-28 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center p-2 shrink-0 overflow-hidden relative">
-                  <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-contain mix-blend-multiply" />
+                {/* 🔥 PERBAIKAN: Gambar List - Hapus padding, ubah jadi object-cover */}
+                <div className="w-28 h-28 rounded-2xl border border-zinc-100 shrink-0 overflow-hidden relative">
+                  <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="flex flex-col justify-between flex-1 py-1">
@@ -342,8 +343,9 @@ export default function Aset({ setCurrentView }) {
             </button>
 
             <div className="w-44 flex flex-col items-center justify-center gap-4 shrink-0">
-              <div className="w-full h-40 rounded-2xl bg-zinc-50/50 border border-zinc-100 flex items-center justify-center p-3">
-                <img src={selectedAsset.gambar} alt={selectedAsset.nama} className="w-full h-full object-contain mix-blend-multiply" />
+              {/* 🔥 PERBAIKAN: Gambar Modal Popup - Hapus padding, ubah jadi object-cover */}
+              <div className="w-full h-40 rounded-2xl border border-zinc-100 overflow-hidden">
+                <img src={selectedAsset.gambar} alt={selectedAsset.nama} className="w-full h-full object-cover" />
               </div>
               <div className="w-full text-center py-1 border border-emerald-600/40 text-[#00664b] font-bold text-xs bg-white rounded-full">
                 {selectedAsset.kode}

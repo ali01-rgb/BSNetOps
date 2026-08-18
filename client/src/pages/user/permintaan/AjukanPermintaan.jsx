@@ -70,7 +70,7 @@ export default function AjukanPermintaan() {
     fetchYearlyRequestsAndSetPriority();
   }, []);
 
-  // 🔥 2. FETCH PROFIL LENGKAP DARI DATABASE (TIDAK CUMA DARI LOCALSTORAGE)
+  // 2. FETCH PROFIL LENGKAP
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -89,7 +89,7 @@ export default function AjukanPermintaan() {
             namaLengkap: prev.namaLengkap || data.fullName || data.name || data.username || '',
             nipPegawai: data.employeeId || data.id || 'BSN-USR-001',
             divisi: prev.divisi || data.divisi || data.unit || '',
-            jabatan: data.role || data.jabatan || 'USER',
+            jabatan: data.role || data.jabatan || 'User',
             email: data.email || 'user@bsn.go.id',
             noTelepon: prev.noTelepon || data.phone || data.noTelepon || ''
           }));
@@ -160,6 +160,12 @@ export default function AjukanPermintaan() {
     else if (currentStep === 2) {
       if (daftarBarang.length === 0) {
         toast.error("Belum ada barang yang diajukan. Silakan pilih kembali dari katalog.");
+        return;
+      }
+      // Validasi form alasan tidak boleh kosong
+      const isEmptyKeterangan = daftarBarang.some(b => !b.keterangan || b.keterangan.trim() === '');
+      if (isEmptyKeterangan) {
+        toast.error("Alasan permintaan barang wajib diisi untuk semua item.");
         return;
       }
       setCurrentStep(3);
@@ -263,27 +269,38 @@ export default function AjukanPermintaan() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  // 🔥 MENGHITUNG PRIORITAS TERTINGGI DARI DAFTAR BARANG
+  const getHighestPriority = () => {
+    if (!daftarBarang || daftarBarang.length === 0) return '-';
+    const weights = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
+    return daftarBarang.reduce((max, item) => {
+      return weights[item.prioritas] > weights[max] ? item.prioritas : max;
+    }, 'Rendah');
+  };
+
+  const highestPriority = getHighestPriority();
+
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
       
       {currentStep <= 3 && (
-        <div className="w-full max-w-2xl mb-6 text-white print:hidden">
+        <div className="w-full max-w-3xl mb-6 text-white print:hidden">
           <h1 className="text-2xl font-bold">Ajukan Permintaan</h1>
-          <p className="text-sm opacity-90">Isi formulir untuk mengajukan permintaan aset kantor</p>
+          <p className="text-sm opacity-90 mt-1">Sistem otomatis menghitung tingkat prioritas berdasarkan frekuensi permintaan tahunan</p>
           
-          <div className="flex items-center space-x-4 mt-4 text-xs">
-            <div className={`flex items-center space-x-1 ${currentStep === 1 ? 'font-semibold' : 'opacity-60'}`}>
-              <span className={`rounded-full w-5 h-5 flex items-center justify-center font-bold ${currentStep === 1 ? 'bg-white text-[#4d8c6b]' : 'border border-white'}`}>1</span>
+          <div className="flex items-center space-x-4 mt-5 text-sm">
+            <div className={`flex items-center space-x-2 ${currentStep === 1 ? 'font-bold' : 'opacity-70'}`}>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 1 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>1</span>
               <span>Informasi Pemohon</span>
             </div>
-            <div className="h-[1px] w-12 bg-white opacity-50"></div>
-            <div className={`flex items-center space-x-1 ${currentStep === 2 ? 'font-semibold' : 'opacity-60'}`}>
-              <span className={`rounded-full w-5 h-5 flex items-center justify-center font-bold ${currentStep === 2 ? 'bg-white text-[#4d8c6b]' : 'border border-white'}`}>2</span>
-              <span>Detail Barang & Kebutuhan</span>
+            <div className="h-[1px] w-16 bg-white opacity-50"></div>
+            <div className={`flex items-center space-x-2 ${currentStep === 2 ? 'font-bold' : 'opacity-70'}`}>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 2 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>2</span>
+              <span>Detail Kebutuhan</span>
             </div>
-            <div className="h-[1px] w-12 bg-white opacity-50"></div>
-            <div className={`flex items-center space-x-1 ${currentStep === 3 ? 'font-semibold' : 'opacity-60'}`}>
-              <span className={`rounded-full w-5 h-5 flex items-center justify-center font-bold ${currentStep === 3 ? 'bg-white text-[#4d8c6b]' : 'border border-white'}`}>3</span>
+            <div className="h-[1px] w-16 bg-white opacity-50"></div>
+            <div className={`flex items-center space-x-2 ${currentStep === 3 ? 'font-bold' : 'opacity-70'}`}>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 3 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>3</span>
               <span>Review & Submit</span>
             </div>
           </div>
@@ -308,26 +325,28 @@ export default function AjukanPermintaan() {
       )}
 
       {currentStep <= 3 ? (
-        <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg p-8 text-black">
+        <div className="bg-white w-full max-w-3xl rounded-3xl shadow-xl p-8 text-black">
           {currentStep <= 2 ? (
             <form onSubmit={handleNext}>
+              
+              {/* STEP 1: INFORMASI PEMOHON */}
               {currentStep === 1 && (
                 <>
-                  <h2 className="text-xl font-bold mb-6">Informasi Pemohon</h2>
+                  <h2 className="text-xl font-extrabold mb-6 text-zinc-900">Informasi Pemohon</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                      <input type="text" name="namaLengkap" value={formData.namaLengkap} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
+                      <input type="text" name="namaLengkap" value={formData.namaLengkap} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] transition-all" required />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">NIP/ ID pegawai</label>
-                      <input type="text" name="nipPegawai" value={formData.nipPegawai} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-200 text-gray-700 cursor-not-allowed select-none" />
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">NIP/ ID pegawai</label>
+                      <input type="text" name="nipPegawai" value={formData.nipPegawai} disabled className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none" />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b] cursor-pointer" required>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit</label>
+                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
                         <option value="" disabled hidden>Pilih Unit</option>
                         <option value="KC Semarang">KC Semarang</option>
                         <option value="KCP Majapahit">KCP Majapahit</option>
@@ -340,146 +359,182 @@ export default function AjukanPermintaan() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Jabatan / Role</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Jabatan</label>
                       <input 
                         type="text" 
                         name="jabatan" 
-                        value={formData.jabatan} 
+                        value={formData.jabatan?.toUpperCase() === 'USER' ? 'User' : formData.jabatan} 
                         disabled 
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-200 text-gray-700 cursor-not-allowed select-none uppercase" 
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none capitalize" 
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input type="email" name="email" value={formData.email} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-200 text-gray-700 cursor-not-allowed select-none" />
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                      <input type="email" name="email" value={formData.email} disabled className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none" />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">No Telephone</label>
-                      <input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4d8c6b]" required />
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">No Telephone</label>
+                      <input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] transition-all" required />
                     </div>
                   </div>
-                  <div className="text-center text-xs text-gray-500 mt-8">1/3</div>
+                  <div className="text-center text-xs text-gray-500 mt-10">1/3</div>
                 </>
               )}
 
+              {/* STEP 2: DETAIL DAFTAR BARANG */}
               {currentStep === 2 && (
                 <>
-                  <h2 className="text-xl font-bold mb-1">Daftar Barang yang Diminta</h2>
-                  <p className="text-xs text-zinc-500 mb-4">
-                    Prioritas dikunci otomatis berdasar akumulasi permohonan Anda tahun ini ({yearlyCount} Permintaan).
-                  </p>
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+                    <h2 className="text-xl font-extrabold text-zinc-900">Detail Daftar Barang</h2>
+                    <div className="flex flex-col sm:items-end">
+                      <label className="text-xs font-bold text-zinc-700 mb-1.5">Tanggal Dibutuhkan</label>
+                      <input 
+                        type="date" 
+                        name="tanggalDibutuhkan" 
+                        value={formData.tanggalDibutuhkan} 
+                        onChange={handleChange} 
+                        min={getTodayDate()} 
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] bg-white transition-all w-full sm:w-auto" 
+                        required 
+                      />
+                    </div>
+                  </div>
 
-                  <div className="border border-zinc-200 rounded-xl p-4 bg-zinc-50/50 space-y-4 mb-6 max-h-[300px] overflow-y-auto">
+                  <div className="space-y-5 max-h-[450px] overflow-y-auto pr-2 pb-2">
                     {daftarBarang.map((barang, idx) => (
-                      <div key={barang.kodeAset} className="flex flex-col gap-3 p-3 bg-white border border-zinc-200 rounded-lg shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div key={barang.kodeAset} className="border border-zinc-200 rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition-all">
+                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center border-b border-zinc-100 pb-4 mb-4 gap-4">
                           <div>
-                            <div className="text-xs font-bold capitalize text-zinc-800">{barang.namaAset}</div>
-                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{barang.kodeAset}</div>
+                            <h4 className="font-extrabold text-base text-zinc-800 tracking-tight">{barang.namaAset}</h4>
+                            <p className="text-[11px] text-zinc-400 font-mono mt-1">ID: {barang.kodeAset}</p>
                           </div>
                           
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5">
-                              <label className="text-[11px] text-zinc-600 font-medium">Prioritas:</label>
-                              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-md border uppercase tracking-wider ${
-                                calculatedPriority === 'Tinggi' 
-                                  ? 'bg-red-50 text-red-700 border-red-200' 
-                                  : calculatedPriority === 'Sedang' 
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              }`}>
-                                {calculatedPriority}
+                          <div className="flex items-center gap-5">
+                            <div className="text-[13px] font-semibold text-zinc-600 flex items-center gap-2">
+                              Prioritas: 
+                              <span className={`text-[12px] font-bold px-3 py-1 rounded-md text-zinc-800 bg-zinc-100`}>
+                                {barang.prioritas}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <label className="text-[11px] text-zinc-600 font-medium">Jumlah:</label>
+                              <span className="text-[13px] font-semibold text-zinc-600">Kuantitas:</span>
                               <input 
                                 type="number" 
                                 min="1" 
                                 value={barang.jumlah} 
                                 onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                                className="w-16 text-center text-xs border border-zinc-300 rounded py-1 px-1.5 focus:outline-[#4d8c6b]"
+                                className="w-16 border border-zinc-300 text-center rounded-lg py-1.5 px-2 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
                                 required
                               />
                             </div>
                           </div>
                         </div>
-                        <div className="w-full">
+
+                        <div>
+                          <label className="text-[11px] font-bold text-zinc-500 mb-2 block">Alasan Permintaan Barang Ini:</label>
                           <input 
                             type="text" 
-                            placeholder="Keterangan (Opsional, max 40 kata)..." 
+                            placeholder="Contoh: Stok alat tulis habis..." 
                             value={barang.keterangan || ''}
                             onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                            className="w-full text-xs border border-gray-300 rounded bg-gray-50 py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#4d8c6b]"
+                            className="w-full text-sm border border-zinc-300 rounded-xl bg-zinc-50 py-2.5 px-4 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                            required
                           />
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Dibutuhkan</label>
-                    <input 
-                      type="date" 
-                      name="tanggalDibutuhkan" 
-                      value={formData.tanggalDibutuhkan} 
-                      onChange={handleChange} 
-                      min={getTodayDate()} 
-                      className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg" 
-                      required 
-                    />
-                  </div>
-                  <div className="text-center text-xs text-gray-500 mt-8">2/3</div>
+                  <div className="text-center text-xs text-gray-500 mt-6">2/3</div>
                 </>
               )}
 
-              <div className="flex justify-end space-x-4 mt-6">
-                <button type="button" onClick={handleBack} className="px-6 py-2 border border-red-500 text-red-500 rounded-lg text-sm font-medium">{currentStep === 2 ? 'Kembali' : 'Batal'}</button>
-                <button type="submit" className="px-6 py-2 bg-[#045936] text-white rounded-lg text-sm font-medium">Selanjutnya</button>
+              <div className="flex justify-end space-x-4 mt-8">
+                <button 
+                  type="button" 
+                  onClick={currentStep === 2 ? handleBack : undefined} 
+                  className="px-6 py-2.5 bg-white border border-red-500 text-red-500 rounded-xl text-sm font-bold shadow-sm hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                  {currentStep === 2 ? 'Kembali' : 'Batal'}
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2.5 bg-[#00664b] hover:bg-[#004d38] text-white rounded-xl text-sm font-bold shadow-md transition-colors cursor-pointer"
+                >
+                  Selanjutnya
+                </button>
               </div>
             </form>
           ) : (
+
+            /* STEP 3: REVIEW & SUBMIT */
             <div>
-              <div className="mb-6">
-                <h2 className="text-lg font-bold mb-4">Informasi Pemohon</h2>
-                <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-y-2 text-sm">
-                  <span className="font-medium">Nama Lengkap</span><span>: {formData.namaLengkap}</span>
-                  <span className="font-medium">Unit</span><span>: {formData.divisi}</span>
-                  <span className="font-medium">Tanggal Dibutuhkan</span><span>: {formData.tanggalDibutuhkan}</span>
+              <div className="mb-8">
+                <h2 className="text-[19px] font-extrabold mb-5 text-zinc-900">Informasi Pemohon</h2>
+                <div className="grid grid-cols-[150px_10px_1fr] gap-y-2.5 text-sm text-zinc-800 font-semibold">
+                  <span className="text-zinc-600">Nama Lengkap</span><span>:</span><span className="text-zinc-900">{formData.namaLengkap}</span>
+                  <span className="text-zinc-600">Unit</span><span>:</span><span className="text-zinc-900">{formData.divisi}</span>
+                  <span className="text-zinc-600">Tanggal dibutuhkan</span><span>:</span><span className="text-zinc-900">{formData.tanggalDibutuhkan}</span>
+                  <span className="text-zinc-600">Prioritas</span><span>:</span><span className="text-zinc-900">{highestPriority}</span>
                 </div>
               </div>
-              <hr className="border-gray-300 my-4" />
+              
+              <hr className="border-zinc-200 my-6" />
+              
               <div className="mb-6">
-                <h2 className="text-lg font-bold mb-3">Daftar Aset Berjumlah ({daftarBarang.length})</h2>
-                <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
-                  <div className="bg-zinc-100 font-bold p-2.5 grid grid-cols-[1fr_100px]"><span>Nama Barang</span><span>Kuantitas</span></div>
-                  {daftarBarang.map((b) => (
-                    <div key={b.kodeAset} className="border-t border-zinc-200 p-2.5 flex justify-between items-center capitalize">
+                <h2 className="text-[19px] font-extrabold mb-4 text-zinc-900">Rincian Barang ({daftarBarang.length})</h2>
+                <div className="border border-zinc-200 rounded-2xl overflow-hidden text-sm bg-white shadow-sm">
+                  
+                  {/* Table Header */}
+                  <div className="bg-zinc-200/60 font-extrabold px-5 py-3.5 grid grid-cols-[1fr_120px_100px] gap-4 text-zinc-700 border-b border-zinc-200 text-[13px]">
+                    <span>Nama Barang</span>
+                    <span className="text-center">Prioritas</span>
+                    <span className="text-center">Jumlah</span>
+                  </div>
+                  
+                  {/* Table Body */}
+                  {daftarBarang.map((b, i) => (
+                    <div key={b.kodeAset} className={`px-5 py-4 grid grid-cols-[1fr_120px_100px] gap-4 items-center ${i !== daftarBarang.length - 1 ? 'border-b border-zinc-100' : ''}`}>
                       <div>
-                        <span className="block font-medium">{b.namaAset} ({b.kodeAset})</span>
-                        <span className="text-[10px] text-gray-500 block mt-1">
-                          <span className="font-bold text-[#4d8c6b]">[{calculatedPriority}]</span> {b.keterangan ? `- Ket: ${b.keterangan}` : ''}
-                        </span>
+                        <span className="block font-bold text-zinc-800 text-[15px]">{b.namaAset}</span>
+                        <span className="block text-[11px] text-zinc-400 font-mono mt-0.5">ID: {b.kodeAset}</span>
+                        <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug">Alasan: {b.keterangan || '-'}</span>
                       </div>
-                      <span className="font-bold whitespace-nowrap">{b.jumlah} Item</span>
+                      <div className="text-center">
+                        <span className="px-3 py-1.5 bg-zinc-100 rounded-lg text-xs font-bold text-zinc-700 inline-block">{b.prioritas}</span>
+                      </div>
+                      <div className="text-center font-bold text-zinc-800 text-[14px]">
+                        {b.jumlah} Item
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end space-x-4 mt-8">
-                <button type="button" onClick={handleBack} className="px-6 py-2 border border-gray-400 text-gray-700 rounded-lg text-sm font-medium cursor-pointer">Ubah</button>
-                <button 
-                  type="button" 
-                  onClick={handleSubmitFinal} 
-                  disabled={isExporting}
-                  className="px-6 py-2 bg-[#045936] text-white rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
-                >
-                  {isExporting ? 'Mengirim...' : 'Ajukan Permintaan'}
-                </button>
+
+              <div className="flex justify-between items-center mt-10">
+                <div className="text-xs text-gray-500">3/3</div>
+                <div className="flex space-x-4">
+                  <button 
+                    type="button" 
+                    onClick={handleBack} 
+                    className="px-7 py-2.5 bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50 rounded-xl text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                  >
+                    Ubah
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleSubmitFinal} 
+                    disabled={isExporting}
+                    className="px-7 py-2.5 bg-[#00664b] hover:bg-[#004d38] text-white rounded-xl text-sm font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isExporting ? 'Mengirim...' : 'Ajukan Permintaan'}
+                  </button>
+                </div>
               </div>
+
             </div>
           )}
         </div>
