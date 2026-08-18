@@ -29,6 +29,12 @@ export default function Aset({ setCurrentView }) {
   
   const filterMenuRef = useRef(null);
 
+  // Helper untuk meringkas nama barang di toaster jika terlalu panjang
+  const truncateText = (text, maxLength = 25) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
@@ -139,7 +145,8 @@ export default function Aset({ setCurrentView }) {
           jumlah: 1
         }];
         setCart(updatedCart);
-        toast.success(`${selectedAsset.nama} dimasukkan ke permintaan.`);
+        // 🔥 Nama barang dipotong dengan ellipsis di toaster
+        toast.success(`${truncateText(selectedAsset.nama)} dimasukkan ke permintaan.`);
       }
       setSelectedAsset(null);
     }
@@ -361,7 +368,6 @@ export default function Aset({ setCurrentView }) {
             {/* Kolom Kanan: Detail & Aksi */}
             <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
               <div className="min-w-0">
-                {/* Teks nama barang memanjang ke bawah & memiliki jarak dari tombol X */}
                 <h3 
                   className="font-bold text-lg sm:text-xl text-zinc-900 border-b border-zinc-900 pb-2 tracking-tight w-full break-all pr-8 leading-snug"
                 >

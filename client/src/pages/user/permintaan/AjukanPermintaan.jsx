@@ -430,9 +430,9 @@ export default function AjukanPermintaan() {
                       return (
                         <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-4">
-                            {/* 🔥 Teks nama barang memanjang ke bawah & tidak terpotong */}
+                            {/* 🔥 NAMA BARANG DIBUAT SEMI-BOLD DENGAN UKURAN PAS */}
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight break-all leading-snug">
+                              <h4 className="font-semibold text-base text-zinc-800 capitalize tracking-tight break-all leading-snug">
                                 {barang.namaAset}
                               </h4>
                               <p className="text-[11px] text-zinc-400 font-mono mt-0.5 break-all">ID: {barang.kodeAset}</p>
@@ -534,9 +534,9 @@ export default function AjukanPermintaan() {
                   {/* Table Body */}
                   {daftarBarang.map((b, i) => (
                     <div key={b.kodeAset} className={`px-5 py-4 grid grid-cols-[1fr_120px_100px] gap-4 items-center ${i !== daftarBarang.length - 1 ? 'border-b border-zinc-100' : ''}`}>
-                      {/* 🔥 Teks nama barang, kode, dan alasan ditulis lengkap berbaris ke bawah */}
+                      {/* 🔥 NAMA BARANG DIBUAT SEMI-BOLD */}
                       <div className="min-w-0 pr-2">
-                        <span className="block font-bold text-zinc-800 text-[15px] capitalize break-all leading-snug">
+                        <span className="block font-semibold text-zinc-800 text-[14px] capitalize break-all leading-snug">
                           {b.namaAset}
                         </span>
                         <span className="block text-[11px] text-zinc-400 font-mono mt-0.5 break-all">ID: {b.kodeAset}</span>

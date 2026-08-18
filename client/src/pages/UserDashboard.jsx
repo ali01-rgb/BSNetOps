@@ -6,13 +6,11 @@ export default function UserDashboard({ setCurrentView }) {
   const [lastRequest, setLastRequest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔥 TARIK DATA REQUEST TERAKHIR & ASET DARI DATABASE
   useEffect(() => {
     const fetchLastRequest = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         
-        // Fetch dua endpoint sekaligus untuk cross-check Kategori
         const [reqRes, assetsRes] = await Promise.all([
           fetch(`${API_URL}/inventory/my-requests`, {
             headers: { "Authorization": `Bearer ${token}` }
@@ -30,18 +28,17 @@ export default function UserDashboard({ setCurrentView }) {
           const masterAssets = assetsJson.data || assetsJson || [];
 
           if (Array.isArray(dataList) && dataList.length > 0) {
-            // 🔥 GROUPING DATA (Menyatukan item dalam 1 ID Laporan)
+            // 🔥 GROUPING BERDASARKAN MENIT / WAKTU PENGAJUAN
             const groupedRequests = dataList.reduce((acc, curr) => {
-              const rawDate = new Date(curr.createdAt || Date.now());
+              const rawDate = new Date(curr.createdAt || curr.created_at || Date.now());
               const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
               const jamMenit = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
               const groupKey = `${tglStr}-${jamMenit}`; 
               
               if (!acc[groupKey]) {
                 const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
-                const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+                const tglFormatId = rawDate.toISOString().slice(0, 10).replace(/-/g, '');
                 
-                // 1. KATEGORI DINAMIS: Cek ke Master Assets (Apakah masuk Trash/Soft-delete)
                 let namaKategori = curr.categoryName || curr.category?.name || curr.category || 'Inventaris Umum';
                 const matchedAsset = masterAssets.find(a => a.nama_barang?.toLowerCase() === (curr.nama_aset || '').toLowerCase());
                 
@@ -55,8 +52,8 @@ export default function UserDashboard({ setCurrentView }) {
 
                 acc[groupKey] = {
                   id: `REQ-${tglFormatId}-${padId}`, 
-                  category: namaKategori, // Mengambil kategori dari barang pertama yang masuk array
-                  createdAt: curr.createdAt || curr.created_at || Date.now(),
+                  category: namaKategori,
+                  createdAt: rawDate.getTime(),
                   items: []
                 };
               }
@@ -69,12 +66,11 @@ export default function UserDashboard({ setCurrentView }) {
               return acc;
             }, {});
 
-            // Ambil laporan yang paling baru
+            // 🔥 SORTING PRESISI BERDASARKAN WAKTU BUAT TERBARU (MURNI TERAKHIR DIAJUKAN)
             const formattedList = Object.values(groupedRequests);
-            formattedList.sort((a, b) => b.id.localeCompare(a.id));
+            formattedList.sort((a, b) => b.createdAt - a.createdAt);
             const terbaru = formattedList[0];
 
-            // 🔥 LOGIKA FORMAT NAMA ITEM (Hanya menyimpan nilai barangnya saja)
             const firstItemName = terbaru.items[0]?.nama || 'Barang';
             const sisaBarang = terbaru.items.length - 1;
             
@@ -83,10 +79,10 @@ export default function UserDashboard({ setCurrentView }) {
               barangValue += `, ${sisaBarang} lainnya`;
             }
 
-            // 2. STATUS STEP MAPPING (Mengecek keseluruhan item)
-            const anyRejected = terbaru.items.some(i => i.status?.toUpperCase() === 'DITOLAK' || i.status?.toUpperCase() === 'REJECTED');
-            const allApproved = terbaru.items.every(i => ['SELESAI', 'DISETUJUI', 'APPROVED', 'DITERIMA'].includes(i.status?.toUpperCase()));
-            const anyForwarded = terbaru.items.some(i => ['DITERUSKAN', 'FORWARDED', 'IN_REVIEW', 'PROCESS'].includes(i.status?.toUpperCase()));
+            // EVALUASI STATUS STEP
+            const anyRejected = terbaru.items.some(i => ['DITOLAK', 'REJECTED'].includes((i.status || '').toUpperCase()));
+            const allApproved = terbaru.items.every(i => ['SELESAI', 'DISETUJUI', 'APPROVED', 'DITERIMA'].includes((i.status || '').toUpperCase()));
+            const anyForwarded = terbaru.items.some(i => ['DITERUSKAN', 'FORWARDED', 'IN_REVIEW', 'PROCESS', 'MENUNGGU MANAGER'].includes((i.status || '').toUpperCase()));
             
             let step = 1; 
             if (anyRejected) {
@@ -97,15 +93,14 @@ export default function UserDashboard({ setCurrentView }) {
               step = 2;
             }
 
-            // Set Label Status
-            let statusText = 'Pending';
+            let statusText = 'Dalam Proses (Pending)';
             if (step === -1) statusText = 'Ditolak';
             else if (step === 3) statusText = 'Selesai';
-            else if (step === 2) statusText = 'Menunggu Manager';
+            else if (step === 2) statusText = 'Diteruskan Ke Manager';
 
             setLastRequest({
               id: terbaru.id,
-              barangValue: barangValue, // Menyimpan nilai barang
+              barangValue: barangValue,
               category: terbaru.category,
               statusText: statusText,
               date: new Date(terbaru.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
@@ -196,12 +191,10 @@ export default function UserDashboard({ setCurrentView }) {
           <p className="text-sm text-center text-zinc-500 py-6">⏳ Memuat data...</p>
         ) : lastRequest ? (
           <>
-            {/* 🔥 CONTAINER DIKUNCI AGAR TIDAK MELAR KE SAMPING */}
             <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-start md:items-center gap-4">
               <div className="space-y-1 min-w-0 flex-1">
                 <p className="text-[17px] font-bold text-zinc-900 leading-tight tracking-tight mb-1 truncate">{lastRequest.id}</p>
                 
-                {/* 🔥 TEKS BARANG DIBATASI AGAR OTOMATIS JADI (...) JIKA TERLALU PANJANG */}
                 <p className="text-[14px] flex items-baseline min-w-0">
                   <span className="text-zinc-500 shrink-0 mr-1.5">Barang :</span>
                   <span className="font-medium text-zinc-700 truncate block" title={lastRequest.barangValue}>
