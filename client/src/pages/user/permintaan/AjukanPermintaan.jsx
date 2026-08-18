@@ -109,6 +109,7 @@ export default function AjukanPermintaan() {
         namaAset: asset.namaAset,
         kodeAset: asset.kodeAset,
         jumlah: asset.jumlah || 1,
+        stokAsli: asset.rawStok || '-', // Ambil stok asli dari keranjang jika ada
         keterangan: '', 
         prioritas: calculatedPriority
       }));
@@ -162,7 +163,6 @@ export default function AjukanPermintaan() {
         toast.error("Belum ada barang yang diajukan. Silakan pilih kembali dari katalog.");
         return;
       }
-      // 🔥 Validasi Keterangan WAJIB DIHAPUS (Alasan sekarang opsional)
       setCurrentStep(3);
     }
   };
@@ -264,7 +264,6 @@ export default function AjukanPermintaan() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // MENGHITUNG PRIORITAS TERTINGGI DARI DAFTAR BARANG
   const getHighestPriority = () => {
     if (!daftarBarang || daftarBarang.length === 0) return '-';
     const weights = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
@@ -403,7 +402,6 @@ export default function AjukanPermintaan() {
                         
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                           <div>
-                            {/* 🔥 FONT DIPERBAIKI (TIDAK TERLALU TEBAL) */}
                             <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
                             <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
                           </div>
@@ -411,7 +409,6 @@ export default function AjukanPermintaan() {
                           <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
                               Prioritas: 
-                              {/* 🔥 WARNA PRIORITAS DISAMAKAN: RENDAH(HIJAU), SEDANG(ORANYE), TINGGI(MERAH) */}
                               <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${
                                 barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
                                 barang.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
@@ -431,7 +428,7 @@ export default function AjukanPermintaan() {
                                   className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
                                   required
                                 />
-                                <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ - Stok</span>
+                                <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ {barang.stokAsli || '-'} Stok</span>
                               </div>
                             </div>
                           </div>
@@ -441,7 +438,6 @@ export default function AjukanPermintaan() {
 
                         <div>
                           <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
-                          {/* 🔥 ALASAN SEKARANG OPSIONAL (TIDAK ADA REQUIRED) */}
                           <input 
                             type="text" 
                             placeholder="Contoh: Stok alat tulis habis..." 
@@ -511,7 +507,6 @@ export default function AjukanPermintaan() {
                         <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug">Alasan: {b.keterangan || '-'}</span>
                       </div>
                       <div className="text-center">
-                        {/* 🔥 WARNA PRIORITAS DISAMAKAN DENGAN STEP 2 */}
                         <span className={`px-2 py-1 rounded text-[11px] font-bold inline-block ${
                           b.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
                           b.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
