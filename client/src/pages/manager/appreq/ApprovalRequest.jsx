@@ -78,27 +78,27 @@ export default function ApprovalRequest() {
             const prettyId = `REQ-${tglFormatId}-${padId}`; 
 
             acc[groupKey] = {
-             id: prettyId, 
-             namaPemohon: pemohonName,
-             unit: divisiPemohon,
-             prioritas: curr.prioritas || 'Rendah',
-             tanggal: tglStr,
-             jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-             status: currentStatus,
-             rawStatus: curr.status, 
-             keperluan: curr.alasan || '-',
-             adminName: curr.adminName || '',     
-             managerName: curr.managerName || '', 
-             items: []
-           };
-         } else {
-           const currentGroupPriority = acc[groupKey].prioritas;
-           const newItemPriority = curr.prioritas || 'Rendah';
- 
-           if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
+              id: prettyId, 
+              namaPemohon: pemohonName,
+              unit: divisiPemohon,
+              prioritas: curr.prioritas || 'Rendah',
+              tanggal: tglStr,
+              jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              status: currentStatus,
+              rawStatus: curr.status, 
+              keperluan: curr.alasan || '-',
+              adminName: curr.adminName || '',     
+              managerName: curr.managerName || '', 
+              items: []
+            };
+          } else {
+            const currentGroupPriority = acc[groupKey].prioritas;
+            const newItemPriority = curr.prioritas || 'Rendah';
+
+            if ((bobotPrioritas[newItemPriority] || 1) > (bobotPrioritas[currentGroupPriority] || 1)) {
               acc[groupKey].prioritas = newItemPriority; 
+            }
           }
-        }
 
           acc[groupKey].items.push({
             idItem: curr.id, 
@@ -108,7 +108,7 @@ export default function ApprovalRequest() {
             jumlahDisetujui: curr.jumlah_disetujui ?? curr.jumlah ?? 1,
             prioritas: curr.prioritas || 'Rendah', 
             remark: curr.alasan || ''
-         });
+          });
 
           return acc;
         }, {});
@@ -131,7 +131,6 @@ export default function ApprovalRequest() {
   }, [activeTab, searchQuery, selectedPriority]);
 
   const filteredRequests = requests.filter(r => {
-    // Perubahan untuk tab "Semua"
     const matchTab = activeTab === 'Semua' ? true : r.status?.toLowerCase() === activeTab.toLowerCase();
     const matchPriority = selectedPriority === 'Semua Prioritas' ? true : r.prioritas === selectedPriority;
     
@@ -148,6 +147,10 @@ export default function ApprovalRequest() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  // Hanya item yang berstatus 'Menunggu Manager' yang dapat dipilih
+  const selectableInPage = paginatedRequests.filter(r => r.status?.toLowerCase() === 'menunggu manager');
+  const isAllSelected = selectableInPage.length > 0 && selectableInPage.every(r => selectedRows.includes(r.id));
+
   const handleSelectRow = (e, id) => {
     e.stopPropagation(); 
     setSelectedRows(prev => prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]);
@@ -155,8 +158,7 @@ export default function ApprovalRequest() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      // Hanya men-select data yang sedang tampil di halaman ini
-      setSelectedRows(paginatedRequests.map(r => r.id));
+      setSelectedRows(selectableInPage.map(r => r.id));
     } else {
       setSelectedRows([]);
     }
@@ -205,7 +207,6 @@ export default function ApprovalRequest() {
 
       toast.dismiss(loadingToast); 
       
-      // 🔥 CUSTOM TOAST SESUAI GAMBAR
       toast.custom((t) => (
         <div className={`${t.visible ? 'animate-in fade-in slide-in-from-bottom-5' : 'animate-out fade-out slide-out-to-bottom-5'} max-w-sm w-full bg-white shadow-lg rounded-xl border border-zinc-100 p-4 flex items-center gap-3`}>
           <div className="w-8 h-8 rounded-full bg-[#00664b] flex items-center justify-center shrink-0">
@@ -254,14 +255,13 @@ export default function ApprovalRequest() {
 
   const activeDetail = requests.find(item => item.id === selectedId);
 
-  // 🔥 LOGIKA QR MANAGER: Dikosongkan jika belum ACC (Selesai)
   const mappedFormData = activeDetail ? {
-   divisi: activeDetail.unit,
-   alasanDibutuhkan: activeDetail.keperluan,
-   namaLengkap: activeDetail.namaPemohon,
-   status: activeDetail.rawStatus || activeDetail.status, 
-   adminName: activeDetail.adminName || 'Admin Gudang',
-   managerName: activeDetail.status === 'Selesai' ? (activeDetail.managerName || 'Manager Operasional') : ''
+    divisi: activeDetail.unit,
+    alasanDibutuhkan: activeDetail.keperluan,
+    namaLengkap: activeDetail.namaPemohon,
+    status: activeDetail.rawStatus || activeDetail.status, 
+    adminName: activeDetail.adminName || 'Admin Gudang',
+    managerName: activeDetail.status === 'Selesai' ? (activeDetail.managerName || 'Manager Operasional') : ''
   } : {};
 
   const mappedDaftarBarang = activeDetail ? activeDetail.items.map(item => ({
@@ -280,11 +280,11 @@ export default function ApprovalRequest() {
           <p className="text-xs text-white font-medium mt-0.5">Tinjau permohonan yang telah diproses Admin dan berikan ACC Final.</p>
         </div>
 
-        {/* 🔥 TAB FILTER DIPERBARUI DENGAN "SEMUA" */}
+        {/* Tab Filter */}
         <div className="flex items-center gap-6 border-b border-[#00664b]/20 text-sm">
           {['Menunggu Manager', 'Selesai', 'Ditolak', 'Semua'].map((status) => (
             <button 
-              key={status}
+              key={status} 
               onClick={() => setActiveTab(status)}
               className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all cursor-pointer text-white capitalize ${
                 activeTab === status ? 'border-white font-bold' : 'border-transparent opacity-75 hover:opacity-100'
@@ -327,7 +327,7 @@ export default function ApprovalRequest() {
 
           <div 
             className={`transition-all duration-500 ease-out overflow-hidden flex items-center ${
-              selectedRows.length > 0 && (activeTab === 'Menunggu Manager' || activeTab === 'Semua') 
+              selectedRows.length > 0 
                 ? 'opacity-100 translate-x-0 max-w-[500px] ml-4' 
                 : 'opacity-0 translate-x-12 max-w-0 ml-0 pointer-events-none'
             }`}
@@ -359,10 +359,11 @@ export default function ApprovalRequest() {
               <thead>
                 <tr className="border-b border-zinc-100 text-[11px] font-bold text-white uppercase bg-[#58a27d]">
                   <th className="py-3 px-4 w-12 text-center">
-                    {(activeTab === 'Menunggu Manager' || activeTab === 'Semua') && (
+                    {/* Checkbox Header hanya muncul jika ada item 'Menunggu Manager' di halaman ini */}
+                    {selectableInPage.length > 0 && (
                       <input 
                         type="checkbox"
-                        checked={selectedRows.length === paginatedRequests.length && paginatedRequests.length > 0}
+                        checked={isAllSelected}
                         onChange={handleSelectAll}
                         className="w-3.5 h-3.5 rounded border-zinc-300 text-[#00664b] focus:ring-[#00664b] cursor-pointer accent-[#00664b]"
                       />
@@ -391,7 +392,8 @@ export default function ApprovalRequest() {
                       className={`hover:bg-zinc-50/80 transition-colors cursor-pointer ${selectedRows.includes(item.id) ? 'bg-emerald-50/40' : ''}`}
                     >
                       <td className="py-4 px-4 text-center">
-                        {(activeTab === 'Menunggu Manager' || activeTab === 'Semua') && (
+                        {/* Checkbox baris hanya muncul jika status masih 'Menunggu Manager' */}
+                        {item.status?.toLowerCase() === 'menunggu manager' && (
                           <input 
                             type="checkbox"
                             checked={selectedRows.includes(item.id)}
@@ -451,9 +453,9 @@ export default function ApprovalRequest() {
             </table>
           </div>
           
-          {/* 🔥 CONTROLS PAGINATION */}
+          {/* Controls Pagination (Ditempatkan di Paling Kanan) */}
           {!loading && filteredRequests.length > 0 && (
-            <div className="flex items-center justify-between p-4 border-t border-zinc-100 bg-white">
+            <div className="flex items-center justify-end p-4 border-t border-zinc-100 bg-white">
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -476,6 +478,7 @@ export default function ApprovalRequest() {
         </div>
       </div>
 
+      {/* Modal Detail Berkas */}
       {isModalOpen && activeDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]">
@@ -563,7 +566,7 @@ export default function ApprovalRequest() {
                     onClick={() => setShowBonPreview(true)}
                     className="flex-1 py-2.5 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Likat Bon Sementara
+                    Lihat Bon Sementara
                   </button>
                   <button 
                     onClick={() => triggerConfirmation('Selesai', [activeDetail.id])}
@@ -596,7 +599,7 @@ export default function ApprovalRequest() {
         </div>
       )}
 
-      {/* 🔥 MODAL KONFIRMASI ACC/TOLAK DIPERBARUI */}
+      {/* Modal Konfirmasi ACC/Tolak */}
       {isConfirmOpen && confirmTargets.length > 0 && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-7 space-y-5 animate-in zoom-in-95 duration-150 text-center relative">
@@ -645,6 +648,7 @@ export default function ApprovalRequest() {
         </div>
       )}
 
+      {/* Modal Preview Dokumen Bon */}
       {showBonPreview && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-zinc-200 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl max-h-[95vh] overflow-hidden relative">

@@ -472,7 +472,7 @@ export default function ActivityLogManager() {
                       <span className="font-bold text-zinc-900">{item.requester}</span> 
                       {item.type === 'Masuk' 
                         ? ' mendaftarkan barang masuk/restock berupa ' 
-                        : ' mengajukan permintaan aset inventaris untuk dikirim ke '}
+                        : ' mengajukan permintaan peminjaman inventaris untuk dikirim ke '}
                       {item.type !== 'Masuk' && (
                         <span className="font-bold text-zinc-900 mr-1">
                           {item.unit}

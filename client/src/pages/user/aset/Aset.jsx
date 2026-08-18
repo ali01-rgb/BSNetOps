@@ -172,7 +172,6 @@ export default function Aset({ setCurrentView }) {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {cart.map((item) => (
                   <span key={item.kodeAset} className="inline-flex items-center gap-1 bg-white border border-zinc-200 text-zinc-700 font-medium text-[10px] px-2 py-0.5 rounded-full capitalize">
-                    {/* 🔥 Truncate pada badge nama di keranjang atas supaya nggak ngerusak navbar jika super panjang */}
                     <span className="truncate max-w-[120px] inline-block align-bottom">{item.namaAset}</span>
                     <button onClick={() => handleRemoveFromCart(item.kodeAset)} className="text-red-500 hover:text-red-700 ml-0.5 font-bold cursor-pointer">×</button>
                   </span>
@@ -306,8 +305,6 @@ export default function Aset({ setCurrentView }) {
                   <img src={aset.gambar} alt={aset.nama} className="w-full h-full object-cover" />
                 </div>
 
-                {/* 🔥 FITUR TRUNCATE YANG SUDAH DIPERBAIKI UNTUK CARD DI HALAMAN ASET */}
-                {/* overflow-hidden dan min-w-0 pada container penting agar flexbox tidak melar ke samping */}
                 <div className="flex flex-col justify-between flex-1 py-1 min-w-0">
                   <div className="overflow-hidden">
                     <h3 
@@ -340,64 +337,70 @@ export default function Aset({ setCurrentView }) {
       )}
 
       {selectedAsset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/30 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border border-zinc-100 shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-xl w-full p-6 relative flex gap-6 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-zinc-100 shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-xl w-full p-6 sm:p-7 relative flex flex-col sm:flex-row gap-6 animate-in zoom-in-95 duration-200">
             
-            <button onClick={() => setSelectedAsset(null)} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:bg-zinc-100 cursor-pointer">
-              <X size={16} />
+            {/* Tombol Close */}
+            <button 
+              onClick={() => setSelectedAsset(null)} 
+              className="absolute top-5 right-5 p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer z-20"
+            >
+              <X size={18} />
             </button>
 
-            <div className="w-44 flex flex-col items-center justify-center gap-4 shrink-0">
-              <div className="w-full h-40 rounded-2xl border border-zinc-100 overflow-hidden">
-                <img src={selectedAsset.gambar} alt={selectedAsset.nama} className="w-full h-full object-cover" />
+            {/* Kolom Kiri: Gambar & Kode */}
+            <div className="w-full sm:w-44 flex flex-col items-center justify-center gap-3 shrink-0">
+              <div className="w-full h-40 sm:h-44 rounded-2xl bg-zinc-50/50 border border-zinc-100 overflow-hidden flex items-center justify-center p-2">
+                <img src={selectedAsset.gambar} alt={selectedAsset.nama} className="w-full h-full object-contain" />
               </div>
-              <div className="w-full text-center py-1 border border-emerald-600/40 text-[#00664b] font-bold text-xs bg-white rounded-full">
+              <div className="w-full text-center py-1.5 border border-emerald-600/40 text-[#00664b] font-bold text-xs bg-white rounded-full">
                 {selectedAsset.kode}
               </div>
             </div>
 
-            {/* 🔥 FITUR TEXT WRAPPING / BREAK-WORDS DI MODAL POPUP */}
-            {/* min-w-0 pada kolom flex ini memaksa kontainer untuk mengikuti ukuran parent, 
-                lalu break-all / break-words membuat teks panjang yg ga ada spasi akan patah ke bawah */}
+            {/* Kolom Kanan: Detail & Aksi */}
             <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
               <div className="min-w-0">
+                {/* Teks nama barang memanjang ke bawah & memiliki jarak dari tombol X */}
                 <h3 
-                  className="font-extrabold text-xl capitalize text-zinc-900 border-b border-zinc-900 pb-1.5 tracking-tight w-full break-words"
+                  className="font-bold text-lg sm:text-xl text-zinc-900 border-b border-zinc-900 pb-2 tracking-tight w-full break-all pr-8 leading-snug"
                 >
                   {selectedAsset.nama}
                 </h3>
 
-                <div className="mt-6 space-y-3">
-                  <p className="text-xs text-zinc-500 font-medium">
-                    Masukkan aset inventaris ini ke list item permintaan untuk pengajuan bon barang sekaligus.
-                  </p>
+                <p className="text-xs text-zinc-500 font-medium mt-4 leading-relaxed">
+                  Masukkan barang ini ke list item permintaan untuk pengajuan bon barang sekaligus.
+                </p>
+              </div>
 
-                  <div className="space-y-2 pt-6">
-                    {cart.some(item => item.kodeAset === selectedAsset.kode) ? (
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          handleRemoveFromCart(selectedAsset.kode);
-                          setSelectedAsset(null);
-                        }} 
-                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center flex items-center justify-center gap-2"
-                      >
-                        Hapus dari Permintaan
-                      </button>
-                    ) : (
-                      <button 
-                        type="button" 
-                        onClick={handleAddToCart} 
-                        className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors text-center flex items-center justify-center gap-2"
-                      >
-                        <ShoppingCart size={14} /> Masukkan ke Permintaan
-                      </button>
-                    )}
-                    <button type="button" onClick={() => setSelectedAsset(null)} className="w-full py-2.5 bg-white border border-zinc-300 text-zinc-600 font-bold text-xs rounded-full hover:bg-zinc-50 cursor-pointer transition-colors">
-                      Batal
-                    </button>
-                  </div>
-                </div>
+              <div className="space-y-2.5 pt-6 sm:pt-4">
+                {cart.some(item => item.kodeAset === selectedAsset.kode) ? (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleRemoveFromCart(selectedAsset.kode);
+                      setSelectedAsset(null);
+                    }} 
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    Hapus dari Permintaan
+                  </button>
+                ) : (
+                  <button 
+                    type="button" 
+                    onClick={handleAddToCart} 
+                    className="w-full py-2.5 bg-[#005c42] hover:bg-[#00422f] text-white font-bold text-xs rounded-full cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <ShoppingCart size={15} /> Masukkan ke Permintaan
+                  </button>
+                )}
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedAsset(null)} 
+                  className="w-full py-2.5 bg-white border border-zinc-300 text-zinc-700 font-bold text-xs rounded-full hover:bg-zinc-50 cursor-pointer transition-colors shadow-sm"
+                >
+                  Batal
+                </button>
               </div>
             </div>
 
