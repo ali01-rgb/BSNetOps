@@ -21,6 +21,20 @@ export default function PenyetujuanBarang() {
     fetchRequestsFromAPI();
   }, []);
 
+  const getStatusInfo = (status) => {
+    const s = (status || '').toUpperCase();
+    if (['DISETUJUI', 'SELESAI', 'APPROVED'].includes(s)) {
+      return { label: 'Selesai', color: 'bg-emerald-50 text-[#00664b] border-emerald-200' };
+    }
+    if (['DITOLAK', 'REJECTED'].includes(s)) {
+      return { label: 'Ditolak', color: 'bg-red-50 text-red-600 border-red-200' };
+    }
+    if (['DITERUSKAN', 'FORWARDED', 'MENUNGGU MANAGER'].includes(s)) {
+      return { label: 'Menunggu Manager', color: 'bg-amber-50 text-amber-700 border-amber-200' };
+    }
+    return { label: 'Menunggu', color: 'bg-orange-50 text-orange-600 border-orange-200' };
+  };
+
   const fetchRequestsFromAPI = async () => {
     setLoading(true);
     try {
@@ -41,7 +55,6 @@ export default function PenyetujuanBarang() {
 
       if (Array.isArray(rawRequests)) {
         const groupedData = rawRequests.reduce((acc, curr) => {
-          // 🔥 PERBAIKAN: Safely parse Date untuk mencegah crash 'Invalid Date'
           let rawDate = new Date(curr.createdAt || curr.tanggal_dibutuhkan || Date.now());
           if (isNaN(rawDate.getTime())) rawDate = new Date();
 
@@ -50,6 +63,18 @@ export default function PenyetujuanBarang() {
           const divisiPemohon = curr.user?.divisi || 'KC Semarang';
 
           const groupKey = `${tglStr}-${curr.userId}`;
+
+          const statusUpper = (curr.status || '').toUpperCase();
+          let currentStatus = 'Menunggu';
+          if (['DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusUpper)) {
+            currentStatus = 'Selesai';
+          } else if (['DITOLAK', 'REJECTED'].includes(statusUpper)) {
+            currentStatus = 'Ditolak';
+          } else if (['DITERUSKAN', 'FORWARDED', 'MENUNGGU MANAGER'].includes(statusUpper)) {
+            currentStatus = 'Menunggu Manager';
+          } else {
+            currentStatus = 'Menunggu';
+          }
 
           if (!acc[groupKey]) {
             const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
@@ -61,8 +86,9 @@ export default function PenyetujuanBarang() {
               pemohon: pemohonName,
               unit: divisiPemohon,
               tanggal: tglStr,
-              status: curr.status || 'menunggu',
-              isDiserahkan: curr.status === 'Diteruskan' || curr.status === 'Disetujui',
+              status: currentStatus,
+              rawStatus: curr.status,
+              isDiserahkan: currentStatus === 'Menunggu Manager' || currentStatus === 'Selesai',
               tanggalDiserahkan: tglStr,
               keteranganPemohon: curr.alasan || '',
               adminName: curr.adminName || '',
@@ -73,7 +99,6 @@ export default function PenyetujuanBarang() {
 
           let latestStock = 0;
           if (Array.isArray(allMasterItems)) {
-            // 🔥 PERBAIKAN: Cegah .trim() crash jika nama barang NULL
             const matched = allMasterItems.find(a => 
               a.nama_barang && curr.nama_aset &&
               String(a.nama_barang).trim().toLowerCase() === String(curr.nama_aset).trim().toLowerCase()
@@ -108,7 +133,6 @@ export default function PenyetujuanBarang() {
     }
   };
 
-  // 🔥 PERBAIKAN: Aman dari error undefined saat filter pencarian
   const filteredRequests = requests.filter(req =>
     (req.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (req.pemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -148,62 +172,61 @@ export default function PenyetujuanBarang() {
     });
   };
 
-const handleApproveAndHandover = async () => {
-  const isInvalid = selectedRequest.items.some(
-    item => item.jmlDisetujui > item.stokGudang || item.jmlDisetujui > item.jmlDiminta
-  );
+  const handleApproveAndHandover = async () => {
+    const isInvalid = selectedRequest.items.some(
+      item => item.jmlDisetujui > item.stokGudang || item.jmlDisetujui > item.jmlDiminta
+    );
 
-  if (isInvalid) {
-    toast.error("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
-    return;
-  }
+    if (isInvalid) {
+      toast.error("Gagal: Jumlah yang disetujui tidak boleh melebihi jumlah yang diminta atau stok gudang!");
+      return;
+    }
 
-  const loadingToast = toast.loading('Menyimpan persetujuan...');
+    const loadingToast = toast.loading('Menyimpan persetujuan...');
 
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    let hasError = false;
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      let hasError = false;
 
-    for (const item of selectedRequest.items) {
-      const res = await fetch(`${API_URL}/inventory/admin/requests/${item.idItem}/status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          status: 'Diteruskan',
-          jumlah_disetujui: item.jmlDisetujui,
-          catatan_admin: item.remark 
-        })
-      });
+      for (const item of selectedRequest.items) {
+        const res = await fetch(`${API_URL}/inventory/admin/requests/${item.idItem}/status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            status: 'Diteruskan',
+            jumlah_disetujui: item.jmlDisetujui,
+            catatan_admin: item.remark 
+          })
+        });
 
-      // 🔥 FIX: cek response, jangan diemin error
-      if (!res.ok) {
-        hasError = true;
-        const errData = await res.json().catch(() => ({}));
-        console.error(`Gagal update item ${item.idItem}:`, errData.message || res.status);
+        if (!res.ok) {
+          hasError = true;
+          const errData = await res.json().catch(() => ({}));
+          console.error(`Gagal update item ${item.idItem}:`, errData.message || res.status);
+        }
       }
+
+      toast.dismiss(loadingToast);
+
+      if (hasError) {
+        toast.error('Sebagian data gagal disimpan ke server. Cek console untuk detail.');
+      } else {
+        toast.success(`Permintaan ${selectedRequest.id} berhasil disetujui dan diteruskan ke Manager.`);
+      }
+      
+      setIsModalOpen(false);
+      setSelectedRequest(null);
+      fetchRequestsFromAPI(); 
+
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('Gagal memperbarui status penyerahan:', error.message);
+      toast.error('Terjadi kesalahan saat menyimpan ke database.');
     }
-
-    toast.dismiss(loadingToast);
-
-    if (hasError) {
-      toast.error('Sebagian data gagal disimpan ke server. Cek console untuk detail.');
-    } else {
-      toast.success(`Permintaan ${selectedRequest.id} berhasil disetujui dan diteruskan ke Manager.`);
-    }
-    
-    setIsModalOpen(false);
-    setSelectedRequest(null);
-    fetchRequestsFromAPI(); 
-
-  } catch (error) {
-    toast.dismiss(loadingToast);
-    console.error('Gagal memperbarui status penyerahan:', error.message);
-    toast.error('Terjadi kesalahan saat menyimpan ke database.');
-  }
-};
+  };
 
   const handleDownloadPDF = () => {
     const element = printRef.current;
@@ -230,11 +253,12 @@ const handleApproveAndHandover = async () => {
 
   const loggedInProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
   
+  // 🔥 PERBAIKAN: Kita berikan status apa adanya agar Bon tahu kapan harus merender TTD
   const mappedFormData = selectedRequest ? {
     divisi: selectedRequest.unit,
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
     namaLengkap: selectedRequest.pemohon,
-    status: (selectedRequest.status === 'Pending' || selectedRequest.status === 'menunggu') ? 'DITERUSKAN' : selectedRequest.status,
+    status: selectedRequest.status, // JANGAN DI PAKSA JADI 'DITERUSKAN'
     adminName: selectedRequest.adminName || loggedInProfile.fullName || 'Admin Gudang',
     managerName: selectedRequest.managerName || 'Manager Operasional'
   } : {};
@@ -270,15 +294,15 @@ const handleApproveAndHandover = async () => {
       </div>
 
       <div className="bg-white border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
-        <table className="w-full text-sm text-left">
+        <table className="w-full text-sm text-left table-fixed">
           <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
             <tr>
-              <th className="p-4 w-40">ID Permintaan</th>
-              <th className="p-4">Pemohon</th>
-              <th className="p-4">Unit</th>
-              <th className="p-4">Tgl Dibutuhkan</th>
-              <th className="p-4 text-center">Status</th>
-              <th className="p-4 text-center">Aksi</th>
+              <th className="p-4 w-[18%]">ID Permintaan</th>
+              <th className="p-4 w-[22%]">Pemohon</th>
+              <th className="p-4 w-[18%]">Unit</th>
+              <th className="p-4 w-[16%]">Tgl Dibutuhkan</th>
+              <th className="p-4 w-[14%] text-center">Status</th>
+              <th className="p-4 w-[12%] text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -287,31 +311,30 @@ const handleApproveAndHandover = async () => {
             ) : filteredRequests.length === 0 ? (
               <tr><td colSpan="6" className="p-8 text-center text-zinc-500 text-sm">Tidak ada data permintaan ditemukan</td></tr>
             ) : (
-              filteredRequests.map((req) => (
-                <tr key={req.id} className="hover:bg-zinc-50/40 transition-colors">
-                  <td className="p-4 font-mono text-xs font-bold text-zinc-900">{req.id}</td>
-                  <td className="p-4 font-bold text-zinc-800">{req.pemohon}</td>
-                  <td className="p-4 text-zinc-600">{req.unit}</td>
-                  <td className="p-4 text-zinc-600">{req.tanggal}</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2.5 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-wider border ${
-                      req.status === 'menunggu' || req.status === 'Pending' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                      req.status === 'Menunggu Manager' || req.status === 'Diteruskan' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                      req.status === 'Ditolak' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-50 text-gray-600 border-gray-200'
-                    }`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="p-4 flex justify-center">
-                    <button 
-                      onClick={() => handleReview(req)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00664b] text-white hover:bg-[#00553e] rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer"
-                    >
-                      <CheckSquare size={14} /> Review / Bon
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filteredRequests.map((req) => {
+                const statusData = getStatusInfo(req.status);
+                return (
+                  <tr key={req.id} className="hover:bg-zinc-50/40 transition-colors">
+                    <td className="p-4 font-mono text-xs font-bold text-zinc-900 truncate" title={req.id}>{req.id}</td>
+                    <td className="p-4 font-bold text-zinc-800 truncate" title={req.pemohon}>{req.pemohon}</td>
+                    <td className="p-4 text-zinc-600 truncate" title={req.unit}>{req.unit}</td>
+                    <td className="p-4 text-zinc-600 truncate">{req.tanggal}</td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2.5 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-wider border ${statusData.color}`}>
+                        {statusData.label}
+                      </span>
+                    </td>
+                    <td className="p-4 flex justify-center">
+                      <button 
+                        onClick={() => handleReview(req)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00664b] text-white hover:bg-[#00553e] rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer"
+                      >
+                        <CheckSquare size={14} /> Review / Bon
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -339,7 +362,12 @@ const handleApproveAndHandover = async () => {
                   <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-y-2 text-sm text-gray-700">
                     <span className="font-medium text-zinc-500">Nama Lengkap</span><span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
                     <span className="font-medium text-zinc-500">Unit / Cabang</span><span>: {selectedRequest.unit}</span>
-                    <span className="font-medium text-zinc-500">Status Aksi</span><span className="font-bold text-[#00664b]">: {selectedRequest.status}</span>
+                    <span className="font-medium text-zinc-500">Status Aksi</span>
+                    <span>: 
+                      <span className={`ml-1 px-2 py-0.5 rounded text-[11px] font-bold border uppercase ${getStatusInfo(selectedRequest.status).color}`}>
+                        {getStatusInfo(selectedRequest.status).label}
+                      </span>
+                    </span>
                     <span className="font-medium text-zinc-500">Keterangan</span><span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
                   </div>
                 </div>
@@ -353,83 +381,100 @@ const handleApproveAndHandover = async () => {
                   <span className="text-[10px] text-zinc-500 font-mono mt-1 font-bold">TTD Pemohon</span>
                 </div>
 
-                <div className={`flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] border-emerald-300 bg-emerald-50/50`}>
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`Approved & Handed over by ${mappedFormData.adminName}`)}`} 
-                    alt="QR Admin" 
-                    className="w-16 h-16 mix-blend-multiply opacity-90"
-                  />
-                  <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold">{mappedFormData.adminName}</span>
-                </div>
+                {/* 🔥 LOGIKA QR TAMPILAN MODAL: Hanya muncul jika BUKAN Menunggu/Pending */}
+                {selectedRequest.status !== 'Menunggu' && selectedRequest.status !== 'Pending' ? (
+                  <div className="flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] border-emerald-300 bg-emerald-50/50">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`Approved & Handed over by ${mappedFormData.adminName}`)}`} 
+                      alt="QR Admin" 
+                      className="w-16 h-16 mix-blend-multiply opacity-90"
+                    />
+                    <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold">{mappedFormData.adminName}</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] border-zinc-200 bg-zinc-50/50">
+                    <span className="text-[10px] text-zinc-400 font-bold italic">Belum di-ACC Admin</span>
+                  </div>
+                )}
               </div>
 
               <h3 className="font-bold text-gray-800 mb-3 text-sm">Penyesuaian Barang (Adjustment & Cek Stok Real-Time)</h3>
               
               <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                <table className="w-full text-left text-sm border-collapse">
+                <table className="w-full text-left text-sm border-collapse table-fixed">
                   <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
                     <tr>
-                      <th className="p-3 w-1/4">Nama Barang</th>
-                      <th className="p-3 text-center">Stok Gudang</th>
-                      <th className="p-3 text-center">Diminta</th>
-                      <th className="p-3 w-32 text-center">Disetujui</th>
-                      <th className="p-3 w-1/3">Catatan Admin</th>
+                      <th className="p-3 w-[30%]">Nama Barang</th>
+                      <th className="p-3 w-[15%] text-center">Stok Gudang</th>
+                      <th className="p-3 w-[12%] text-center">Diminta</th>
+                      <th className="p-3 w-[18%] text-center">Disetujui</th>
+                      <th className="p-3 w-[25%]">Catatan Admin</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {selectedRequest.items.map((item, index) => (
-                      <tr key={item.idItem} className="hover:bg-zinc-50/40">
-                        <td className="p-3">
-                          <div className="font-bold text-zinc-800 capitalize">{item.namaBarang}</div>
-                          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{item.kodeBarang}</div>
-                        </td>
-                        <td className="p-3 text-center">
-                          <span className={`inline-flex items-center justify-center min-w-[32px] px-2 py-1 rounded-md text-xs font-bold border ${item.stokGudang > 0 ? 'bg-[#e7f0ec] text-[#00664b] border-[#00664b]/20' : 'bg-red-50 text-red-600 border-red-200'}`}>
-                            {item.stokGudang}
-                          </span>
-                        </td>
-                        <td className="p-3 text-center font-bold text-zinc-600">{item.jmlDiminta}</td>
-                        <td className="p-3">
-                          <input 
-                            type="number" 
-                            min="0"
-                            max={Math.min(item.jmlDiminta, item.stokGudang)}
-                            value={item.jmlDisetujui}
-                            onChange={(e) => handleQtyChange(item.idItem, e.target.value)}
-                            className="w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-center bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-[#00664b]/40 font-bold text-[#00664b]"
-                          />
-                        </td>
-                        <td className="p-3">
-                          <input 
-                            type="text" 
-                            placeholder="Alasan penyesuaian..."
-                            value={item.remark}
-                            onChange={(e) => handleRemarkChange(item.idItem, e.target.value)}
-                            className="w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-[#00664b]/40"
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedRequest.items.map((item) => {
+                      const isProcessed = selectedRequest.status !== 'Menunggu';
+                      return (
+                        <tr key={item.idItem} className="hover:bg-zinc-50/40">
+                          <td className="p-3 min-w-0">
+                            <div className="font-bold text-zinc-800 capitalize truncate cursor-pointer" title={item.namaBarang}>
+                              {item.namaBarang}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate" title={item.kodeBarang}>
+                              {item.kodeBarang}
+                            </div>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className={`inline-flex items-center justify-center min-w-[32px] px-2 py-1 rounded-md text-xs font-bold border ${item.stokGudang > 0 ? 'bg-[#e7f0ec] text-[#00664b] border-[#00664b]/20' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                              {item.stokGudang}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-bold text-zinc-600">{item.jmlDiminta}</td>
+                          <td className="p-3">
+                            <input 
+                              type="number" 
+                              min="0"
+                              max={Math.min(item.jmlDiminta, item.stokGudang)}
+                              value={item.jmlDisetujui}
+                              disabled={isProcessed}
+                              onChange={(e) => handleQtyChange(item.idItem, e.target.value)}
+                              className={`w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-center bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-[#00664b]/40 font-bold text-[#00664b] ${isProcessed ? 'cursor-not-allowed opacity-75' : ''}`}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <input 
+                              type="text" 
+                              placeholder="Alasan penyesuaian..."
+                              value={item.remark}
+                              disabled={isProcessed}
+                              onChange={(e) => handleRemarkChange(item.idItem, e.target.value)}
+                              className={`w-full px-3 py-1.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-[#00664b]/40 ${isProcessed ? 'cursor-not-allowed opacity-75' : ''}`}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
             <div className="px-6 py-4 border-t border-zinc-200 bg-white flex justify-between items-center rounded-b-2xl">
-              <div className="flex space-x-3">
-                <button 
-                  onClick={() => setShowBonPreview(true)}
-                  className="px-5 py-2 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] font-semibold rounded-lg text-sm transition-colors shadow-sm cursor-pointer"
-                >
-                  Lihat Bon Permintaan
-                </button>
+              <button 
+                onClick={() => setShowBonPreview(true)}
+                className="px-5 py-2 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] font-semibold rounded-lg text-sm transition-colors shadow-sm cursor-pointer"
+              >
+                Lihat Bon Permintaan
+              </button>
+
+              {selectedRequest.status === 'Menunggu' && (
                 <button 
                   onClick={handleApproveAndHandover}
                   className="px-5 py-2 bg-[#00664b] hover:bg-[#00553e] text-white font-semibold rounded-lg text-sm transition-colors shadow-md flex items-center justify-center cursor-pointer"
                 >
                   Setujui & Teruskan ke Manager
                 </button>
-              </div>
+              )}
             </div>
 
           </div>
@@ -446,7 +491,7 @@ const handleApproveAndHandover = async () => {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
                     className="p-1.5 text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
                   >
                     <MoreVertical size={20} />
@@ -455,8 +500,8 @@ const handleApproveAndHandover = async () => {
                   {isMenuOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
                       <button 
-                        onClick={handleDownloadPDF}
-                        disabled={isExporting}
+                        onClick={handleDownloadPDF} 
+                        disabled={isExporting} 
                         className="w-full px-4 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 flex items-center gap-2 cursor-pointer"
                       >
                         <Download size={14} className="text-[#00664b]" />
@@ -478,7 +523,7 @@ const handleApproveAndHandover = async () => {
             <div className="flex-1 overflow-auto p-8 flex justify-center bg-zinc-200">
               <div className="shadow-lg border border-zinc-300 bg-white">
                 <TemplateDokumenA4 
-                  ref={printRef}
+                  ref={printRef} 
                   formData={mappedFormData} 
                   daftarBarang={mappedDaftarBarang} 
                 />

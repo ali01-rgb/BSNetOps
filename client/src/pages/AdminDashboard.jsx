@@ -65,20 +65,17 @@ export default function AdminDashboard({ role = 'admin' }) {
         // ----------------------------------------------------
         // 2. HITUNG STATISTIK (LOGIKA MATEMATIKA DIPERBAIKI)
         // ----------------------------------------------------
-        // Total Tersedia: Murni menjumlahkan sisa stok di database saat ini
         const totalTersedia = assets.reduce((acc, item) => acc + (parseInt(item.stok) || parseInt(item.stock) || 0), 0);
 
-        // Total Keluar: Menjumlahkan barang dari request yang statusnya sudah ACC
         const approvedRequests = requests.filter(r => 
           ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DISETUJUI', 'SELESAI'].includes((r.status || '').toUpperCase())
         );
         const totalKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
         
-        // Total Masuk (Histori): Sisa stok saat ini + Barang yang sudah keluar
         const totalMasuk = totalTersedia + totalKeluar;
 
         setStats({
-          totalBarang: totalTersedia, // Dijamin memunculkan sisa aslinya (contoh: 22 Unit)
+          totalBarang: totalTersedia,
           barangMasuk: totalMasuk,
           barangKeluar: totalKeluar
         });
@@ -90,7 +87,6 @@ export default function AdminDashboard({ role = 'admin' }) {
         assets.forEach(asset => {
           let katName = 'Tanpa Kategori';
           
-          // Memastikan nama kategori benar-benar berbentuk teks (String), bukan Object
           if (asset.category && typeof asset.category.name === 'string') {
             katName = asset.category.name;
           } else if (typeof asset.category === 'string') {
@@ -120,7 +116,7 @@ export default function AdminDashboard({ role = 'admin' }) {
           unit: req.user?.divisi || req.user?.fullName || 'User BSN',
           type: ['APPROVED', 'DISERAHKAN', 'RECEIVED', 'DITERUSKAN', 'DISETUJUI', 'SELESAI'].includes((req.status || '').toUpperCase()) ? 'Keluar' : 'Pending',
           rawDate: new Date(req.createdAt || Date.now()),
-          date: formatFullDate(req.createdAt || Date.now()) // 🔥 Panggil Fungsi Tanggal
+          date: formatFullDate(req.createdAt || Date.now())
         }));
 
         const assetLogs = assets.map(ast => ({
@@ -129,7 +125,7 @@ export default function AdminDashboard({ role = 'admin' }) {
           unit: 'Gudang Utama',
           type: 'Masuk',
           rawDate: new Date(ast.createdAt || Date.now()),
-          date: formatFullDate(ast.createdAt || Date.now()) // 🔥 Panggil Fungsi Tanggal
+          date: formatFullDate(ast.createdAt || Date.now())
         }));
 
         const combinedLogs = [...requestLogs, ...assetLogs]
@@ -183,7 +179,7 @@ export default function AdminDashboard({ role = 'admin' }) {
       {/* Konten Utama */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* 🔥 CHART DONUT SETENGAH LINGKARAN */}
+        {/* CHART DONUT SETENGAH LINGKARAN */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md flex flex-col justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 mb-2">Distribusi Stok per Kategori</h2>
           
@@ -197,8 +193,8 @@ export default function AdminDashboard({ role = 'admin' }) {
                 <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <Pie 
                     data={categoryData} 
-                    startAngle={180}
-                    endAngle={0}
+                    startAngle={180} 
+                    endAngle={0} 
                     innerRadius={65} 
                     outerRadius={95} 
                     paddingAngle={3}
@@ -214,7 +210,7 @@ export default function AdminDashboard({ role = 'admin' }) {
             )}
           </div>
 
-          {/* 🔥 LEGEND CUSTOM PERSIS SEPERTI GAMBAR */}
+          {/* LEGEND CUSTOM */}
           {!isLoading && categoryData.length > 0 && (
             <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 pt-4 border-t border-zinc-100 mt-2">
               {categoryData.map((cat, idx) => (
@@ -234,13 +230,14 @@ export default function AdminDashboard({ role = 'admin' }) {
         <div className="bg-white p-6 border border-zinc-200/80 rounded-xl shadow-md overflow-hidden">
           <h2 className="text-lg font-semibold text-zinc-900 mb-4">Aktivitas Terbaru</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            {/* 🔥 TABLE-FIXED MENGUNCI LEBAR TABEL */}
+            <table className="w-full text-sm text-left table-fixed">
               <thead>
                 <tr className="text-zinc-500 border-b bg-zinc-50/50 text-xs uppercase font-semibold">
-                  <th className="pb-3 pt-2 px-2">Barang</th>
-                  <th className="pb-3 pt-2 px-2">Unit</th>
-                  <th className="pb-3 pt-2 px-2">Status</th>
-                  <th className="pb-3 pt-2 px-2">Tanggal</th>
+                  <th className="pb-3 pt-2 px-2 w-[40%]">Barang</th>
+                  <th className="pb-3 pt-2 px-2 w-[22%]">Unit</th>
+                  <th className="pb-3 pt-2 px-2 w-[18%]">Status</th>
+                  <th className="pb-3 pt-2 px-2 w-[20%]">Tanggal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -251,10 +248,13 @@ export default function AdminDashboard({ role = 'admin' }) {
                 ) : (
                   activityLogs.map((log, idx) => (
                     <tr key={idx} className="hover:bg-zinc-50/40 transition-colors">
-                      <td className="py-3 px-2 font-semibold text-zinc-800 min-w-0">
-                        <span className="block truncate max-w-full" title={log.item}>{log.item}</span>
+                      {/* 🔥 NAMA BARANG DIRINGKAS DENGAN (...) SECARA OTOMATIS */}
+                      <td className="py-3 px-2 font-semibold text-zinc-800 truncate" title={log.item}>
+                        {log.item}
                       </td>
-                      <td className="py-3 px-2 text-[#00664b] font-bold text-xs">{log.unit}</td> 
+                      <td className="py-3 px-2 text-[#00664b] font-bold text-xs truncate" title={log.unit}>
+                        {log.unit}
+                      </td> 
                       <td className="py-3 px-2">
                         <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md border ${
                           log.type === 'Masuk'
@@ -266,7 +266,6 @@ export default function AdminDashboard({ role = 'admin' }) {
                           {log.type}
                         </span>
                       </td>
-                      {/* 🔥 TANGGAL DENGAN TAHUN (YYYY-MM-DD) */}
                       <td className="py-3 px-2 text-xs text-zinc-500 font-mono">{log.date}</td>
                     </tr>
                   ))

@@ -25,7 +25,7 @@ export default function AjukanPermintaan() {
   });
 
   const [daftarBarang, setDaftarBarang] = useState(savedDraft?.daftarBarang || []);
-  const [masterAssets, setMasterAssets] = useState([]); // 🔥 STATE BARU UNTUK MENAMPUNG STOK ADMIN
+  const [masterAssets, setMasterAssets] = useState([]);
 
   // 1. HITUNG PRIORITAS BERDASARKAN HISTORY
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function AjukanPermintaan() {
     fetchUserProfile();
   }, []);
 
-  // 🔥 3. FETCH DATA ASET ADMIN UNTUK COCOKAN STOK ASLI
+  // 3. FETCH DATA ASET ADMIN UNTUK COCOKAN STOK ASLI
   useEffect(() => {
     const fetchMasterAssets = async () => {
       try {
@@ -259,7 +259,7 @@ export default function AjukanPermintaan() {
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { 
         scale: 2, 
-        useCORS: true,
+        useCORS: true, 
         logging: false,
         onclone: (clonedDoc) => {
           const allElements = clonedDoc.querySelectorAll('*');
@@ -406,7 +406,6 @@ export default function AjukanPermintaan() {
               {/* STEP 2: DETAIL DAFTAR BARANG */}
               {currentStep === 2 && (
                 <>
-                  {/* 🔥 PERBAIKAN ALIGNMENT TANGGAL DIBUTUHKAN */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h2 className="text-xl font-bold text-zinc-900">Detail Daftar Barang</h2>
                     <div className="flex flex-col items-start mt-4 sm:mt-0">
@@ -425,20 +424,22 @@ export default function AjukanPermintaan() {
 
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 pb-2">
                     {daftarBarang.map((barang, idx) => {
-                      // 🔥 PENCARIAN STOK DINAMIS DARI TABEL MASTER ASSETS
                       const matchedAsset = masterAssets.find(a => a.kode_barang === barang.kodeAset || a.id === barang.kodeAset || a.nama_barang === barang.namaAset);
                       const stokTersedia = matchedAsset ? (matchedAsset.stok ?? matchedAsset.stock ?? 0) : '-';
 
                       return (
                         <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight truncate block max-w-full">{barang.namaAset}</h4>
-                                <p className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate block max-w-full">ID: {barang.kodeAset}</p>
-                              </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-4">
+                            {/* 🔥 Teks nama barang memanjang ke bawah & tidak terpotong */}
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight break-all leading-snug">
+                                {barang.namaAset}
+                              </h4>
+                              <p className="text-[11px] text-zinc-400 font-mono mt-0.5 break-all">ID: {barang.kodeAset}</p>
+                            </div>
                             
-                            <div className="flex items-center gap-6">
-                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+                            <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 shrink-0">
+                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600 shrink-0">
                                 Prioritas: 
                                 <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${
                                   barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
@@ -448,7 +449,7 @@ export default function AjukanPermintaan() {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+                              <div className="flex items-center gap-2 text-[13px] font-medium text-zinc-600 shrink-0">
                                 Kuantitas:
                                 <div className="flex items-center gap-1.5">
                                   <input 
@@ -460,7 +461,6 @@ export default function AjukanPermintaan() {
                                     className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
                                     required
                                   />
-                                  {/* 🔥 LOGIKA STOK MENAMPILKAN DATA ASLI */}
                                   <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ {stokTersedia} Stok</span>
                                 </div>
                               </div>
@@ -469,19 +469,18 @@ export default function AjukanPermintaan() {
 
                           <hr className="border-zinc-100 mb-4" />
 
-                              <div>
-                                <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
-                                <input 
-                                  type="text" 
-                                  placeholder="Contoh: Stok alat tulis habis..." 
-                                  value={barang.keterangan || ''}
-                                  onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                                  className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
-                                />
-                              </div>
-
+                          <div>
+                            <label className="block text-[11px] font-bold text-zinc-500 mb-2">Alasan Permintaan Barang Ini:</label>
+                            <input 
+                              type="text" 
+                              placeholder="Contoh: Stok alat tulis habis..." 
+                              value={barang.keterangan || ''}
+                              onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
+                              className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                            />
+                          </div>
                         </div>
-                      )
+                      );
                     })}
                   </div>
 
@@ -512,7 +511,7 @@ export default function AjukanPermintaan() {
               <div className="mb-8">
                 <h2 className="text-[19px] font-bold mb-5 text-zinc-900">Informasi Pemohon</h2>
                 <div className="grid grid-cols-[150px_10px_1fr] gap-y-2.5 text-sm text-zinc-800 font-semibold">
-                  <span className="text-zinc-600">Nama Lengkap</span><span>:</span><span className="text-zinc-900">{formData.namaLengkap}</span>
+                  <span className="text-zinc-600">Nama Lengkap</span><span>:</span><span className="text-zinc-900 break-all">{formData.namaLengkap}</span>
                   <span className="text-zinc-600">Unit</span><span>:</span><span className="text-zinc-900">{formData.divisi}</span>
                   <span className="text-zinc-600">Tanggal dibutuhkan</span><span>:</span><span className="text-zinc-900">{formData.tanggalDibutuhkan}</span>
                   <span className="text-zinc-600">Prioritas</span><span>:</span><span className="text-zinc-900">{highestPriority}</span>
@@ -535,12 +534,17 @@ export default function AjukanPermintaan() {
                   {/* Table Body */}
                   {daftarBarang.map((b, i) => (
                     <div key={b.kodeAset} className={`px-5 py-4 grid grid-cols-[1fr_120px_100px] gap-4 items-center ${i !== daftarBarang.length - 1 ? 'border-b border-zinc-100' : ''}`}>
-                      <div>
-                        <span className="block font-bold text-zinc-800 text-[15px] capitalize">{b.namaAset}</span>
-                        <span className="block text-[11px] text-zinc-400 font-mono mt-0.5">ID: {b.kodeAset}</span>
-                        <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug">Alasan: {b.keterangan || '-'}</span>
+                      {/* 🔥 Teks nama barang, kode, dan alasan ditulis lengkap berbaris ke bawah */}
+                      <div className="min-w-0 pr-2">
+                        <span className="block font-bold text-zinc-800 text-[15px] capitalize break-all leading-snug">
+                          {b.namaAset}
+                        </span>
+                        <span className="block text-[11px] text-zinc-400 font-mono mt-0.5 break-all">ID: {b.kodeAset}</span>
+                        <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug break-all">
+                          Alasan: {b.keterangan || '-'}
+                        </span>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center shrink-0">
                         <span className={`px-2 py-1 rounded text-[11px] font-bold inline-block ${
                           b.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
                           b.prioritas === 'Sedang' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-[#00664b]'
@@ -548,7 +552,7 @@ export default function AjukanPermintaan() {
                           {b.prioritas}
                         </span>
                       </div>
-                      <div className="text-center font-bold text-zinc-800 text-[14px]">
+                      <div className="text-center font-bold text-zinc-800 text-[14px] shrink-0">
                         {b.jumlah} Item
                       </div>
                     </div>

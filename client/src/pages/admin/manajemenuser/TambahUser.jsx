@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER
+import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
 export default function TambahUser({ onClose, onSuccess }) {
@@ -8,8 +8,9 @@ export default function TambahUser({ onClose, onSuccess }) {
     name: '', 
     email: '', 
     password: '', 
-    role: 'Staff', 
-    unit: 'KC Semarang' 
+    role: 'User', 
+    unit: 'KC Semarang',
+    isSuspended: false // 🔥 STATE TAMBAHAN UNTUK STATUS KEAKTIFAN
   });
   
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,6 @@ export default function TambahUser({ onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🔥 VALIDASI DOMAIN EMAIL BSN
     const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id"];
     const isDomainValid = allowedDomains.some(domain => formData.email.toLowerCase().endsWith(domain));
     
@@ -44,7 +44,8 @@ export default function TambahUser({ onClose, onSuccess }) {
           password: formData.password, 
           role: formData.role.toUpperCase(), 
           divisi: formData.unit,
-          hasSignedUp: true 
+          hasSignedUp: true,
+          is_suspended: formData.isSuspended // 🔥 Payload di-include
         })
       });
 
@@ -53,13 +54,13 @@ export default function TambahUser({ onClose, onSuccess }) {
         throw new Error(errorData.message || "Gagal menyimpan ke database");
       }
 
-      toast.success(`Sukses! Akun untuk ${formData.name} berhasil dibuat.`); // 🔥 GANTI ALERT
+      toast.success(`Akun ${formData.name} berhasil dibuat`); 
       if (onSuccess) onSuccess(); 
       onClose(); 
 
     } catch (error) {
       console.error('Gagal mendaftarkan user baru:', error.message);
-      toast.error('Terjadi kesalahan saat menyimpan: ' + error.message); // 🔥 GANTI ALERT
+      toast.error('Terjadi kesalahan saat menyimpan: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,8 @@ export default function TambahUser({ onClose, onSuccess }) {
         
         <div className="p-5 border-b flex justify-between items-center bg-zinc-50/50">
           <div>
-            <h3 className="text-lg font-bold text-zinc-900">Buat Akun Baru</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">Pembuatan kredensial akses sistem logistik BSN</p>
+            <h3 className="text-lg font-bold text-zinc-900">Daftarkan User Baru</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">Berikan otorisasi masuk sistem logistik kepada pegawai baru</p>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-zinc-200/70 text-zinc-400 hover:text-zinc-600 rounded-lg transition-all cursor-pointer">
             <X size={18} />
@@ -105,7 +106,7 @@ export default function TambahUser({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-zinc-700 mb-1">Password</label>
+            <label className="block text-sm font-semibold text-zinc-700 mb-1">Password Awal</label>
             <input 
               type="text" 
               required 
@@ -124,7 +125,7 @@ export default function TambahUser({ onClose, onSuccess }) {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
               >
-                <option value="Staff">Staff (User)</option>
+                <option value="User">User</option>
                 <option value="Admin">Admin</option>
                 <option value="Manager">Manager</option>
               </select>
@@ -145,6 +146,19 @@ export default function TambahUser({ onClose, onSuccess }) {
                 <option value="KCP Magelang">KCP Magelang</option>
               </select>
             </div>
+          </div>
+
+          {/* 🔥 DROPDOWN STATUS KEAKTIFAN AKUN BARU */}
+          <div>
+            <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Keaktifan Akun</label>
+            <select 
+              value={formData.isSuspended ? "suspended" : "active"} 
+              onChange={(e) => setFormData({ ...formData, isSuspended: e.target.value === "suspended" })} 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white cursor-pointer"
+            >
+              <option value="active">Aktif</option>
+              <option value="suspended">Suspend</option>
+            </select>
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">

@@ -7,7 +7,7 @@ export default function EditUser({ userData, onClose, onSave }) {
     originalId: '', 
     name: '', 
     email: '', 
-    role: 'Staff', 
+    role: 'User', 
     unit: 'KC Semarang',
     isSuspended: false,
     isDeleted: false 
@@ -20,7 +20,7 @@ export default function EditUser({ userData, onClose, onSave }) {
         originalId: userData.originalId || '',
         name: userData.name || '',
         email: userData.email || '',
-        role: userData.role || 'Staff',
+        role: userData.role || 'User',
         unit: userData.unit || 'KC Semarang',
         isSuspended: userData.isSuspended || false,
         isDeleted: userData.isDeleted || false 
@@ -78,9 +78,15 @@ export default function EditUser({ userData, onClose, onSave }) {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
               >
-                <option value="Staff">Staff</option>
-                <option value="Admin">Admin</option>
-                <option value="Manager">Manager</option>
+                {/* 🔥 LOGIKA ROLE: Jika Manager, cuma bisa Manager. Jika User/Admin, hanya bisa User/Admin */}
+                {userData?.role === 'Manager' ? (
+                  <option value="Manager">Manager</option>
+                ) : (
+                  <>
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                  </>
+                )}
               </select>
             </div>
             <div>
@@ -106,19 +112,18 @@ export default function EditUser({ userData, onClose, onSave }) {
             <select 
               value={formData.isSuspended ? "suspended" : "active"} 
               onChange={(e) => setFormData({ ...formData, isSuspended: e.target.value === "suspended" })} 
-              className={`w-full px-4 py-2 border rounded-lg text-sm font-semibold focus:outline-none cursor-pointer ${
-                formData.isSuspended ? 'bg-red-50 border-red-300 text-red-600' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-              }`}
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white cursor-pointer"
             >
-              <option value="active">✅ Aktif (Diizinkan Login)</option>
-              <option value="suspended">⛔ Ditangguhkan / Suspended (Blokir Login)</option>
+              <option value="active">Aktif (Diizinkan Login)</option>
+              <option value="suspended">Suspend (Ditangguhkan)</option>
             </select>
             <p className="text-[11px] text-zinc-400 mt-1">Jika ditangguhkan, user tidak akan bisa masuk ke dalam sistem saat mencoba login.</p>
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-zinc-100">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">Batal</button>
-            <button type="submit" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer">
+            {/* 🔥 GANTI WARNA TOMBOL PERBARUI JADI HIJAU */}
+            <button type="submit" className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer">
               <Check size={16} /> Perbarui Akun
             </button>
           </div>

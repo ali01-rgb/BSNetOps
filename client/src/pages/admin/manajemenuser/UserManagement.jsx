@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft, AlertTriangle, X } from 'lucide-react';
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
-import toast from 'react-hot-toast'; // 🔥 IMPORT TOASTER DI SINI
+import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
 export default function UserManagement() {
@@ -17,6 +17,7 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState('Semua');
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, user: null });
+  const [restoreModal, setRestoreModal] = useState({ isOpen: false, originalId: null, name: '' });
 
   useEffect(() => {
     fetchUsersFromAPI();
@@ -36,18 +37,24 @@ export default function UserManagement() {
       const data = resJson.data || resJson;
 
       if (Array.isArray(data)) {
-        const formattedData = data.map(u => ({
-          id: u.employeeId || u.staff_id || u.id, 
-          originalId: u.id, 
-          name: u.fullName || u.username || 'Tanpa Nama',
-          email: u.email,
-          role: u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1).toLowerCase() : 'Staff',
-          unit: u.divisi || u.unit || 'KC Semarang',
-          isSuspended: u.is_suspended || false,
-          status: u.is_suspended ? 'Ditangguhkan' : 'Aktif', 
-          isDeleted: u.deleted_at ? true : false,
-          deleted_at: u.deleted_at
-        }));
+        const formattedData = data.map(u => {
+          // Ganti otomatis Staff menjadi User
+          let rawRole = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1).toLowerCase() : 'User';
+          if (rawRole === 'Staff') rawRole = 'User';
+
+          return {
+            id: u.employeeId || u.staff_id || u.id, 
+            originalId: u.id, 
+            name: u.fullName || u.username || 'Tanpa Nama',
+            email: u.email,
+            role: rawRole,
+            unit: u.divisi || u.unit || 'KC Semarang',
+            isSuspended: u.is_suspended || false,
+            status: u.is_suspended ? 'Ditangguhkan' : 'Aktif', 
+            isDeleted: u.deleted_at ? true : false,
+            deleted_at: u.deleted_at
+          };
+        });
         
         formattedData.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         setUsers(formattedData);
@@ -86,12 +93,11 @@ export default function UserManagement() {
       if (!res.ok) throw new Error("Gagal memperbarui");
 
       setIsEditOpen(false);
-      // 🔥 GANTI ALERT JADI TOAST SUCCESS
-      toast.success(`Data akun ${updatedUser.name} berhasil diperbarui!`);
+      // 🔥 Teks toast sesuai gambar
+      toast.success(`Data Akun ${updatedUser.name} Telah Diperbarui`);
       fetchUsersFromAPI(); 
     } catch (error) {
       console.error('Gagal memperbarui user:', error.message);
-      // 🔥 GANTI ALERT JADI TOAST ERROR
       toast.error('Terjadi kesalahan saat memperbarui database.');
     }
   };
@@ -127,8 +133,7 @@ export default function UserManagement() {
         setUsers(users.map(user => 
           user.originalId === originalId ? { ...user, isDeleted: true, deleted_at: timestamp } : user
         ));
-        // 🔥 TAMBAH TOAST SUCCESS
-        toast.success(`Akun ${name} berhasil dipindahkan ke Trash.`);
+        toast.success(`Akun ${name} berhasil dipindahkan ke Trash`);
       } 
       else if (deleteModal.type === 'hard') {
         const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
@@ -139,43 +144,47 @@ export default function UserManagement() {
         if (!res.ok) throw new Error("Gagal menghapus permanen");
 
         setUsers(users.filter(user => user.originalId !== originalId));
-        // 🔥 TAMBAH TOAST SUCCESS
-        toast.success(`Akun ${name} berhasil dihapus permanen.`);
+        // 🔥 Teks toast sesuai gambar
+        toast.success(`Akun ${name} berhasil dihapus permanen`);
       }
     } catch (error) {
       console.error('Gagal memproses penghapusan akun:', error.message);
-      // 🔥 GANTI ALERT JADI TOAST ERROR
       toast.error('Terjadi kesalahan pada database.');
     } finally {
       setDeleteModal({ isOpen: false, type: null, user: null });
     }
   };
 
-  const handleRestore = async (originalId, name) => {
-    if (window.confirm(`Kembalikan hak akses akun untuk ${name}?`)) {
-      try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ deleted_at: null })
-        });
+  const handleRestoreClick = (originalId, name) => {
+    setRestoreModal({ isOpen: true, originalId, name });
+  };
 
-        if (!res.ok) throw new Error("Gagal merestore");
+  const confirmRestore = async () => {
+    const { originalId, name } = restoreModal;
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const res = await fetch(`${API_URL}/inventory/users/${originalId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ deleted_at: null })
+      });
 
-        setUsers(users.map(user => 
-          user.originalId === originalId ? { ...user, isDeleted: false, deleted_at: null } : user
-        ));
-        // 🔥 TAMBAH TOAST SUCCESS
-        toast.success(`Akun ${name} berhasil dipulihkan dari Trash.`);
-      } catch (error) {
-        console.error('Gagal memulihkan akun:', error.message);
-        // 🔥 GANTI ALERT JADI TOAST ERROR
-        toast.error('Terjadi kesalahan pada database.');
-      }
+      if (!res.ok) throw new Error("Gagal merestore");
+
+      setUsers(users.map(user => 
+        user.originalId === originalId ? { ...user, isDeleted: false, deleted_at: null } : user
+      ));
+      
+      // 🔥 Teks toast sesuai gambar
+      toast.success(`Hak Akses ${name} berhasil dipulihkan`);
+    } catch (error) {
+      console.error('Gagal memulihkan akun:', error.message);
+      toast.error('Terjadi kesalahan pada database.');
+    } finally {
+      setRestoreModal({ isOpen: false, originalId: null, name: '' });
     }
   };
 
@@ -235,7 +244,7 @@ export default function UserManagement() {
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nama staff atau alamat email resmi..." 
+            placeholder="Cari nama user atau alamat email resmi..." 
             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
           />
         </div>
@@ -250,7 +259,7 @@ export default function UserManagement() {
             <option value="Semua">Semua</option>
             <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
-            <option value="Staff">Staff</option>
+            <option value="User">User</option>
           </select>
         </div>
       </div>
@@ -293,9 +302,11 @@ export default function UserManagement() {
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
                         user.role === 'Admin' 
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                          : user.role === 'Manager'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
                           : 'bg-blue-50 text-blue-700 border border-blue-200'
                       }`}>
-                        {user.role === 'Admin' ? <Shield size={12} /> : <UserCheck size={12} />}
+                        {user.role === 'Admin' || user.role === 'Manager' ? <Shield size={12} /> : <UserCheck size={12} />}
                         {user.role}
                       </span>
                     </td>
@@ -315,7 +326,7 @@ export default function UserManagement() {
                       {showTrash ? (
                         <div className="flex justify-end gap-2">
                           <button 
-                            onClick={() => handleRestore(user.originalId, user.name)}
+                            onClick={() => handleRestoreClick(user.originalId, user.name)}
                             className="p-1.5 text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition-colors"
                           >
                             <RotateCcw size={14} /> Restore
@@ -328,7 +339,7 @@ export default function UserManagement() {
                           </button>
                         </div>
                       ) : (
-                        <>
+                        <div className="flex justify-end gap-1">
                           <button 
                             onClick={() => handleEditClick(user)}
                             title="Edit Data"
@@ -343,7 +354,7 @@ export default function UserManagement() {
                           >
                             <Trash2 size={16} />
                           </button>
-                        </>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -354,22 +365,30 @@ export default function UserManagement() {
         </div>
       </div>
 
+      {/* 🔥 MODAL DELETE */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setDeleteModal({ isOpen: false, type: null, user: null })} 
+              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-red-500 rounded-lg cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
             <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${deleteModal.type === 'soft' ? 'bg-amber-100' : 'bg-red-100'}`}>
               <AlertTriangle className={`w-8 h-8 ${deleteModal.type === 'soft' ? 'text-amber-500' : 'text-red-500'}`} />
             </div>
             
             <h3 className="text-xl font-bold text-zinc-900 mb-3">
-              {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Akun?'}
+              {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Akun'}
             </h3>
             
             <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
               {deleteModal.type === 'soft' ? (
                 <>Apakah Anda yakin ingin menonaktifkan dan memindahkan akun <b>"{deleteModal.user?.name}"</b> ({deleteModal.user?.id}) ke tempat sampah?</>
               ) : (
-                <>PERINGATAN: Hapus PERMANEN akun <b>"{deleteModal.user?.name}"</b>? Data dan riwayat akses pengguna ini tidak dapat dibatalkan dan akan hilang selamanya dari sistem.</>
+                <>PERINGATAN: Apakah anda yakin ingin menghapus PERMANEN akun <b>{deleteModal.user?.name}</b>? Data pengguna ini tidak bisa dikembalikan.</>
               )}
             </p>
             
@@ -386,7 +405,48 @@ export default function UserManagement() {
                   deleteModal.type === 'soft' ? 'bg-[#00664b] hover:bg-[#00553e]' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                Ya, Lanjutkan
+                Ya, lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 MODAL RESTORE */}
+      {restoreModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setRestoreModal({ isOpen: false, originalId: null, name: '' })} 
+              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-zinc-600 rounded-lg cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-amber-100">
+              <AlertTriangle className="w-8 h-8 text-amber-500" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-zinc-900 mb-3">
+              Restore Akun
+            </h3>
+            
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              Kembalikan hak akses akun untuk <b>{restoreModal.name}</b>?
+            </p>
+            
+            <div className="flex justify-center gap-3">
+              <button 
+                onClick={() => setRestoreModal({ isOpen: false, originalId: null, name: '' })} 
+                className="px-6 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={confirmRestore} 
+                className="px-6 py-2.5 text-sm font-semibold text-white bg-[#00664b] hover:bg-[#00553e] rounded-full shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                Ya, lanjutkan
               </button>
             </div>
           </div>

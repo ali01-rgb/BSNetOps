@@ -8,8 +8,8 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
   const requestId = submitResult?.id || submitResult?.[0]?.id || `BSN-REQ-${Date.now()}`;
   const statusDoc = (formData?.status || submitResult?.status || submitResult?.[0]?.status || 'PENDING').toUpperCase();
 
-  // 🔥 Logika Tampil: Kalau diteruskan admin, kolom "diberikan" dan TTD Admin muncul
-  const isDiteruskan = ['DITERUSKAN', 'DISETUJUI', 'SELESAI', 'APPROVED', 'DITOLAK', 'REJECTED'].includes(statusDoc);
+  // 🔥 Logika Tampil: DITOLAK tidak boleh memunculkan tanda tangan
+  const isDiteruskan = ['DITERUSKAN', 'DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusDoc);
   const isDisetujui = ['DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusDoc);
 
   const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -36,9 +36,10 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
   return (
     <div ref={ref} className="bg-white w-[210mm] min-h-[297mm] p-[10mm] text-black font-sans box-border">
       <div className="flex justify-between items-start mb-4 border-b-2 border-black pb-2">
-        <div className="flex flex-col">
-          <img src="/images/logo-BSN.png" alt="Logo BSN" className="h-12 w-auto object-contain mb-1" />
-          <span className="text-[13px] font-bold mt-1">Cabang Semarang</span>
+        {/* 🔥 PERBAIKAN: Logo & Teks Cabang Rata Kiri */}
+        <div className="flex flex-col items-start">
+          <img src="/images/logo-BSN.png" alt="Logo BSN" className="h-12 w-auto object-contain object-left mb-1" />
+          <span className="text-[13px] font-bold mt-1 text-left w-full">Cabang Semarang</span>
         </div>
         <h1 className="text-xl font-bold uppercase underline underline-offset-4 decoration-2 mt-2">BON BARANG</h1>
         <div className="text-[12px] w-[200px] text-right font-bold mt-2">
@@ -58,7 +59,7 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
         <p className="italic text-gray-700">"{keteranganTambahan}"</p>
       </div>
 
-      <table className="w-full border-collapse border-2 border-black text-xs mb-6">
+      <table className="w-full border-collapse border-2 border-black text-xs mb-6 table-fixed">
         <thead>
           <tr className="bg-gray-100 font-bold text-center">
             <th rowSpan={2} className="border-2 border-black w-[5%] py-2">No.</th>
@@ -76,18 +77,18 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
             const barang = daftarBarang[index];
             return (
               <tr key={index} className="h-[36px] text-center">
-                <td className="border-2 border-black font-bold">{index + 1}</td>
-                <td className="border-2 border-black px-3 text-left capitalize font-semibold">
+                <td className="border-2 border-black font-bold align-top py-1.5">{index + 1}</td>
+                {/* 🔥 TEKS BARANG & KETERANGAN DIBUAT BREAK-ALL / TURUN KE BAWAH */}
+                <td className="border-2 border-black px-3 py-1.5 text-left capitalize font-semibold align-top break-all leading-snug">
                   {barang ? (barang.namaAset || barang.namaBarang) : ''}
                 </td>
-                <td className="border-2 border-black font-bold">
+                <td className="border-2 border-black font-bold align-top py-1.5">
                   {barang ? (barang.jumlahDiminta || barang.jumlah || '') : ''}
                 </td>
-                <td className="border-2 border-black font-bold text-[#00664b]">
-                  {/* 🔥 TAMPILKAN JIKA DITERUSKAN/DI-ACC */}
+                <td className="border-2 border-black font-bold text-[#00664b] align-top py-1.5">
                   {barang && isDiteruskan ? (barang.jumlahDisetujui !== undefined ? barang.jumlahDisetujui : barang.jumlahDiminta) : ''}
                 </td>
-                <td className="border-2 border-black px-2 text-left font-medium">
+                <td className="border-2 border-black px-2 py-1.5 text-left font-medium align-top break-all leading-snug">
                   {barang ? (barang.remark || barang.keterangan || '') : ''}
                 </td>
               </tr>
@@ -116,6 +117,7 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
               ) : <span className="text-gray-400 italic font-normal">Belum di-ACC</span>}
             </td>
             <td className="border-2 border-black p-2 align-middle">
+              {/* 🔥 HANYA TAMPIL JIKA SUDAH DITERUSKAN OLEH ADMIN */}
               {isDiteruskan ? (
                 <div className="flex flex-col items-center justify-center">
                   <img src={getQrUrl('ADMIN', adminName)} alt="QR Admin" className="w-12 h-12 object-contain" />

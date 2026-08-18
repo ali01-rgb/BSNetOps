@@ -24,7 +24,7 @@ export default function RiwayatPermintaan() {
     if (['DITOLAK', 'REJECTED'].includes(s)) return 'Ditolak';
     if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(s)) return 'Selesai';
     if (['DITERUSKAN', 'FORWARDED', 'MENUNGGU MANAGER'].includes(s)) return 'Menunggu Manager';
-    return 'Menunggu Admin'; // Default jika PENDING
+    return 'Menunggu Admin';
   };
 
   const fetchUserRequests = async () => {
@@ -84,7 +84,7 @@ export default function RiwayatPermintaan() {
             jumlahDiminta: curr.jumlah,
             jumlahDisetujui: curr.jumlah, 
             prioritasItem: curr.prioritas || 'Rendah',
-            statusItem: getStatusLabel(curr.status), // 🔥 Menggunakan logika status baru
+            statusItem: getStatusLabel(curr.status),
             remark: curr.alasan || ''
           });
 
@@ -97,7 +97,6 @@ export default function RiwayatPermintaan() {
           const allSelesai = allItems.every(i => i.statusItem === 'Selesai');
           const anyManager = allItems.some(i => i.statusItem === 'Menunggu Manager');
 
-          // 🔥 Logika Penentuan Status Laporan Keseluruhan
           let currentStatus = 'Menunggu Admin';
           if (anyRejected) currentStatus = 'Ditolak';
           else if (allSelesai) currentStatus = 'Selesai';
@@ -204,7 +203,6 @@ export default function RiwayatPermintaan() {
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex justify-center">
-                          {/* 🔥 STATUS LAPORAN (TAMPILAN UTAMA) */}
                           {laporan.status === 'Menunggu Admin' && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
                               <Clock size={12} /> Menunggu Admin
@@ -270,25 +268,32 @@ export default function RiwayatPermintaan() {
 
             <div className="overflow-x-auto p-6 flex-1">
               <h4 className="text-xs font-bold text-zinc-700 mb-4 uppercase tracking-wider">Rincian Barang yang Diajukan</h4>
-              <table className="w-full text-left border border-zinc-200 rounded-xl overflow-hidden border-collapse">
+              
+              {/* 🔥 TABLE-FIXED DENGAN PROPORSI PERSENTASE KOLOM */}
+              <table className="w-full text-left border border-zinc-200 rounded-xl overflow-hidden border-collapse table-fixed">
                 <thead>
                   <tr className="bg-zinc-100 text-zinc-600 text-[11px] font-bold">
-                    <th className="py-3 px-4 w-12 text-center border-b border-zinc-200">NO</th>
-                    <th className="py-3 px-4 border-b border-zinc-200">NAMA BARANG</th>
-                    <th className="py-3 px-4 text-center border-b border-zinc-200">PRIORITAS</th>
-                    <th className="py-3 px-4 text-center border-b border-zinc-200">JUMLAH</th>
-                    <th className="py-3 px-4 text-center border-b border-zinc-200">STATUS ITEM</th>
-                    <th className="py-3 px-4 text-center border-b border-zinc-200">AKSI PENERIMAAN</th>
+                    <th className="py-3 px-4 w-[8%] text-center border-b border-zinc-200">NO</th>
+                    <th className="py-3 px-4 w-[32%] border-b border-zinc-200">NAMA BARANG</th>
+                    <th className="py-3 px-4 w-[15%] text-center border-b border-zinc-200">PRIORITAS</th>
+                    <th className="py-3 px-4 w-[12%] text-center border-b border-zinc-200">JUMLAH</th>
+                    <th className="py-3 px-4 w-[15%] text-center border-b border-zinc-200">STATUS ITEM</th>
+                    <th className="py-3 px-4 w-[18%] text-center border-b border-zinc-200">AKSI PENERIMAAN</th>
                   </tr>
                 </thead>
                 <tbody className="text-xs font-semibold text-zinc-700 divide-y divide-zinc-100">
                   {activeLaporan.items.map((item, index) => (
                     <tr key={item.idItem} className="hover:bg-zinc-50 transition-colors">
-                      <td className="py-4 px-4 text-center text-zinc-400 font-mono">{index + 1}</td>
-                      <td className="py-4 px-4 text-zinc-900 capitalize min-w-0">
-                        <span className="block truncate max-w-full">{item.barang}</span>
+                      <td className="py-4 px-4 text-center text-zinc-400 font-mono align-top">{index + 1}</td>
+                      
+                      {/* 🔥 NAMA BARANG DITULIS LENGKAP KE BAWAH (BREAK-ALL) */}
+                      <td className="py-4 px-4 text-zinc-900 capitalize align-top">
+                        <span className="block font-bold text-zinc-800 break-all leading-snug">
+                          {item.barang}
+                        </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
+                      
+                      <td className="py-4 px-4 text-center align-top">
                         <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${
                           item.prioritasItem === 'Tinggi' ? 'bg-red-50 text-red-600 border-red-100' :
                           item.prioritasItem === 'Sedang' ? 'bg-yellow-50 text-yellow-600 border-yellow-100' : 'bg-gray-50 text-gray-600 border-gray-200'
@@ -296,10 +301,10 @@ export default function RiwayatPermintaan() {
                           {item.prioritasItem}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-[#00664b]">{item.jumlahDiminta} Unit</td>
                       
-                      {/* 🔥 STATUS ITEM (TAMPILAN DETAIL) */}
-                      <td className="py-4 px-4 text-center">
+                      <td className="py-4 px-4 text-center font-bold text-[#00664b] align-top">{item.jumlahDiminta} Unit</td>
+                      
+                      <td className="py-4 px-4 text-center align-top">
                         <div className="flex justify-center">
                           {item.statusItem === 'Menunggu Admin' && <span className="text-amber-500 font-bold flex items-center gap-1"><Clock size={12}/> Menunggu Admin</span>}
                           {item.statusItem === 'Menunggu Manager' && <span className="text-amber-500 font-bold flex items-center gap-1"><Clock size={12}/> Menunggu Manager</span>}
@@ -308,8 +313,7 @@ export default function RiwayatPermintaan() {
                         </div>
                       </td>
 
-                      {/* 🔥 AKSI PENERIMAAN KETERANGAN (TAMPILAN DETAIL) */}
-                      <td className="py-4 px-4 text-center">
+                      <td className="py-4 px-4 text-center align-top">
                         {item.statusItem === 'Menunggu Admin' && <span className="text-zinc-400 italic">Menunggu persetujuan Admin...</span>}
                         {item.statusItem === 'Menunggu Manager' && <span className="text-zinc-400 italic">Menunggu persetujuan Manager...</span>}
                         {item.statusItem === 'Selesai' && <span className="text-[#00664b] font-bold">Barang siap diambil di R.ATK</span>}
@@ -334,7 +338,7 @@ export default function RiwayatPermintaan() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
                     className="p-1.5 text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
                   >
                     <MoreVertical size={20} />
@@ -343,8 +347,8 @@ export default function RiwayatPermintaan() {
                   {isMenuOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white border border-zinc-200 rounded-xl shadow-lg py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
                       <button 
-                        onClick={handleDownloadPDF}
-                        disabled={isExporting}
+                        onClick={handleDownloadPDF} 
+                        disabled={isExporting} 
                         className="w-full px-4 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 flex items-center gap-2 cursor-pointer"
                       >
                         <Download size={14} className="text-[#00664b]" />
@@ -366,7 +370,7 @@ export default function RiwayatPermintaan() {
             <div className="flex-1 overflow-auto p-8 flex justify-center bg-zinc-200">
               <div className="shadow-lg border border-zinc-300 bg-white">
                 <TemplateDokumenA4 
-                  ref={printRef}
+                  ref={printRef} 
                   formData={mappedFormData} 
                   daftarBarang={mappedDaftarBarang} 
                 />

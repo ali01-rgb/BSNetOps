@@ -196,19 +196,24 @@ export default function UserDashboard({ setCurrentView }) {
           <p className="text-sm text-center text-zinc-500 py-6">⏳ Memuat data...</p>
         ) : lastRequest ? (
           <>
-            <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-start md:items-center">
-              <div className="space-y-1">
-                {/* 🔥 PERUBAHAN PEWARNAAN TEKS SESUAI GAMBAR */}
-                <p className="text-[17px] font-bold text-zinc-900 leading-tight tracking-tight mb-1">{lastRequest.id}</p>
+            {/* 🔥 CONTAINER DIKUNCI AGAR TIDAK MELAR KE SAMPING */}
+            <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-start md:items-center gap-4">
+              <div className="space-y-1 min-w-0 flex-1">
+                <p className="text-[17px] font-bold text-zinc-900 leading-tight tracking-tight mb-1 truncate">{lastRequest.id}</p>
                 
-                <p className="text-[14px] min-w-0">
-                  <span className="text-zinc-500">Barang : </span>
-                  <span className="font-medium text-zinc-700 block truncate max-w-full" title={lastRequest.barangValue}>{lastRequest.barangValue}</span>
+                {/* 🔥 TEKS BARANG DIBATASI AGAR OTOMATIS JADI (...) JIKA TERLALU PANJANG */}
+                <p className="text-[14px] flex items-baseline min-w-0">
+                  <span className="text-zinc-500 shrink-0 mr-1.5">Barang :</span>
+                  <span className="font-medium text-zinc-700 truncate block" title={lastRequest.barangValue}>
+                    {lastRequest.barangValue}
+                  </span>
                 </p>
                 
-                <p className="text-[14px]">
-                  <span className="text-zinc-500">Kategori : </span>
-                  <span className="font-medium text-zinc-700">{lastRequest.category}</span>
+                <p className="text-[14px] flex items-baseline min-w-0">
+                  <span className="text-zinc-500 shrink-0 mr-1.5">Kategori :</span>
+                  <span className="font-medium text-zinc-700 truncate block" title={lastRequest.category}>
+                    {lastRequest.category}
+                  </span>
                 </p>
               </div>
               <div className="mt-2 md:mt-0 shrink-0">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
@@ -35,36 +35,86 @@ export default function LogAktifitasAdmin() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      const res = await fetch(`${API_URL}/inventory/admin/requests`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      // 🔥 Fetch dua endpoint: Requests (Keluar) dan Assets (Masuk)
+      const [reqRes, assetsRes] = await Promise.all([
+        fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } })
+      ]);
 
-      if (res.ok) {
-        const resJson = await res.json();
-        const data = resJson.data || resJson;
+      let combinedLogs = [];
 
-        if (Array.isArray(data)) {
-          const formatted = data.map(req => {
-            // 🔥 PELINDUNG TANGGAL
+      // 1. FORMAT DATA REQUESTS (BARANG KELUAR)
+      if (reqRes.ok) {
+        const reqJson = await reqRes.json();
+        const reqData = reqJson.data || reqJson;
+
+        if (Array.isArray(reqData)) {
+          reqData.forEach((req, index) => {
+            const stat = (req.status || '').toUpperCase();
+            
+            // 🔥 LOGIKA: Jika DITOLAK, skip sepenuhnya dari Activity Log & Laporan
+            if (['DITOLAK', 'REJECTED'].includes(stat)) return;
+
             let rawDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
             if (isNaN(rawDate.getTime())) rawDate = new Date();
 
-            return {
-              id: req.no_urut ? `REQ-${rawDate.toISOString().slice(0,10).replace(/-/g, '')}-${String(req.no_urut).padStart(3, '0')}` : (req.id?.substring(0,8) || 'REQ-XXX'),
+            let currentStatus = 'Menunggu';
+            if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(stat)) {
+              currentStatus = 'Selesai';
+            }
+
+            // Generate Unique ID REQ-YYYYMMDD-XXX
+            const padId = String(req.no_urut || index + 1).padStart(3, '0');
+            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const prettyId = `REQ-${tglFormatId}-${padId}`;
+
+            combinedLogs.push({
+              id: prettyId,
               originalId: req.id, 
-              requester: req.user?.fullName || req.user?.username || 'user',
+              requester: req.user?.fullName || req.user?.username || 'Pemohon',
               unit: req.user?.divisi || req.unit || 'KC Semarang',
               itemName: req.nama_aset || 'Barang',
               qty: req.jumlah || 1,
               date: rawDate.toISOString(),
-              managerStatus: req.status || 'Pending',
-              adminStatus: req.status || 'Pending',
+              managerStatus: currentStatus,
+              adminStatus: currentStatus,
               type: 'Keluar' 
-            };
+            });
           });
-          setHistory(formatted);
         }
       }
+
+      // 2. FORMAT DATA ASSETS (BARANG MASUK)
+      if (assetsRes.ok) {
+        const astJson = await assetsRes.json();
+        const astData = astJson.data || astJson;
+
+        if (Array.isArray(astData)) {
+          astData.forEach((ast) => {
+            let rawDate = new Date(ast.createdAt || ast.updatedAt || Date.now());
+            if (isNaN(rawDate.getTime())) rawDate = new Date();
+
+            // 🔥 LOGIKA: Barang masuk langsung otomatis Selesai
+            combinedLogs.push({
+              id: ast.kode_barang || ast.id || 'AST-NEW',
+              originalId: ast.id,
+              requester: 'Admin Gudang',
+              unit: 'Gudang Utama',
+              itemName: ast.nama_barang || ast.nama_aset || 'Barang Baru',
+              qty: ast.stok ?? ast.stock ?? 0,
+              date: rawDate.toISOString(),
+              managerStatus: 'Selesai', 
+              adminStatus: 'Selesai',
+              type: 'Masuk'
+            });
+          });
+        }
+      }
+
+      // Urutkan berdasarkan tanggal terbaru
+      combinedLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setHistory(combinedLogs);
+
     } catch (error) {
       console.error('Gagal memuat log admin:', error.message);
     } finally {
@@ -79,7 +129,7 @@ export default function LogAktifitasAdmin() {
       if (periodType === 'Semua') return true;
       
       const itemDate = new Date(item.date);
-      if (isNaN(itemDate.getTime())) return true; // Bypass kalau date aneh
+      if (isNaN(itemDate.getTime())) return true;
 
       const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
       const itemYear = String(itemDate.getFullYear());
@@ -91,14 +141,12 @@ export default function LogAktifitasAdmin() {
       }
       return true;
     })
-    // 🔥 PELINDUNG PENCARIAN (NULL-SAFETY)
     .filter(item =>
       (item.requester || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.itemName || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    );
 
   const handleExport = () => {
     if (filteredHistory.length === 0) {
@@ -114,14 +162,13 @@ export default function LogAktifitasAdmin() {
       "Nama Barang / Logistik": item.itemName,
       "Jumlah (Unit)": item.qty,
       "Tanggal Transaksi": new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      "Status Manajer": item.managerStatus,
-      "Status Logistik": item.adminStatus
+      "Status": item.managerStatus
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const columnWidths = [
-      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 30 }, 
-      { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
+      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 40 }, 
+      { wch: 15 }, { wch: 20 }, { wch: 15 }
     ];
     worksheet['!cols'] = columnWidths;
 
@@ -157,7 +204,6 @@ export default function LogAktifitasAdmin() {
       const resJson = await res.json();
 
       if (res.ok) {
-        // Hapus dari state lokal
         setHistory(prev => prev.filter(item => !idsToDelete.includes(item.originalId)));
         
         toast.dismiss(loadingToast);
@@ -177,12 +223,10 @@ export default function LogAktifitasAdmin() {
 
   const getStatusBadge = (status) => {
     const statLower = String(status).toLowerCase();
-    if (statLower === 'approved' || statLower === 'disetujui' || statLower === 'selesai') {
+    if (statLower === 'selesai') {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20"><CheckCircle2 size={13} /> Selesai</span>;
-    } else if (statLower === 'rejected' || statLower === 'ditolak') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200"><XCircle size={13} /> Ditolak</span>;
     }
-    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200"><Clock size={13} /> {status}</span>;
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><Clock size={13} /> Menunggu</span>;
   };
 
   const getTypeIcon = (type) => {
@@ -202,11 +246,13 @@ export default function LogAktifitasAdmin() {
         </div>
 
         <div className="flex items-center gap-3 self-start md:self-auto">
+          {/* 🔥 Tombol Hapus Riwayat menjadi Icon Saja dengan Tooltip */}
           <button 
+            title="Hapus Riwayat"
             onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center p-2.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
           >
-            <Trash2 size={16} /> Hapus Riwayat
+            <Trash2 size={20} />
           </button>
           <button 
             onClick={handleExport}
@@ -247,9 +293,8 @@ export default function LogAktifitasAdmin() {
               className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
               <option value="Semua">Semua Status</option>
-              <option value="Approved">Approved / Selesai</option>
-              <option value="Pending">Pending</option>
-              <option value="Rejected">Rejected / Ditolak</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Menunggu">Menunggu</option>
             </select>
           </div>
         </div>
@@ -320,24 +365,26 @@ export default function LogAktifitasAdmin() {
 
             <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="space-y-1.5">
-                  <p className="text-sm text-zinc-700">
+                <div className="space-y-1.5 min-w-0">
+                  <p className="text-sm text-zinc-700 leading-relaxed break-words">
                     <span className="font-bold text-zinc-900">{item.requester}</span> 
                     {item.type === 'Masuk' 
                       ? ' mendaftarkan barang masuk/restock berupa ' 
                       : ' melakukan pengambilan barang untuk dikirim ke '}
                     {item.type !== 'Masuk' && (
-                      <span className="font-bold text-zinc-900 underline decoration-zinc-300 underline-offset-2 mr-1">
+                      <span className="font-bold text-zinc-900 mr-1">
                         {item.unit}
                       </span>
                     )}
-                    berupa <span className="font-bold text-[#00664b]">{item.qty} Unit {item.itemName}</span>.
+                    {/* 🔥 NAMA BARANG DITULIS LENGKAP KE BAWAH DENGAN BREAK-ALL */}
+                    berupa <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
                     <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
                     <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
-                    <span className="text-[#00664b] font-bold flex items-center gap-1 bg-[#e7f0ec] px-2 py-0.5 rounded-md">
+                    {/* 🔥 HIGHLIGHT BACKGROUND DIHILANGKAN, TERSISA TEXT SAJA */}
+                    <span className="text-zinc-500 font-medium flex items-center gap-1">
                       <MapPin size={12} /> {item.unit}
                     </span>
                   </div>
