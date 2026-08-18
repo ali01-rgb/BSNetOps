@@ -74,13 +74,13 @@ export default function UserDashboard({ setCurrentView }) {
             formattedList.sort((a, b) => b.id.localeCompare(a.id));
             const terbaru = formattedList[0];
 
-            // 🔥 LOGIKA FORMAT NAMA ITEM (Barang pertama + X lainnya)
+            // 🔥 LOGIKA FORMAT NAMA ITEM (Hanya menyimpan nilai barangnya saja)
             const firstItemName = terbaru.items[0]?.nama || 'Barang';
             const sisaBarang = terbaru.items.length - 1;
             
-            let barangText = `Barang : ${firstItemName}`;
+            let barangValue = firstItemName;
             if (sisaBarang > 0) {
-              barangText += `, ${sisaBarang} lainnya`;
+              barangValue += `, ${sisaBarang} lainnya`;
             }
 
             // 2. STATUS STEP MAPPING (Mengecek keseluruhan item)
@@ -105,7 +105,7 @@ export default function UserDashboard({ setCurrentView }) {
 
             setLastRequest({
               id: terbaru.id,
-              barangText: barangText, 
+              barangValue: barangValue, // Menyimpan nilai barang
               category: terbaru.category,
               statusText: statusText,
               date: new Date(terbaru.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
@@ -197,11 +197,19 @@ export default function UserDashboard({ setCurrentView }) {
         ) : lastRequest ? (
           <>
             <div className="mb-6 p-4 bg-zinc-50 border border-zinc-150 rounded-lg flex justify-between items-start md:items-center">
-              <div>
-                {/* 🔥 PERUBAHAN TATA LETAK TEKS SESUAI GAMBAR */}
-                <p className="text-[15px] font-bold text-zinc-900 leading-tight">{lastRequest.id}</p>
-                <p className="text-[13px] font-medium text-zinc-700 mt-1">{lastRequest.barangText}</p>
-                <p className="text-[12px] text-zinc-500 mt-0.5">Kategori : <span className="font-medium text-zinc-700">{lastRequest.category}</span></p>
+              <div className="space-y-1">
+                {/* 🔥 PERUBAHAN PEWARNAAN TEKS SESUAI GAMBAR */}
+                <p className="text-[17px] font-bold text-zinc-900 leading-tight tracking-tight mb-1">{lastRequest.id}</p>
+                
+                <p className="text-[14px]">
+                  <span className="text-zinc-500">Barang : </span>
+                  <span className="font-medium text-zinc-700">{lastRequest.barangValue}</span>
+                </p>
+                
+                <p className="text-[14px]">
+                  <span className="text-zinc-500">Kategori : </span>
+                  <span className="font-medium text-zinc-700">{lastRequest.category}</span>
+                </p>
               </div>
               <div className="mt-2 md:mt-0 shrink-0">
                 {renderStatusBadge(lastRequest.currentStep, lastRequest.statusText)}

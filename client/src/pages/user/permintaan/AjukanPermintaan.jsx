@@ -70,7 +70,7 @@ export default function AjukanPermintaan() {
     fetchYearlyRequestsAndSetPriority();
   }, []);
 
-  // 2. FETCH PROFIL LENGKAP
+  // 2. FETCH PROFIL LENGKAP DARI DATABASE
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -162,7 +162,6 @@ export default function AjukanPermintaan() {
         toast.error("Belum ada barang yang diajukan. Silakan pilih kembali dari katalog.");
         return;
       }
-      // Validasi form alasan tidak boleh kosong
       const isEmptyKeterangan = daftarBarang.some(b => !b.keterangan || b.keterangan.trim() === '');
       if (isEmptyKeterangan) {
         toast.error("Alasan permintaan barang wajib diisi untuk semua item.");
@@ -269,7 +268,7 @@ export default function AjukanPermintaan() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // 🔥 MENGHITUNG PRIORITAS TERTINGGI DARI DAFTAR BARANG
+  // MENGHITUNG PRIORITAS TERTINGGI DARI DAFTAR BARANG
   const getHighestPriority = () => {
     if (!daftarBarang || daftarBarang.length === 0) return '-';
     const weights = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
@@ -290,17 +289,17 @@ export default function AjukanPermintaan() {
           
           <div className="flex items-center space-x-4 mt-5 text-sm">
             <div className={`flex items-center space-x-2 ${currentStep === 1 ? 'font-bold' : 'opacity-70'}`}>
-              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 1 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>1</span>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 1 ? 'bg-white text-[#00664b]' : 'border border-white'}`}>1</span>
               <span>Informasi Pemohon</span>
             </div>
             <div className="h-[1px] w-16 bg-white opacity-50"></div>
             <div className={`flex items-center space-x-2 ${currentStep === 2 ? 'font-bold' : 'opacity-70'}`}>
-              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 2 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>2</span>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 2 ? 'bg-white text-[#00664b]' : 'border border-white'}`}>2</span>
               <span>Detail Kebutuhan</span>
             </div>
             <div className="h-[1px] w-16 bg-white opacity-50"></div>
             <div className={`flex items-center space-x-2 ${currentStep === 3 ? 'font-bold' : 'opacity-70'}`}>
-              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 3 ? 'bg-white text-[#00664b]' : 'border-2 border-white'}`}>3</span>
+              <span className={`rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs leading-none ${currentStep === 3 ? 'bg-white text-[#00664b]' : 'border border-white'}`}>3</span>
               <span>Review & Submit</span>
             </div>
           </div>
@@ -332,7 +331,7 @@ export default function AjukanPermintaan() {
               {/* STEP 1: INFORMASI PEMOHON */}
               {currentStep === 1 && (
                 <>
-                  <h2 className="text-xl font-extrabold mb-6 text-zinc-900">Informasi Pemohon</h2>
+                  <h2 className="text-xl font-bold mb-6 text-zinc-900">Informasi Pemohon</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
@@ -386,9 +385,9 @@ export default function AjukanPermintaan() {
               {/* STEP 2: DETAIL DAFTAR BARANG */}
               {currentStep === 2 && (
                 <>
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                    <h2 className="text-xl font-extrabold text-zinc-900">Detail Daftar Barang</h2>
-                    <div className="flex flex-col sm:items-end">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6">
+                    <h2 className="text-xl font-bold text-zinc-900">Detail Daftar Barang</h2>
+                    <div className="flex flex-col items-start sm:items-end mt-4 sm:mt-0 w-full sm:w-auto">
                       <label className="text-xs font-bold text-zinc-700 mb-1.5">Tanggal Dibutuhkan</label>
                       <input 
                         type="date" 
@@ -402,48 +401,55 @@ export default function AjukanPermintaan() {
                     </div>
                   </div>
 
-                  <div className="space-y-5 max-h-[450px] overflow-y-auto pr-2 pb-2">
+                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 pb-2">
                     {daftarBarang.map((barang, idx) => (
-                      <div key={barang.kodeAset} className="border border-zinc-200 rounded-2xl p-5 bg-white shadow-sm hover:shadow-md transition-all">
-                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center border-b border-zinc-100 pb-4 mb-4 gap-4">
+                      <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
+                        
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                           <div>
-                            <h4 className="font-extrabold text-base text-zinc-800 tracking-tight">{barang.namaAset}</h4>
-                            <p className="text-[11px] text-zinc-400 font-mono mt-1">ID: {barang.kodeAset}</p>
+                            <h4 className="font-bold text-lg text-zinc-900 capitalize tracking-tight">{barang.namaAset}</h4>
+                            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">ID: {barang.kodeAset}</p>
                           </div>
                           
-                          <div className="flex items-center gap-5">
-                            <div className="text-[13px] font-semibold text-zinc-600 flex items-center gap-2">
+                          <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2 text-[13px] font-semibold text-zinc-600">
                               Prioritas: 
-                              <span className={`text-[12px] font-bold px-3 py-1 rounded-md text-zinc-800 bg-zinc-100`}>
+                              <span className={`px-2.5 py-1 rounded text-[11px] font-bold tracking-wide ${
+                                barang.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
+                                barang.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600' : 'bg-zinc-100 text-zinc-600'
+                              }`}>
                                 {barang.prioritas}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <span className="text-[13px] font-semibold text-zinc-600">Kuantitas:</span>
+                            <div className="flex items-center gap-2 text-[13px] font-semibold text-zinc-600">
+                              Kuantitas:
                               <input 
                                 type="number" 
                                 min="1" 
                                 value={barang.jumlah} 
                                 onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                                className="w-16 border border-zinc-300 text-center rounded-lg py-1.5 px-2 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
+                                className="w-14 border border-zinc-300 text-center rounded-md py-1 px-1.5 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
                                 required
                               />
                             </div>
                           </div>
                         </div>
 
+                        <hr className="border-zinc-100 mb-4" />
+
                         <div>
-                          <label className="text-[11px] font-bold text-zinc-500 mb-2 block">Alasan Permintaan Barang Ini:</label>
+                          <label className="block text-[11px] font-bold text-zinc-600 mb-2">Alasan Permintaan Barang Ini:</label>
                           <input 
                             type="text" 
                             placeholder="Contoh: Stok alat tulis habis..." 
                             value={barang.keterangan || ''}
                             onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                            className="w-full text-sm border border-zinc-300 rounded-xl bg-zinc-50 py-2.5 px-4 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                            className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
                             required
                           />
                         </div>
+
                       </div>
                     ))}
                   </div>
@@ -473,7 +479,7 @@ export default function AjukanPermintaan() {
             /* STEP 3: REVIEW & SUBMIT */
             <div>
               <div className="mb-8">
-                <h2 className="text-[19px] font-extrabold mb-5 text-zinc-900">Informasi Pemohon</h2>
+                <h2 className="text-[19px] font-bold mb-5 text-zinc-900">Informasi Pemohon</h2>
                 <div className="grid grid-cols-[150px_10px_1fr] gap-y-2.5 text-sm text-zinc-800 font-semibold">
                   <span className="text-zinc-600">Nama Lengkap</span><span>:</span><span className="text-zinc-900">{formData.namaLengkap}</span>
                   <span className="text-zinc-600">Unit</span><span>:</span><span className="text-zinc-900">{formData.divisi}</span>
@@ -485,11 +491,11 @@ export default function AjukanPermintaan() {
               <hr className="border-zinc-200 my-6" />
               
               <div className="mb-6">
-                <h2 className="text-[19px] font-extrabold mb-4 text-zinc-900">Rincian Barang ({daftarBarang.length})</h2>
+                <h2 className="text-[19px] font-bold mb-4 text-zinc-900">Rincian Barang ({daftarBarang.length})</h2>
                 <div className="border border-zinc-200 rounded-2xl overflow-hidden text-sm bg-white shadow-sm">
                   
                   {/* Table Header */}
-                  <div className="bg-zinc-200/60 font-extrabold px-5 py-3.5 grid grid-cols-[1fr_120px_100px] gap-4 text-zinc-700 border-b border-zinc-200 text-[13px]">
+                  <div className="bg-zinc-200/60 font-bold px-5 py-3.5 grid grid-cols-[1fr_120px_100px] gap-4 text-zinc-700 border-b border-zinc-200 text-[13px]">
                     <span>Nama Barang</span>
                     <span className="text-center">Prioritas</span>
                     <span className="text-center">Jumlah</span>
@@ -499,12 +505,17 @@ export default function AjukanPermintaan() {
                   {daftarBarang.map((b, i) => (
                     <div key={b.kodeAset} className={`px-5 py-4 grid grid-cols-[1fr_120px_100px] gap-4 items-center ${i !== daftarBarang.length - 1 ? 'border-b border-zinc-100' : ''}`}>
                       <div>
-                        <span className="block font-bold text-zinc-800 text-[15px]">{b.namaAset}</span>
+                        <span className="block font-bold text-zinc-800 text-[15px] capitalize">{b.namaAset}</span>
                         <span className="block text-[11px] text-zinc-400 font-mono mt-0.5">ID: {b.kodeAset}</span>
                         <span className="block text-[12px] text-zinc-600 mt-1.5 leading-snug">Alasan: {b.keterangan || '-'}</span>
                       </div>
                       <div className="text-center">
-                        <span className="px-3 py-1.5 bg-zinc-100 rounded-lg text-xs font-bold text-zinc-700 inline-block">{b.prioritas}</span>
+                        <span className={`px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block ${
+                          b.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
+                          b.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600' : 'bg-zinc-100 text-zinc-600'
+                        }`}>
+                          {b.prioritas}
+                        </span>
                       </div>
                       <div className="text-center font-bold text-zinc-800 text-[14px]">
                         {b.jumlah} Item
