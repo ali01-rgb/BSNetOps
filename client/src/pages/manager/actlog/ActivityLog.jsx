@@ -3,7 +3,7 @@ import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, A
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
-// 🔥 IMPORT KEDUA HELPER EXCELJS TERBARU
+// 🔥 IMPORT HELPER EXCELJS
 import { generateLaporanActivityLog } from '@/Laporan/ExportLaporan';
 import { exportLaporanOpnameStyled } from '@/Laporan/LaporanOpname';
 
@@ -11,7 +11,7 @@ export default function ActivityLogManager() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State Filters
+  // State Filters Utama (Dipakai untuk Riwayat, Log Activity, dan Laporan Opname)
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
@@ -23,24 +23,6 @@ export default function ActivityLogManager() {
   // Tracking Download & Modal Hapus
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  // Modal Khusus Laporan Opname
-  const currentYear = new Date().getFullYear();
-  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-  const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
-  const [opnameType, setOpnameType] = useState('bulanan'); 
-  const [opnameMonth, setOpnameMonth] = useState(currentMonth);
-  const [opnameYear, setOpnameYear] = useState(String(currentYear));
-
-  const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
-  const months = [
-    { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
-    { value: '03', label: 'Maret' }, { value: '04', label: 'April' },
-    { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
-    { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' },
-    { value: '09', label: 'September' }, { value: '10', label: 'Oktober' },
-    { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
-  ];
 
   // Reset status download jika filter diubah
   useEffect(() => {
@@ -56,7 +38,6 @@ export default function ActivityLogManager() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Fetch data requests dan data aset masuk
       const [reqRes, assetsRes] = await Promise.all([
         fetch(`${API_URL}/inventory/manager/requests`, { headers: { "Authorization": `Bearer ${token}` } })
           .then(res => res.ok ? res : fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } })),
@@ -73,8 +54,6 @@ export default function ActivityLogManager() {
         if (Array.isArray(reqData)) {
           reqData.forEach((req, index) => {
             const stat = (req.status || '').toUpperCase();
-            
-            // Skip data ditolak
             if (['DITOLAK', 'REJECTED'].includes(stat)) return;
 
             let rawDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
@@ -167,7 +146,7 @@ export default function ActivityLogManager() {
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  // 🔥 1. HANDLE EXPORT LAPORAN ACTIVITY LOG
+  // 1. EXPORT LAPORAN ACTIVITY LOG (Langsung gunakan filter luar)
   const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
@@ -203,7 +182,7 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 🔥 2. HANDLE EXPORT LAPORAN OPNAME (Gudang & Inventaris)
+  // 2. EXPORT LAPORAN OPNAME (Langsung unduh pakai filter luar tanpa pop-up)
   const handleExportOpname = async () => {
     const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
     try {
@@ -217,25 +196,34 @@ export default function ActivityLogManager() {
         let assetsData = resJson.data || resJson || [];
         if (!Array.isArray(assetsData)) assetsData = [];
 
+        // Filter data sesuai filter halaman luar
         let filteredAssets = assetsData.filter(item => !item.deleted_at);
 
         filteredAssets = filteredAssets.filter(item => {
+          if (periodType === 'Semua') return true;
+
           const itemDate = new Date(item.createdAt || item.date || Date.now());
           if (isNaN(itemDate.getTime())) return true;
           
           const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
           const itemYear = String(itemDate.getFullYear());
 
-          if (opnameType === 'bulanan') {
-            return itemMonth === opnameMonth && itemYear === opnameYear;
-          } else {
-            return itemYear === opnameYear;
+          if (periodType === 'Bulan') {
+            return itemMonth === selectedMonth && itemYear === selectedYear;
+          } else if (periodType === 'Tahun') {
+            return itemYear === selectedYear;
           }
+          return true;
+        }).filter(item => {
+          const name = item.nama_barang || item.nama_aset || item.name || '';
+          const kode = item.kode_barang || item.id || '';
+          return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                 kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
         });
 
         if (filteredAssets.length === 0) {
           toast.dismiss(loadingToast);
-          toast.error("Tidak ada data stok pada periode tersebut.");
+          toast.error("Tidak ada data stok pada periode filter yang dipilih.");
           return;
         }
 
@@ -249,12 +237,18 @@ export default function ActivityLogManager() {
           stokAkhir: item.stok ?? item.stock ?? 0
         }));
 
-        const fileName = `Laporan_Opname_Stok_${opnameType === 'bulanan' ? opnameMonth + '-' : ''}${opnameYear}.xlsx`;
+        let namaPeriode = 'Semua_Waktu';
+        if (periodType === 'Bulan') {
+          namaPeriode = `Bulan_${selectedMonth}_${selectedYear}`;
+        } else if (periodType === 'Tahun') {
+          namaPeriode = `Tahun_${selectedYear}`;
+        }
+
+        const fileName = `Laporan_Opname_Stok_${namaPeriode}.xlsx`;
         
         await exportLaporanOpnameStyled(dataToExport, fileName);
         toast.dismiss(loadingToast);
         toast.success("Laporan Opname berhasil diunduh.");
-        setIsOpnameModalOpen(false);
       } else {
         throw new Error("Gagal mengambil data dari server");
       }
@@ -337,14 +331,14 @@ export default function ActivityLogManager() {
           >
             <Trash2 size={20} />
           </button>
-          {/* Tombol Laporan Opname Tambahan untuk Manager */}
+          {/* Tombol Laporan Opname (Langsung Unduh) */}
           <button 
-            onClick={() => setIsOpnameModalOpen(true)}
+            onClick={handleExportOpname}
             className="flex items-center justify-center gap-2 bg-white text-zinc-700 border border-zinc-200 hover:bg-emerald-50 hover:text-[#00664b] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Laporan Opname
           </button>
-          {/* Tombol Export Laporan */}
+          {/* Tombol Export Laporan Activity Log */}
           <button 
             onClick={handleExport}
             className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
@@ -424,15 +418,14 @@ export default function ActivityLogManager() {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
-              {yearRange.map(y => (
-                <option key={y} value={String(y)}>{y}</option>
-              ))}
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
             </select>
           )}
         </div>
       </div>
 
-      {/* LIST DATA */}
+      {/* LIST RIWAYAT */}
       {loading ? (
         <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
           Memuat data log dari database...
@@ -485,90 +478,6 @@ export default function ActivityLogManager() {
             </div>
           </div>
         ))
-      )}
-
-      {/* MODAL PILIH PERIODE LAPORAN OPNAME */}
-      {isOpnameModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl p-7 animate-in zoom-in-95 duration-200">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full bg-[#dce9e3] flex items-center justify-center text-[#00634b] shrink-0">
-                <Calendar size={22} strokeWidth={2.5} />
-              </div>
-              <div>
-                <h3 className="text-[18px] font-bold text-slate-900 leading-tight">Pilih Periode Laporan Opname</h3>
-                <p className="text-[13px] text-slate-500 mt-0.5">Rekapitulasi stok masuk & keluar inventaris.</p>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Jenis Rekap</label>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setOpnameType('bulanan')}
-                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
-                      opnameType === 'bulanan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
-                    }`}
-                  >
-                    Bulanan
-                  </button>
-                  <button 
-                    onClick={() => setOpnameType('tahunan')}
-                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
-                      opnameType === 'tahunan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
-                    }`}
-                  >
-                    Tahunan (Per Tahun)
-                  </button>
-                </div>
-              </div>
-
-              {opnameType === 'bulanan' && (
-                <div>
-                  <label className="block text-[13px] font-semibold text-slate-800 mb-2">Bulan</label>
-                  <select 
-                    value={opnameMonth}
-                    onChange={(e) => setOpnameMonth(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
-                  >
-                    {months.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Tahun</label>
-                <select 
-                  value={opnameYear}
-                  onChange={(e) => setOpnameYear(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
-                >
-                  {yearRange.map(year => (
-                    <option key={year} value={String(year)}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-5 mt-8">
-              <button 
-                onClick={() => setIsOpnameModalOpen(false)}
-                className="text-slate-500 hover:text-slate-800 text-[14px] font-medium transition-colors"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleExportOpname}
-                className="bg-[#00664b] hover:bg-[#004d3a] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold flex items-center gap-2 shadow-md transition-all active:scale-95"
-              >
-                <Download size={18} /> Unduh Excel
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* MODAL KONFIRMASI HAPUS RIWAYAT */}
