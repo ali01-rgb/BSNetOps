@@ -38,7 +38,6 @@ export default function UserManagement() {
 
       if (Array.isArray(data)) {
         const formattedData = data.map(u => {
-          // Ganti otomatis Staff menjadi User
           let rawRole = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1).toLowerCase() : 'User';
           if (rawRole === 'Staff') rawRole = 'User';
 
@@ -93,7 +92,6 @@ export default function UserManagement() {
       if (!res.ok) throw new Error("Gagal memperbarui");
 
       setIsEditOpen(false);
-      // 🔥 Teks toast sesuai gambar
       toast.success(`Data Akun ${updatedUser.name} Telah Diperbarui`);
       fetchUsersFromAPI(); 
     } catch (error) {
@@ -144,7 +142,6 @@ export default function UserManagement() {
         if (!res.ok) throw new Error("Gagal menghapus permanen");
 
         setUsers(users.filter(user => user.originalId !== originalId));
-        // 🔥 Teks toast sesuai gambar
         toast.success(`Akun ${name} berhasil dihapus permanen`);
       }
     } catch (error) {
@@ -178,7 +175,6 @@ export default function UserManagement() {
         user.originalId === originalId ? { ...user, isDeleted: false, deleted_at: null } : user
       ));
       
-      // 🔥 Teks toast sesuai gambar
       toast.success(`Hak Akses ${name} berhasil dipulihkan`);
     } catch (error) {
       console.error('Gagal memulihkan akun:', error.message);
@@ -228,7 +224,7 @@ export default function UserManagement() {
           
           {!showTrash && (
             <button 
-              onClick={() => setIsAddOpen(true)}
+              onClick={() => setIsAddOpen(true)} 
               className="flex items-center gap-2 bg-[#00664b] hover:bg-[#00553e] text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               <Plus size={16} /> Daftarkan User Baru
@@ -242,8 +238,8 @@ export default function UserManagement() {
           <Search size={18} className="absolute left-3 text-zinc-400" />
           <input 
             type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
             placeholder="Cari nama user atau alamat email resmi..." 
             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
           />
@@ -252,8 +248,8 @@ export default function UserManagement() {
         <div className="relative flex items-center bg-zinc-50 border border-zinc-200 rounded-lg px-3 hover:bg-zinc-100 transition-colors">
           <Filter size={16} className="text-zinc-500 mr-2" />
           <select 
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            value={roleFilter} 
+            onChange={(e) => setRoleFilter(e.target.value)} 
             className="bg-transparent text-sm text-zinc-600 focus:outline-none cursor-pointer py-2 pr-2 font-medium"
           >
             <option value="Semua">Semua</option>
@@ -277,16 +273,16 @@ export default function UserManagement() {
                 <th className="p-4 text-right rounded-tr-xl">Aksi Kontrol</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-zinc-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
+                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium">
                     Memuat data dari database...
                   </td>
                 </tr>
               ) : processedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium bg-zinc-50/30">
+                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium">
                     {showTrash 
                       ? "Keranjang sampah kosong." 
                       : "Tidak ditemukan data user yang cocok dengan kriteria pencarian."}
@@ -295,7 +291,8 @@ export default function UserManagement() {
               ) : (
                 processedUsers.map((user) => (
                   <tr key={user.originalId} className="hover:bg-zinc-50/40 transition-colors">
-                    <td className="p-4 font-mono text-xs font-bold text-zinc-900 bg-zinc-50/30">{user.id}</td>
+                    {/* Background shading abu-abu tipis telah dihapus */}
+                    <td className="p-4 font-mono text-xs font-bold text-zinc-900">{user.id}</td>
                     <td className="p-4 font-semibold text-zinc-900">{user.name}</td>
                     <td className="p-4 text-zinc-900 font-medium">{user.email}</td>
                     <td className="p-4">
@@ -365,7 +362,7 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {/* 🔥 MODAL DELETE */}
+      {/* MODAL DELETE */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200 relative">
@@ -412,7 +409,7 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* 🔥 MODAL RESTORE */}
+      {/* MODAL RESTORE */}
       {restoreModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200 relative">

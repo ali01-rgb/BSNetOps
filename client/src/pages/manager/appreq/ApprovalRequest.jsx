@@ -349,7 +349,7 @@ export default function ApprovalRequest() {
           </div>
         </div>
 
-        {/* Tabel Request Utama dengan Proporsi Layout Rapi */}
+        {/* Tabel Request Utama dengan Penyesuaian Posisi Kolom Tanggal */}
         <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-fixed">
@@ -365,12 +365,13 @@ export default function ApprovalRequest() {
                       />
                     )}
                   </th>
-                  <th className="py-3.5 px-3 w-[15%]">ID Permintaan</th>
-                  <th className="py-3.5 px-4 w-[18%]">Pemohon</th>
-                  <th className="py-3.5 px-4 w-[23%]">Daftar Barang</th>
+                  <th className="py-3.5 px-3 w-[14%]">ID Permintaan</th>
+                  <th className="py-3.5 px-4 w-[17%]">Pemohon</th>
+                  <th className="py-3.5 px-4 w-[24%]">Daftar Barang</th>
                   <th className="py-3.5 px-3 w-[12%] text-center">Prioritas</th>
-                  <th className="py-3.5 px-4 w-[12%]">Tanggal</th>
-                  <th className="py-3.5 px-4 w-[16%] text-center">Status</th>
+                  {/* Kolom Tanggal Digeser Sedikit ke Kanan dengan padding px-6 */}
+                  <th className="py-3.5 px-6 w-[14%]">Tanggal</th>
+                  <th className="py-3.5 px-4 w-[15%] text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-xs font-medium">
@@ -422,15 +423,15 @@ export default function ApprovalRequest() {
                           {item.prioritas}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-zinc-500 font-medium">
+                      {/* Tanggal diberi px-6 agar seimbang jaraknya dengan Prioritas dan Status */}
+                      <td className="py-4 px-6 text-zinc-500 font-medium">
                         <div className="flex flex-col">
-                          <span>{item.tanggal}</span>
+                          <span className="whitespace-nowrap">{item.tanggal}</span>
                           <span className="text-[10px] text-zinc-400">{item.jam}</span>
                         </div>
                       </td>
-                      {/* 🔥 STATUS CELL: TIDAK AKAN PERNAH BERTUMPUK DUA BARIS */}
                       <td className="py-4 px-4 text-center">
-                        <span className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1 rounded-md text-[11px] font-bold border capitalize shadow-xs ${
+                        <span className={`inline-flex items-center justify-center whitespace-nowrap min-w-[120px] px-3 py-1.5 rounded-md text-[11px] font-bold border capitalize shadow-xs ${
                           item.status.toLowerCase() === 'menunggu manager' ? 'bg-amber-100/80 text-amber-700 border-amber-300' :
                           item.status.toLowerCase() === 'selesai' || item.status.toLowerCase() === 'disetujui' ? 'bg-emerald-100/80 text-emerald-700 border-emerald-300' : 'bg-red-100/80 text-red-600 border-red-300'
                         }`}>

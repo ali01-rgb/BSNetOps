@@ -8,8 +8,19 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
   const requestId = submitResult?.id || submitResult?.[0]?.id || `BSN-REQ-${Date.now()}`;
   const statusDoc = (formData?.status || submitResult?.status || submitResult?.[0]?.status || 'PENDING').toUpperCase();
 
-  // 🔥 Logika Tampil: DITOLAK tidak boleh memunculkan tanda tangan
-  const isDiteruskan = ['DITERUSKAN', 'DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusDoc);
+  // 🔥 REVISI: Tambahkan 'MENUNGGU MANAGER', 'FORWARDED', dan 'DITOLAK' agar saat barang sudah diproses admin, kolom Diberikan & QR Admin langsung muncul
+  const isDiteruskan = [
+    'DITERUSKAN', 
+    'FORWARDED', 
+    'MENUNGGU MANAGER', 
+    'DISETUJUI', 
+    'SELESAI', 
+    'APPROVED', 
+    'DITOLAK', 
+    'REJECTED'
+  ].includes(statusDoc);
+
+  // Hanya status disetujui final yang memunculkan QR Manager
   const isDisetujui = ['DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusDoc);
 
   const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -36,7 +47,6 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
   return (
     <div ref={ref} className="bg-white w-[210mm] min-h-[297mm] p-[10mm] text-black font-sans box-border">
       <div className="flex justify-between items-start mb-4 border-b-2 border-black pb-2">
-        {/* 🔥 PERBAIKAN: Logo & Teks Cabang Rata Kiri */}
         <div className="flex flex-col items-start">
           <img src="/images/logo-BSN.png" alt="Logo BSN" className="h-12 w-auto object-contain object-left mb-1" />
           <span className="text-[13px] font-bold mt-1 text-left w-full">Cabang Semarang</span>
@@ -78,13 +88,13 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
             return (
               <tr key={index} className="h-[36px] text-center">
                 <td className="border-2 border-black font-bold align-top py-1.5">{index + 1}</td>
-                {/* 🔥 TEKS BARANG & KETERANGAN DIBUAT BREAK-ALL / TURUN KE BAWAH */}
                 <td className="border-2 border-black px-3 py-1.5 text-left capitalize font-semibold align-top break-all leading-snug">
                   {barang ? (barang.namaAset || barang.namaBarang) : ''}
                 </td>
                 <td className="border-2 border-black font-bold align-top py-1.5">
                   {barang ? (barang.jumlahDiminta || barang.jumlah || '') : ''}
                 </td>
+                {/* Kolom Diberikan: Otomatis terisi jumlah disetujui admin */}
                 <td className="border-2 border-black font-bold text-[#00664b] align-top py-1.5">
                   {barang && isDiteruskan ? (barang.jumlahDisetujui !== undefined ? barang.jumlahDisetujui : barang.jumlahDiminta) : ''}
                 </td>
@@ -117,7 +127,7 @@ const TemplateDokumenA4 = React.forwardRef(({ formData, daftarBarang = [], submi
               ) : <span className="text-gray-400 italic font-normal">Belum di-ACC</span>}
             </td>
             <td className="border-2 border-black p-2 align-middle">
-              {/* 🔥 HANYA TAMPIL JIKA SUDAH DITERUSKAN OLEH ADMIN */}
+              {/* QR Admin: Muncul saat status Menunggu Manager, Diteruskan, Selesai, atau Ditolak */}
               {isDiteruskan ? (
                 <div className="flex flex-col items-center justify-center">
                   <img src={getQrUrl('ADMIN', adminName)} alt="QR Admin" className="w-12 h-12 object-contain" />

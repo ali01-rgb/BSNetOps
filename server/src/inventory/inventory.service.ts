@@ -23,8 +23,28 @@ export class InventoryService {
     }
   }
 
+  // 🔥 KODE STOK BARANG: AUTO INCREMENT (BRG-001, BRG-002, DST)
   async createAsset(data: any) {
-    const kodeBarang = data.kode_barang || data.id || `BRG-${Date.now()}`;
+    let kodeBarang = data.kode_barang || data.id;
+
+    if (!kodeBarang || kodeBarang.startsWith('BRG-')) {
+      const existingAssets = await this.prisma.asset.findMany({
+        where: { kode_barang: { startsWith: 'BRG-' } },
+        select: { kode_barang: true },
+      });
+
+      let maxNumber = 0;
+      existingAssets.forEach((a) => {
+        if (a.kode_barang) {
+          const num = parseInt(a.kode_barang.replace(/\D/g, ''), 10);
+          if (!isNaN(num) && num > maxNumber) maxNumber = num;
+        }
+      });
+
+      const nextNumber = String(maxNumber + 1).padStart(3, '0');
+      kodeBarang = `BRG-${nextNumber}`;
+    }
+
     const namaBarang = data.nama_barang || data.nama_aset || data.name;
     const stok = parseInt(data.stok ?? data.stock ?? 0, 10);
 
@@ -88,12 +108,12 @@ export class InventoryService {
     return await this.prisma.asset.delete({ where: { id: existingAsset.id } });
   }
 
-  // ================= REQUESTS =================
+  // ================= REQUESTS (PERMINTAAN) =================
   async createRequest(userId: string, data: any) {
     const requestData = data.items.map((item: any) => ({
       userId: userId,
       nama_aset: item.namaAset,
-      jumlah: parseInt(item.jumlah),
+      jumlah: parseInt(item.jumlah, 10),
       prioritas: item.prioritas,
       tanggal_dibutuhkan: new Date(data.tanggalDibutuhkan),
       alasan: item.keterangan || '',
@@ -218,12 +238,7 @@ export class InventoryService {
   }
 
   // ================= UPDATE STATUS & PEMOTONGAN STOK OTOMATIS =================
-  // 🔥 FIX UTAMA: parameter kedua sekarang diterima sebagai 'payload' (bisa string ATAU object),
-  // dan di-parse dengan benar. Sebelumnya, controller mengirim seluruh body object
-  // { status, jumlah_disetujui, catatan_admin } tapi function ini menganggapnya string murni,
-  // menyebabkan .toUpperCase() crash dan field jumlah_disetujui/catatan_admin tidak pernah tersimpan.
   async updateRequestStatus(id: string, payload: any, currentUser?: any) {
-    // Dukung dua format: string biasa (lama) atau object { status, jumlah_disetujui, catatan_admin } (baru)
     const status = typeof payload === 'string' ? payload : payload?.status;
     const jumlahDisetujuiInput = typeof payload === 'object' ? payload?.jumlah_disetujui : undefined;
     const catatanAdminInput = typeof payload === 'object' ? payload?.catatan_admin : undefined;
@@ -231,7 +246,6 @@ export class InventoryService {
     const statusUpper = (status || 'PENDING').toUpperCase();
     const updateData: any = { status: status };
 
-    // 🔥 FIX: field ini sebelumnya dikirim dari frontend tapi TIDAK PERNAH disimpan ke database
     if (jumlahDisetujuiInput !== undefined && jumlahDisetujuiInput !== null) {
       updateData.jumlah_disetujui = parseInt(jumlahDisetujuiInput, 10);
     }
@@ -270,7 +284,6 @@ export class InventoryService {
       });
 
       if (matchedAsset) {
-        // Pakai jumlah_disetujui kalau ada, kalau tidak fallback ke jumlah yang diminta
         const jumlahDiminta = updateData.jumlah_disetujui ?? existingRequest.jumlah ?? 1;
         const stokSekarang = matchedAsset.stok || 0;
         const sisaStok = Math.max(0, stokSekarang - jumlahDiminta);
