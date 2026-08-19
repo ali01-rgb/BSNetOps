@@ -19,11 +19,26 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: "", password: "", remember: false });
   const [error, setError] = useState({ username: "", password: "" });
 
-  // 🔥 STATE BARU UNTUK MODAL KEDALUWARSA LUPA PASSWORD
   const [resetExpired, setResetExpired] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
+  // 🔥 1. BACA DATA "INGAT SAYA" & TOKEN RESET DARI URL SAAT HALAMAN DIBUKA
   useEffect(() => {
+    // Cek apakah ada data akun yang tersimpan sebelumnya
+    const savedEmail = localStorage.getItem("bsn_remembered_email");
+    const savedPassword = localStorage.getItem("bsn_remembered_password");
+    const savedRemember = localStorage.getItem("bsn_remember_me") === "true";
+
+    if (savedRemember && savedEmail) {
+      setForm((prev) => ({
+        ...prev,
+        username: savedEmail,
+        password: savedPassword || "",
+        remember: true
+      }));
+    }
+
+    // Tangani token reset password dari URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     const email = urlParams.get("email");
@@ -32,15 +47,17 @@ export default function LoginPage() {
       setResetToken(token);
       setForgotEmail(email);
       setForgotEmailStep(3); 
-      
       window.history.replaceState(null, '', '/login');
     }
   }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
-    setError({ ...error, [name]: "" });
+    setForm((prev) => ({ 
+      ...prev, 
+      [name]: type === "checkbox" ? checked : value 
+    }));
+    setError((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleLogin = async (e) => {
@@ -66,6 +83,17 @@ export default function LoginPage() {
       toast.dismiss(loadingToast);
 
       if (res.ok) {
+        // 🔥 2. LOGIKA SIMPAN / HAPUS KREDENSIAL BERDASARKAN STATUS CHECKBOX
+        if (form.remember) {
+          localStorage.setItem("bsn_remembered_email", form.username);
+          localStorage.setItem("bsn_remembered_password", form.password);
+          localStorage.setItem("bsn_remember_me", "true");
+        } else {
+          localStorage.removeItem("bsn_remembered_email");
+          localStorage.removeItem("bsn_remembered_password");
+          localStorage.removeItem("bsn_remember_me");
+        }
+
         localStorage.setItem("token", data.access_token);
         const rawRole = data.role || (data.user && data.user.role) || "USER";
         const userRole = rawRole.toUpperCase();
@@ -146,13 +174,11 @@ export default function LoginPage() {
     }
   };
 
-  // 🔥 FUNGSI BARU UNTUK 1-KLIK RESEND LINK RESET
   const handleResendExpiredReset = async () => {
     setIsResending(true);
     const loadingToast = toast.loading("Mengirim link baru...");
 
     try {
-      // Kita panggil ulang API forgot-password pake email yang udah ada di memori
       const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,7 +190,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         setResetExpired(false);
-        setForgotEmailStep(0); // Balikin ke halaman login awal
+        setForgotEmailStep(0);
         setForgotEmail(""); 
         setResetToken("");
         
@@ -245,7 +271,6 @@ export default function LoginPage() {
         ), { position: "top-center", duration: 5000 });
 
       } else {
-        // 🔥 Kalau error gara-gara kedaluwarsa atau token tidak valid, pop-up dimunculkan
         setResetExpired(true);
       }
     } catch (err) {
@@ -264,7 +289,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/40" /> 
 
-      {/* 🔥 MODAL LUPA PASSWORD KEDALUWARSA 1-KLIK (Tanpa Input Teks) */}
+      {/* MODAL LUPA PASSWORD KEDALUWARSA */}
       {resetExpired && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
@@ -310,6 +335,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   name="username"
+                  autoComplete="username"
                   value={form.username}
                   onChange={handleChange}
                   placeholder="contoh@bsn.go.id"
@@ -323,6 +349,7 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
+                    autoComplete="current-password"
                     value={form.password}
                     onChange={handleChange}
                     placeholder="•••••"
@@ -339,9 +366,16 @@ export default function LoginPage() {
                 {error.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{error.password}</p>}
               </div>
 
+              {/* 🔥 CHECKBOX INGAT SAYA (TERHUBUNG KE STATE & LOCALSTORAGE) */}
               <div className="flex justify-between items-center pt-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#00634b] focus:ring-[#00634b]" />
+                  <input 
+                    type="checkbox" 
+                    name="remember"
+                    checked={form.remember}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded border-slate-300 text-[#00664b] focus:ring-[#00664b] accent-[#00664b] cursor-pointer" 
+                  />
                   <span className="text-[12px] font-semibold text-slate-700">Ingat Saya</span>
                 </label>
                 <button type="button" onClick={() => setForgotEmailStep(1)} className="text-[12px] font-semibold text-[#00634b] hover:underline transition-all cursor-pointer">
@@ -385,7 +419,7 @@ export default function LoginPage() {
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Admin@bsn.go.id"
-                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3 text-[13px] outline-none focus:border-[#00634b] focus:ring-1 focus:ring-[#00634b] font-medium text-slate-900 placeholder:text-slate-400"
+                  className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3 text-[13px] outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] font-medium text-slate-900 placeholder:text-slate-400"
                 />
               </div>
 
@@ -419,7 +453,7 @@ export default function LoginPage() {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="contoh@bsn.go.id"
+                    placeholder="•••••"
                     className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 pr-11 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
                   />
                   <button 
