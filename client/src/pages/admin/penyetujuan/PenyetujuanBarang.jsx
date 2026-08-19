@@ -253,12 +253,11 @@ export default function PenyetujuanBarang() {
 
   const loggedInProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
   
-  // 🔥 PERBAIKAN: Kita berikan status apa adanya agar Bon tahu kapan harus merender TTD
   const mappedFormData = selectedRequest ? {
     divisi: selectedRequest.unit,
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
     namaLengkap: selectedRequest.pemohon,
-    status: selectedRequest.status, // JANGAN DI PAKSA JADI 'DITERUSKAN'
+    status: selectedRequest.status, 
     adminName: selectedRequest.adminName || loggedInProfile.fullName || 'Admin Gudang',
     managerName: selectedRequest.managerName || 'Manager Operasional'
   } : {};
@@ -363,11 +362,8 @@ export default function PenyetujuanBarang() {
                     <span className="font-medium text-zinc-500">Nama Lengkap</span><span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
                     <span className="font-medium text-zinc-500">Unit / Cabang</span><span>: {selectedRequest.unit}</span>
                     <span className="font-medium text-zinc-500">Status Aksi</span>
-                    <span>: 
-                      <span className={`ml-1 px-2 py-0.5 rounded text-[11px] font-bold border uppercase ${getStatusInfo(selectedRequest.status).color}`}>
-                        {getStatusInfo(selectedRequest.status).label}
-                      </span>
-                    </span>
+                    {/* 🔥 HIGHLIGHT DIHILANGKAN, WARNA DIBUAT #013F27 */}
+                    <span>: <span className="ml-1 uppercase font-bold text-[#013F27]">{getStatusInfo(selectedRequest.status).label}</span></span>
                     <span className="font-medium text-zinc-500">Keterangan</span><span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
                   </div>
                 </div>
@@ -378,10 +374,12 @@ export default function PenyetujuanBarang() {
                     alt="QR Pemohon" 
                     className="w-16 h-16 mix-blend-multiply opacity-90"
                   />
-                  <span className="text-[10px] text-zinc-500 font-mono mt-1 font-bold">TTD Pemohon</span>
+                  {/* 🔥 LABEL DINAMIS SESUAI NAMA PEMOHON */}
+                  <span className="text-[10px] text-zinc-500 font-mono mt-1 font-bold truncate max-w-full" title={selectedRequest.pemohon}>
+                    {selectedRequest.pemohon}
+                  </span>
                 </div>
 
-                {/* 🔥 LOGIKA QR TAMPILAN MODAL: Hanya muncul jika BUKAN Menunggu/Pending */}
                 {selectedRequest.status !== 'Menunggu' && selectedRequest.status !== 'Pending' ? (
                   <div className="flex flex-col items-center justify-center p-3 border-2 border-dashed rounded-lg min-w-[130px] border-emerald-300 bg-emerald-50/50">
                     <img 
@@ -459,7 +457,7 @@ export default function PenyetujuanBarang() {
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-zinc-200 bg-white flex justify-between items-center rounded-b-2xl">
+            <div className="px-6 py-4 border-t border-zinc-200 bg-white flex justify-start items-center rounded-b-2xl gap-3">
               <button 
                 onClick={() => setShowBonPreview(true)}
                 className="px-5 py-2 border border-[#00664b] text-[#00664b] bg-white hover:bg-[#e7f0ec] font-semibold rounded-lg text-sm transition-colors shadow-sm cursor-pointer"
@@ -467,6 +465,7 @@ export default function PenyetujuanBarang() {
                 Lihat Bon Permintaan
               </button>
 
+              {/* 🔥 TOMBOL DISEJAJARKAN DI KIRI */}
               {selectedRequest.status === 'Menunggu' && (
                 <button 
                   onClick={handleApproveAndHandover}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
+
+// 🔥 IMPORT HELPER EXPORT EXCELJS DI SINI (Sesuaikan path folder kamu)
+import { generateLaporanActivityLog } from '../../Laporan/ExportLaporan';
 
 export default function LogAktifitasAdmin() {
   const [history, setHistory] = useState([]);
@@ -12,7 +14,7 @@ export default function LogAktifitasAdmin() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
-  
+
   const [periodType, setPeriodType] = useState('Semua');
   const [selectedMonth, setSelectedMonth] = useState('08'); 
   const [selectedYear, setSelectedYear] = useState('2026');
@@ -34,7 +36,7 @@ export default function LogAktifitasAdmin() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      
+
       // 🔥 Fetch dua endpoint: Requests (Keluar) dan Assets (Masuk)
       const [reqRes, assetsRes] = await Promise.all([
         fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } }),
@@ -51,7 +53,7 @@ export default function LogAktifitasAdmin() {
         if (Array.isArray(reqData)) {
           reqData.forEach((req, index) => {
             const stat = (req.status || '').toUpperCase();
-            
+
             // 🔥 LOGIKA: Jika DITOLAK, skip sepenuhnya dari Activity Log & Laporan
             if (['DITOLAK', 'REJECTED'].includes(stat)) return;
 
@@ -127,7 +129,7 @@ export default function LogAktifitasAdmin() {
     .filter(item => (typeFilter === 'Semua' ? true : item.type === typeFilter))
     .filter(item => {
       if (periodType === 'Semua') return true;
-      
+
       const itemDate = new Date(item.date);
       if (isNaN(itemDate.getTime())) return true;
 
@@ -148,11 +150,14 @@ export default function LogAktifitasAdmin() {
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const handleExport = () => {
+  // 🔥 UPDATE LOGIKA EXPORT MENGGUNAKAN EXCELJS
+  const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
       return;
     }
+
+    const toastId = toast.loading("Menyiapkan Laporan Log Aktivitas...");
 
     const dataToExport = filteredHistory.map(item => ({
       "ID Transaksi": item.id,
@@ -165,19 +170,22 @@ export default function LogAktifitasAdmin() {
       "Status": item.managerStatus
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const columnWidths = [
-      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 40 }, 
-      { wch: 15 }, { wch: 20 }, { wch: 15 }
-    ];
-    worksheet['!cols'] = columnWidths;
+    // Generate label periode untuk penamaan file Excel
+    let namaPeriode = 'Semua_Waktu';
+    if (periodType === 'Bulan') {
+      namaPeriode = `Bulan_${selectedMonth}_${selectedYear}`;
+    } else if (periodType === 'Tahun') {
+      namaPeriode = `Tahun_${selectedYear}`;
+    }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Logistik");
-    XLSX.writeFile(workbook, "Laporan_Activity_Log_BSN.xlsx");
-
-    setHasDownloaded(true);
-    toast.success("Laporan berhasil diunduh. Fitur hapus riwayat terbuka.");
+    try {
+      await generateLaporanActivityLog(dataToExport, namaPeriode, toastId);
+      setHasDownloaded(true);
+      // Tombol hapus riwayat bisa diaktifkan
+    } catch (error) {
+      console.error(error);
+      setHasDownloaded(false);
+    }
   };
 
   const handleDeleteHistory = async () => {
@@ -205,10 +213,10 @@ export default function LogAktifitasAdmin() {
 
       if (res.ok) {
         setHistory(prev => prev.filter(item => !idsToDelete.includes(item.originalId)));
-        
+
         toast.dismiss(loadingToast);
         toast.success(`${filteredHistory.length} data riwayat berhasil dihapus permanen dari database!`);
-        
+
         setIsDeleteModalOpen(false);
         setHasDownloaded(false);
       } else {
@@ -238,7 +246,7 @@ export default function LogAktifitasAdmin() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Activity Log & Laporan</h2>
@@ -275,7 +283,7 @@ export default function LogAktifitasAdmin() {
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <select 
               value={typeFilter}
@@ -303,7 +311,7 @@ export default function LogAktifitasAdmin() {
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-600">
             <Calendar size={16} /> Filter Periode:
           </div>
-          
+
           <select 
             value={periodType}
             onChange={(e) => setPeriodType(e.target.value)}
@@ -383,7 +391,6 @@ export default function LogAktifitasAdmin() {
                   <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
                     <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
                     <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
-                    {/* 🔥 HIGHLIGHT BACKGROUND DIHILANGKAN, TERSISA TEXT SAJA */}
                     <span className="text-zinc-500 font-medium flex items-center gap-1">
                       <MapPin size={12} /> {item.unit}
                     </span>
@@ -418,11 +425,11 @@ export default function LogAktifitasAdmin() {
             <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${!hasDownloaded ? 'bg-amber-100' : 'bg-red-100'}`}>
               <AlertTriangle className={`w-8 h-8 ${!hasDownloaded ? 'text-amber-500' : 'text-red-500'}`} />
             </div>
-            
+
             <h3 className="text-xl font-bold text-zinc-900 mb-2">
               {!hasDownloaded ? 'Peringatan Keamanan' : 'Hapus Permanen Riwayat?'}
             </h3>
-            
+
             <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {!hasDownloaded ? (
                 <>Anda <b>wajib mengunduh (Export Laporan)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
@@ -430,7 +437,7 @@ export default function LogAktifitasAdmin() {
                 <>Apakah Anda yakin ingin menghapus <b>{filteredHistory.length} riwayat</b> dari database untuk periode {periodType === 'Semua' ? 'Semua Waktu' : periodType === 'Bulan' ? `Bulan ${selectedMonth}-${selectedYear}` : `Tahun ${selectedYear}`}?</>
               )}
             </p>
-            
+
             <div className="flex justify-center gap-3">
               {!hasDownloaded ? (
                 <button 
