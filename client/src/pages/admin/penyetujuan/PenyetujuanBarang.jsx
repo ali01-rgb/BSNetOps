@@ -257,7 +257,7 @@ export default function PenyetujuanBarang() {
     divisi: selectedRequest.unit,
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
     namaLengkap: selectedRequest.pemohon,
-    status: selectedRequest.status, 
+    status: selectedRequest.status,
     adminName: selectedRequest.adminName || loggedInProfile.fullName || 'Admin Gudang',
     managerName: selectedRequest.managerName || 'Manager Operasional'
   } : {};
@@ -361,9 +361,11 @@ export default function PenyetujuanBarang() {
                   <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-y-2 text-sm text-gray-700">
                     <span className="font-medium text-zinc-500">Nama Lengkap</span><span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
                     <span className="font-medium text-zinc-500">Unit / Cabang</span><span>: {selectedRequest.unit}</span>
+                    
+                    {/* 🔥 1. STATUS AKSI: TANPA HIGHLIGHT, WARNA #013F27 */}
                     <span className="font-medium text-zinc-500">Status Aksi</span>
-                    {/* 🔥 HIGHLIGHT DIHILANGKAN, WARNA DIBUAT #013F27 */}
                     <span>: <span className="ml-1 uppercase font-bold text-[#013F27]">{getStatusInfo(selectedRequest.status).label}</span></span>
+                    
                     <span className="font-medium text-zinc-500">Keterangan</span><span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
                   </div>
                 </div>
@@ -374,8 +376,8 @@ export default function PenyetujuanBarang() {
                     alt="QR Pemohon" 
                     className="w-16 h-16 mix-blend-multiply opacity-90"
                   />
-                  {/* 🔥 LABEL DINAMIS SESUAI NAMA PEMOHON */}
-                  <span className="text-[10px] text-zinc-500 font-mono mt-1 font-bold truncate max-w-full" title={selectedRequest.pemohon}>
+                  {/* 🔥 2. NAMA PEMOHON DINAMIS DI BAWAH QR */}
+                  <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold truncate max-w-full" title={selectedRequest.pemohon}>
                     {selectedRequest.pemohon}
                   </span>
                 </div>
@@ -457,6 +459,7 @@ export default function PenyetujuanBarang() {
               </div>
             </div>
 
+            {/* 🔥 3. TOMBOL SEJAJAR DI KIRI: flex justify-start gap-3 */}
             <div className="px-6 py-4 border-t border-zinc-200 bg-white flex justify-start items-center rounded-b-2xl gap-3">
               <button 
                 onClick={() => setShowBonPreview(true)}
@@ -465,7 +468,6 @@ export default function PenyetujuanBarang() {
                 Lihat Bon Permintaan
               </button>
 
-              {/* 🔥 TOMBOL DISEJAJARKAN DI KIRI */}
               {selectedRequest.status === 'Menunggu' && (
                 <button 
                   onClick={handleApproveAndHandover}
