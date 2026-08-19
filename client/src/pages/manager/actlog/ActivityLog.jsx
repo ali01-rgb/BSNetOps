@@ -1,72 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Clock, CheckCircle2, XCircle, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X, ChevronDown } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import React, { useState, useEffect } from 'react';
+import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
-// 🔥 KOMPONEN DROPDOWN CUSTOM (Menyatu dalam file, tidak perlu dipisah)
-function CustomDropdown({ value, onChange, options, triggerClassName, minWidth = "min-w-[160px]" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [hoveredValue, setHoveredValue] = useState(null);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedLabel = options.find((opt) => opt.value === value)?.label || value;
-
-  return (
-    <div className={`relative ${minWidth}`} ref={dropdownRef}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex justify-between items-center text-sm rounded-lg px-3 cursor-pointer font-medium transition-all ${
-          isOpen ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]" : "border-zinc-200 hover:border-[var(--color-primary)]"
-        } ${triggerClassName}`}
-      >
-        <span className="truncate mr-3">{selectedLabel}</span>
-        <ChevronDown size={14} className={`shrink-0 opacity-70 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-      </div>
-
-      {isOpen && (
-        <div
-          className="absolute left-0 top-full mt-1.5 w-full min-w-max bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150"
-          onMouseLeave={() => setHoveredValue(null)}
-        >
-          {options.map((opt, index) => {
-            const isSelected = value === opt.value;
-            const isActive = isSelected || hoveredValue === opt.value;
-            const isLast = index === options.length - 1;
-
-            return (
-              <div
-                key={opt.value}
-                onMouseEnter={() => setHoveredValue(opt.value)}
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-4 py-2.5 cursor-pointer text-[13px] transition-colors duration-150 flex items-center whitespace-nowrap ${
-                  isActive
-                    ? "bg-[var(--color-primary)] text-white font-semibold shadow-sm" 
-                    : `text-zinc-700 font-medium ${!isLast ? "border-b border-zinc-100" : ""}`
-                }`}
-              >
-                {opt.label}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+// 🔥 IMPORT KEDUA HELPER EXCELJS TERBARU
+import { generateLaporanActivityLog } from '@/Laporan/ExportLaporan';
+import { exportLaporanOpnameStyled } from '@/Laporan/LaporanOpname';
 
 export default function ActivityLogManager() {
   const [history, setHistory] = useState([]);
@@ -81,10 +20,29 @@ export default function ActivityLogManager() {
   const [selectedMonth, setSelectedMonth] = useState('08'); 
   const [selectedYear, setSelectedYear] = useState('2026');
 
-  // Tracking Download & Modal
+  // Tracking Download & Modal Hapus
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // Modal Khusus Laporan Opname
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+  const [isOpnameModalOpen, setIsOpnameModalOpen] = useState(false);
+  const [opnameType, setOpnameType] = useState('bulanan'); 
+  const [opnameMonth, setOpnameMonth] = useState(currentMonth);
+  const [opnameYear, setOpnameYear] = useState(String(currentYear));
+
+  const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const months = [
+    { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' }, { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' }, { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
+  ];
+
+  // Reset status download jika filter diubah
   useEffect(() => {
     setHasDownloaded(false);
   }, [searchQuery, statusFilter, typeFilter, periodType, selectedMonth, selectedYear]);
@@ -98,42 +56,84 @@ export default function ActivityLogManager() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      const res = await fetch(`${API_URL}/inventory/manager/requests`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      // Fetch data requests dan data aset masuk
+      const [reqRes, assetsRes] = await Promise.all([
+        fetch(`${API_URL}/inventory/manager/requests`, { headers: { "Authorization": `Bearer ${token}` } })
+          .then(res => res.ok ? res : fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } })),
+        fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } })
+      ]);
 
-      if (res.ok) {
-        const resJson = await res.json();
-        const data = resJson.data || resJson;
+      let combinedLogs = [];
 
-        if (Array.isArray(data)) {
-          const formatted = data.map((req, index) => {
+      // 1. FORMAT DATA REQUESTS (BARANG KELUAR)
+      if (reqRes.ok) {
+        const reqJson = await reqRes.json();
+        const reqData = reqJson.data || reqJson;
+
+        if (Array.isArray(reqData)) {
+          reqData.forEach((req, index) => {
+            const stat = (req.status || '').toUpperCase();
+            
+            // Skip data ditolak
+            if (['DITOLAK', 'REJECTED'].includes(stat)) return;
+
             let rawDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
             if (isNaN(rawDate.getTime())) rawDate = new Date();
 
-            // 🔥 LOGIKA PEMBUATAN ID REQ-YYYYMMDD-XXX
+            let currentStatus = 'Menunggu';
+            if (['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(stat)) {
+              currentStatus = 'Selesai';
+            }
+
+            const padId = String(req.no_urut || index + 1).padStart(3, '0');
             const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
-            // Gunakan no_urut dari DB, atau buat angka urut palsu dari ID/Index jika no_urut tidak ada
-            const urut = req.no_urut || String(req.id).replace(/\D/g, '').substring(0,3) || (index + 1);
-            const padId = String(urut).padStart(3, '0');
             const prettyId = `REQ-${tglFormatId}-${padId}`;
 
-            return {
-              id: prettyId, // ID sudah seragam
+            combinedLogs.push({
+              id: prettyId,
               originalId: req.id, 
-              requester: req.user?.fullName || req.user?.username || 'user',
+              requester: req.user?.fullName || req.user?.username || 'Pemohon',
               unit: req.user?.divisi || req.unit || 'KC Semarang',
               itemName: req.nama_aset || 'Barang',
               qty: req.jumlah || 1,
               date: rawDate.toISOString(),
-              managerStatus: req.status || 'Pending',
-              adminStatus: req.status || 'Pending',
+              managerStatus: currentStatus,
+              adminStatus: currentStatus,
               type: 'Keluar' 
-            };
+            });
           });
-          setHistory(formatted);
         }
       }
+
+      // 2. FORMAT DATA ASSETS (BARANG MASUK)
+      if (assetsRes.ok) {
+        const astJson = await assetsRes.json();
+        const astData = astJson.data || astJson;
+
+        if (Array.isArray(astData)) {
+          astData.forEach((ast) => {
+            let rawDate = new Date(ast.createdAt || ast.updatedAt || Date.now());
+            if (isNaN(rawDate.getTime())) rawDate = new Date();
+
+            combinedLogs.push({
+              id: ast.kode_barang || ast.id || 'AST-NEW',
+              originalId: ast.id,
+              requester: 'Admin Gudang',
+              unit: 'Gudang Utama',
+              itemName: ast.nama_barang || ast.nama_aset || 'Barang Baru',
+              qty: ast.stok ?? ast.stock ?? 0,
+              date: rawDate.toISOString(),
+              managerStatus: 'Selesai', 
+              adminStatus: 'Selesai',
+              type: 'Masuk'
+            });
+          });
+        }
+      }
+
+      combinedLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setHistory(combinedLogs);
+
     } catch (error) {
       console.error('Gagal memuat log manager:', error.message);
     } finally {
@@ -148,7 +148,7 @@ export default function ActivityLogManager() {
       if (periodType === 'Semua') return true;
       
       const itemDate = new Date(item.date);
-      if (isNaN(itemDate.getTime())) return true; 
+      if (isNaN(itemDate.getTime())) return true;
 
       const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
       const itemYear = String(itemDate.getFullYear());
@@ -165,14 +165,16 @@ export default function ActivityLogManager() {
       (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.itemName || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    );
 
-  const handleExport = () => {
+  // 🔥 1. HANDLE EXPORT LAPORAN ACTIVITY LOG
+  const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
       return;
     }
+
+    const toastId = toast.loading("Menyiapkan Laporan Log Aktivitas...");
 
     const dataToExport = filteredHistory.map(item => ({
       "ID Transaksi": item.id,
@@ -182,27 +184,28 @@ export default function ActivityLogManager() {
       "Nama Barang / Logistik": item.itemName,
       "Jumlah (Unit)": item.qty,
       "Tanggal Transaksi": new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-      "Status Manajer": item.managerStatus,
-      "Status Logistik": item.adminStatus
+      "Status": item.managerStatus
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const columnWidths = [
-      { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }, { wch: 30 }, 
-      { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 }
-    ];
-    worksheet['!cols'] = columnWidths;
+    let namaPeriode = 'Semua_Waktu';
+    if (periodType === 'Bulan') {
+      namaPeriode = `Bulan_${selectedMonth}_${selectedYear}`;
+    } else if (periodType === 'Tahun') {
+      namaPeriode = `Tahun_${selectedYear}`;
+    }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Logistik");
-    XLSX.writeFile(workbook, "Laporan_Activity_Log_BSN.xlsx");
-
-    setHasDownloaded(true);
-    toast.success("Laporan berhasil diunduh. Fitur hapus riwayat terbuka.");
+    try {
+      await generateLaporanActivityLog(dataToExport, namaPeriode, toastId);
+      setHasDownloaded(true);
+    } catch (error) {
+      console.error(error);
+      setHasDownloaded(false);
+    }
   };
 
+  // 🔥 2. HANDLE EXPORT LAPORAN OPNAME (Gudang & Inventaris)
   const handleExportOpname = async () => {
-    const loadingToast = toast.loading("Mengambil data stok dari gudang...");
+    const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       const res = await fetch(`${API_URL}/inventory/assets`, {
@@ -211,48 +214,54 @@ export default function ActivityLogManager() {
 
       if (res.ok) {
         const resJson = await res.json();
-        let data = resJson.data || resJson || [];
-        if (!Array.isArray(data)) data = [];
+        let assetsData = resJson.data || resJson || [];
+        if (!Array.isArray(assetsData)) assetsData = [];
 
-        const filteredData = data.filter(item => {
-          const name = item.nama_barang || item.nama_aset || item.name || '';
-          const kode = item.kode_barang || item.id || '';
-          return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                 kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
+        let filteredAssets = assetsData.filter(item => !item.deleted_at);
+
+        filteredAssets = filteredAssets.filter(item => {
+          const itemDate = new Date(item.createdAt || item.date || Date.now());
+          if (isNaN(itemDate.getTime())) return true;
+          
+          const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
+          const itemYear = String(itemDate.getFullYear());
+
+          if (opnameType === 'bulanan') {
+            return itemMonth === opnameMonth && itemYear === opnameYear;
+          } else {
+            return itemYear === opnameYear;
+          }
         });
 
-        if (filteredData.length === 0) {
+        if (filteredAssets.length === 0) {
           toast.dismiss(loadingToast);
-          toast.error("Tidak ada data stok yang sesuai dengan pencarian.");
+          toast.error("Tidak ada data stok pada periode tersebut.");
           return;
         }
 
-        const dataToExport = filteredData.map(item => ({
-          "Kode Barang": item.kode_barang || '-',
-          "Nama Barang": item.nama_barang || item.nama_aset || item.name || '-',
-          "Kategori": item.category?.name || '-',
-          "Sisa Stok (Unit)": item.stok ?? item.stock ?? 0,
-          "Lokasi": item.location || '-'
+        const dataToExport = filteredAssets.map(item => ({
+          kodeBarang: item.kode_barang || '-',
+          namaBarang: item.nama_barang || item.nama_aset || item.name || '-',
+          kategori: item.category?.name || '-',
+          stokAwal: item.stok ?? item.stock ?? 0,
+          barangMasuk: 0,
+          barangKeluar: 0,
+          stokAkhir: item.stok ?? item.stock ?? 0
         }));
 
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const columnWidths = [
-          { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 20 }
-        ];
-        worksheet['!cols'] = columnWidths;
-
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Opname");
-        XLSX.writeFile(workbook, "Laporan_Opname_Stok_BSN.xlsx");
-
+        const fileName = `Laporan_Opname_Stok_${opnameType === 'bulanan' ? opnameMonth + '-' : ''}${opnameYear}.xlsx`;
+        
+        await exportLaporanOpnameStyled(dataToExport, fileName);
         toast.dismiss(loadingToast);
         toast.success("Laporan Opname berhasil diunduh.");
+        setIsOpnameModalOpen(false);
       } else {
-        throw new Error("Gagal mengambil data");
+        throw new Error("Gagal mengambil data dari server");
       }
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Gagal mengunduh Laporan Opname.");
+      console.error(error);
     }
   };
 
@@ -281,10 +290,8 @@ export default function ActivityLogManager() {
 
       if (res.ok) {
         setHistory(prev => prev.filter(item => !idsToDelete.includes(item.originalId)));
-        
         toast.dismiss(loadingToast);
         toast.success(`${filteredHistory.length} data riwayat berhasil dihapus permanen dari database!`);
-        
         setIsDeleteModalOpen(false);
         setHasDownloaded(false);
       } else {
@@ -297,29 +304,12 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 🔥 STATUS BADGE (Selesai -> Approved, Ditolak -> Rejected)
   const getStatusBadge = (status) => {
     const statLower = String(status).toLowerCase();
-    
-    if (statLower === 'approved' || statLower === 'disetujui' || statLower === 'selesai') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20">
-          <Clock size={13} /> Selesai
-        </span>
-      );
-    } else if (statLower === 'rejected' || statLower === 'ditolak') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200">
-          <Clock size={13} /> Ditolak
-        </span>
-      );
+    if (statLower === 'selesai' || statLower === 'approved' || statLower === 'disetujui') {
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20"><CheckCircle2 size={13} /> Selesai</span>;
     }
-    
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
-        <Clock size={13} /> Pending
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><Clock size={13} /> Menunggu</span>;
   };
 
   const getTypeIcon = (type) => {
@@ -339,28 +329,32 @@ export default function ActivityLogManager() {
         </div>
 
         <div className="flex items-center gap-3 self-start md:self-auto">
+          {/* Tombol Hapus Riwayat */}
           <button 
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center justify-center bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 p-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
             title="Hapus Riwayat"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="flex items-center justify-center p-2.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
+          {/* Tombol Laporan Opname Tambahan untuk Manager */}
           <button 
-            onClick={handleExportOpname}
-            className="flex items-center justify-center gap-2 bg-white text-zinc-800 border border-zinc-200 hover:bg-zinc-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
+            onClick={() => setIsOpnameModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-white text-zinc-700 border border-zinc-200 hover:bg-emerald-50 hover:text-[#00664b] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Laporan Opname
           </button>
+          {/* Tombol Export Laporan */}
           <button 
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 bg-white text-zinc-800 border border-zinc-200 hover:bg-zinc-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Export Laporan
           </button>
         </div>
       </div>
 
+      {/* FILTER BOX */}
       <div className="bg-white p-4 rounded-xl shadow-md border border-zinc-200/80 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative flex items-center">
@@ -370,139 +364,210 @@ export default function ActivityLogManager() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
           
-          <div className="flex gap-2 relative z-40">
-            <CustomDropdown 
+          <div className="flex gap-2">
+            <select 
               value={typeFilter}
-              onChange={setTypeFilter}
-              triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2.5"
-              options={[
-                { label: 'Semua Transaksi', value: 'Semua' },
-                { label: 'Barang Masuk', value: 'Masuk' },
-                { label: 'Barang Keluar', value: 'Keluar' }
-              ]}
-            />
-            <CustomDropdown 
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+            >
+              <option value="Semua">Semua Transaksi</option>
+              <option value="Masuk">Barang Masuk</option>
+              <option value="Keluar">Barang Keluar</option>
+            </select>
+
+            <select 
               value={statusFilter}
-              onChange={setStatusFilter}
-              triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2.5"
-              options={[
-                { label: 'Semua Status', value: 'Semua' },
-                { label: 'Approved / Selesai', value: 'Approved' },
-                { label: 'Pending', value: 'Pending' },
-                { label: 'Rejected / Ditolak', value: 'Rejected' }
-              ]}
-            />
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+            >
+              <option value="Semua">Semua Status</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Menunggu">Menunggu</option>
+            </select>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-100 relative z-30">
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-100">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-600">
             <Calendar size={16} /> Filter Periode:
           </div>
           
-          <CustomDropdown 
+          <select 
             value={periodType}
-            onChange={setPeriodType}
-            triggerClassName="bg-zinc-50 border-zinc-200 text-zinc-700 py-2"
-            minWidth="min-w-[170px]"
-            options={[
-              { label: 'Semua Waktu', value: 'Semua' },
-              { label: 'Berdasarkan Bulan', value: 'Bulan' },
-              { label: 'Berdasarkan Tahun', value: 'Tahun' }
-            ]}
-          />
+            onChange={(e) => setPeriodType(e.target.value)}
+            className="bg-zinc-50 border border-zinc-200 text-sm text-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer"
+          >
+            <option value="Semua">Semua Waktu</option>
+            <option value="Bulan">Berdasarkan Bulan</option>
+            <option value="Tahun">Berdasarkan Tahun</option>
+          </select>
 
           {periodType === 'Bulan' && (
-            <CustomDropdown 
+            <select 
               value={selectedMonth}
-              onChange={setSelectedMonth}
-              triggerClassName="bg-blue-50 border-blue-200 text-blue-800 py-2"
-              minWidth="min-w-[140px]"
-              options={[
-                { label: 'Januari', value: '01' }, { label: 'Februari', value: '02' },
-                { label: 'Maret', value: '03' }, { label: 'April', value: '04' },
-                { label: 'Mei', value: '05' }, { label: 'Juni', value: '06' },
-                { label: 'Juli', value: '07' }, { label: 'Agustus', value: '08' },
-                { label: 'September', value: '09' }, { label: 'Oktober', value: '10' },
-                { label: 'November', value: '11' }, { label: 'Desember', value: '12' }
-              ]}
-            />
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+            >
+              {months.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
           )}
 
           {(periodType === 'Bulan' || periodType === 'Tahun') && (
-            <CustomDropdown 
+            <select 
               value={selectedYear}
-              onChange={setSelectedYear}
-              triggerClassName="bg-blue-50 border-blue-200 text-blue-800 py-2"
-              minWidth="min-w-[120px]"
-              options={[
-                { label: '2025', value: '2025' },
-                { label: '2026', value: '2026' }
-              ]}
-            />
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
+            >
+              {yearRange.map(y => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
           )}
         </div>
       </div>
 
+      {/* LIST DATA */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200 relative z-0">
+        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
           Memuat data log dari database...
         </div>
       ) : filteredHistory.length === 0 ? (
-        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200 relative z-0">
+        <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
           Tidak ditemukan riwayat yang sesuai dengan filter.
         </div>
       ) : (
-        <div className="relative z-0">
-          {filteredHistory.map((item) => (
-            <div key={item.id} className="relative mb-4 pl-14 group">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
-                {getTypeIcon(item.type)}
-              </div>
+        filteredHistory.map((item) => (
+          <div key={item.id} className="relative mb-4 pl-14 group">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
+              {getTypeIcon(item.type)}
+            </div>
 
-              <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <div className="space-y-1.5 min-w-0">
-                    {/* 🔥 REDAKSI & STYLING TEXT SESUAI GAMBAR KE-2 */}
-                    <p className="text-sm text-zinc-700">
-                      <span className="font-bold text-zinc-900 block truncate max-w-full">{item.requester}</span> 
-                      {item.type === 'Masuk' 
-                        ? ' mendaftarkan barang masuk/restock berupa ' 
-                        : ' mengajukan permintaan peminjaman inventaris untuk dikirim ke '}
-                      {item.type !== 'Masuk' && (
-                        <span className="font-bold text-zinc-900 mr-1">
-                          {item.unit}
-                        </span>
-                      )}
-                      berupa <span className="font-bold text-[#00664b]"><span className="truncate block max-w-full">{item.qty} Unit {item.itemName}</span></span>.
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium pt-1">
-                      <span className="text-zinc-400"><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
-                      <span className="text-zinc-400"><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
-                      {/* 🔥 MAP PIN HIGHLIGHT HIJAU DIHILANGKAN, JADI TEKS ABU-ABU */}
-                      <span className="flex items-center gap-1 text-zinc-500 font-medium">
-                        <MapPin size={12} /> {item.unit}
+            <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div className="space-y-1.5 min-w-0">
+                  <p className="text-sm text-zinc-700 leading-relaxed break-words">
+                    <span className="font-bold text-zinc-900">{item.requester}</span> 
+                    {item.type === 'Masuk' 
+                      ? ' mendaftarkan barang masuk/restock berupa ' 
+                      : ' melakukan pengambilan barang untuk dikirim ke '}
+                    {item.type !== 'Masuk' && (
+                      <span className="font-bold text-zinc-900 mr-1">
+                        {item.unit}
                       </span>
-                    </div>
-                  </div>
+                    )}
+                    berupa <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
+                  </p>
 
-                  <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
-                    <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
-                      item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
-                    }`}>
-                      <Package size={13} /> {item.type}
-                    </div>
-                    {getStatusBadge(item.managerStatus)}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
+                    <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
+                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
+                    <span className="text-zinc-500 font-medium flex items-center gap-1">
+                      <MapPin size={12} /> {item.unit}
+                    </span>
                   </div>
+                </div>
+
+                <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
+                  <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
+                    item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
+                  }`}>
+                    <Package size={13} /> {item.type}
+                  </div>
+                  {getStatusBadge(item.managerStatus)}
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+        ))
+      )}
+
+      {/* MODAL PILIH PERIODE LAPORAN OPNAME */}
+      {isOpnameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-[460px] rounded-2xl shadow-2xl p-7 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-[#dce9e3] flex items-center justify-center text-[#00634b] shrink-0">
+                <Calendar size={22} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-bold text-slate-900 leading-tight">Pilih Periode Laporan Opname</h3>
+                <p className="text-[13px] text-slate-500 mt-0.5">Rekapitulasi stok masuk & keluar inventaris.</p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Jenis Rekap</label>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setOpnameType('bulanan')}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
+                      opnameType === 'bulanan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
+                    }`}
+                  >
+                    Bulanan
+                  </button>
+                  <button 
+                    onClick={() => setOpnameType('tahunan')}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
+                      opnameType === 'tahunan' ? 'bg-[#00664b] text-white border-[#00664b]' : 'bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50'
+                    }`}
+                  >
+                    Tahunan (Per Tahun)
+                  </button>
+                </div>
+              </div>
+
+              {opnameType === 'bulanan' && (
+                <div>
+                  <label className="block text-[13px] font-semibold text-slate-800 mb-2">Bulan</label>
+                  <select 
+                    value={opnameMonth}
+                    onChange={(e) => setOpnameMonth(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
+                  >
+                    {months.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[13px] font-semibold text-slate-800 mb-2">Tahun</label>
+                <select 
+                  value={opnameYear}
+                  onChange={(e) => setOpnameYear(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-[14px] text-slate-800 outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] transition-colors cursor-pointer"
+                >
+                  {yearRange.map(year => (
+                    <option key={year} value={String(year)}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-5 mt-8">
+              <button 
+                onClick={() => setIsOpnameModalOpen(false)}
+                className="text-slate-500 hover:text-slate-800 text-[14px] font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleExportOpname}
+                className="bg-[#00664b] hover:bg-[#004d3a] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold flex items-center gap-2 shadow-md transition-all active:scale-95"
+              >
+                <Download size={18} /> Unduh Excel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -520,11 +585,11 @@ export default function ActivityLogManager() {
             <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${!hasDownloaded ? 'bg-amber-100' : 'bg-red-100'}`}>
               <AlertTriangle className={`w-8 h-8 ${!hasDownloaded ? 'text-amber-500' : 'text-red-500'}`} />
             </div>
-            
+
             <h3 className="text-xl font-bold text-zinc-900 mb-2">
               {!hasDownloaded ? 'Peringatan Keamanan' : 'Hapus Permanen Riwayat?'}
             </h3>
-            
+
             <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {!hasDownloaded ? (
                 <>Anda <b>wajib mengunduh (Export Laporan)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
@@ -532,7 +597,7 @@ export default function ActivityLogManager() {
                 <>Apakah Anda yakin ingin menghapus <b>{filteredHistory.length} riwayat</b> dari database untuk periode {periodType === 'Semua' ? 'Semua Waktu' : periodType === 'Bulan' ? `Bulan ${selectedMonth}-${selectedYear}` : `Tahun ${selectedYear}`}?</>
               )}
             </p>
-            
+
             <div className="flex justify-center gap-3">
               {!hasDownloaded ? (
                 <button 
