@@ -3,8 +3,7 @@ import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, A
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
-// 🔥 IMPORT HELPER EXPORT EXCELJS (Sesuaikan path jika posisi foldermu berbeda)
-import { generateLaporanActivityLog } from '../../Laporan/ExportLaporan';
+import { generateLaporanActivityLog } from '@/Laporan/ExportLaporan';
 
 export default function LogAktifitasAdmin() {
   const [history, setHistory] = useState([]);

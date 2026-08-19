@@ -5,8 +5,7 @@ import EditItem from './EditItem';
 import toast from 'react-hot-toast'; 
 import { API_URL } from '@/api';
 
-// 🔥 IMPORT HELPER EXPORT LAPORAN OPNAME (ExcelJS)
-import { exportLaporanOpnameStyled } from '../../Laporan/LaporanOpname'; 
+import { exportLaporanOpnameStyled } from '@/Laporan/LaporanOpname';
 
 export default function StokBarang({ role = 'admin' }) {
   const isAdmin = role === 'admin' || role === 'ADMIN';
