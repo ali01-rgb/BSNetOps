@@ -72,7 +72,6 @@ export default function Bantuan() {
 
       <div className="space-y-12">
         
-        {/* Kontak IT Support */}
         <section>
           <h2 className="text-lg font-bold text-slate-900 pb-2 mb-4 border-b-2 border-[#00664b]/15">
             Kontak Darurat (IT Support)
@@ -86,9 +85,7 @@ export default function Bantuan() {
                 <Mail size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-slate-800 text-sm group-hover:text-[#00664b] transition-colors">
-                  Email Support
-                </h3>
+                <h3 className="font-bold text-slate-800 text-sm group-hover:text-[#00664b] transition-colors">Email Support</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">inventory.bsn@gmail.com</p>
               </div>
             </a>
@@ -103,16 +100,13 @@ export default function Bantuan() {
                 <MessageCircle size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-slate-800 text-sm group-hover:text-[#00664b] transition-colors">
-                  WhatsApp Support
-                </h3>
+                <h3 className="font-bold text-slate-800 text-sm group-hover:text-[#00664b] transition-colors">WhatsApp Support</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">+62 851-5777-8659</p>
               </div>
             </a>
           </div>
         </section>
 
-        {/* FAQ Section */}
         <section>
           <div className="flex items-center justify-between flex-wrap gap-3 pb-2 mb-6 border-b-2 border-[#00664b]/15">
             <h2 className="text-lg font-bold text-slate-900">
@@ -120,7 +114,8 @@ export default function Bantuan() {
             </h2>
           </div>
 
-          <div className="divide-y divide-slate-200/60 bg-white rounded-2xl border border-slate-200/80 px-2 shadow-sm">
+          {/* 🔥 REVISI: Menggunakan gap-y-3 antar card, menghapus divide-y */}
+          <div className="flex flex-col gap-y-3"> 
             {filteredFaqs.length === 0 && (
               <p className="text-sm font-medium text-slate-400 py-8 text-center">
                 Pertanyaan tidak ditemukan. Coba gunakan kata kunci lain.
@@ -130,13 +125,13 @@ export default function Bantuan() {
             {filteredFaqs.map((faq) => {
               const isOpen = openFaq === faq.id;
               return (
-                <div key={faq.id} className="py-2">
+                /* 🔥 CARD TERPISAH DENGAN BORDER & SHADOW */
+                <div key={faq.id} className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
                   <button
                     onClick={() => toggleFaq(faq.id)}
-                    className="w-full flex justify-between items-center text-left gap-4 p-4 group rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="w-full flex justify-between items-center text-left gap-4 p-5 group hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-3">
-                      {/* Bulatan hijau #00664b seragam */}
                       <span className="w-2 h-2 rounded-full shrink-0 shadow-sm bg-[#00664b]" />
                       <span className="font-bold text-slate-700 text-sm group-hover:text-[#00664b] transition-colors">
                         {faq.q}
@@ -154,8 +149,8 @@ export default function Bantuan() {
                   </button>
 
                   <div
-                    className={`grid transition-all duration-300 ease-in-out px-4 ${
-                      isOpen ? 'grid-rows-[1fr] opacity-100 pb-4' : 'grid-rows-[0fr] opacity-0'
+                    className={`grid transition-all duration-300 ease-in-out px-5 ${
+                      isOpen ? 'grid-rows-[1fr] opacity-100 pb-5' : 'grid-rows-[0fr] opacity-0'
                     }`}
                   >
                     <div className="overflow-hidden">
