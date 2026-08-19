@@ -11,14 +11,29 @@ export default function ActivityLogManager() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State Filters Utama (Dipakai untuk Riwayat, Log Activity, dan Laporan Opname)
+  // Inisialisasi Tanggal & Tahun Dinamis
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+
+  // Definisi Array Bulan & Tahun (Mencegah Blank Putih)
+  const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const months = [
+    { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' }, { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' }, { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
+  ];
+
+  // State Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
   
   const [periodType, setPeriodType] = useState('Semua');
-  const [selectedMonth, setSelectedMonth] = useState('08'); 
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth); 
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
   // Tracking Download & Modal Hapus
   const [hasDownloaded, setHasDownloaded] = useState(false);
@@ -146,7 +161,7 @@ export default function ActivityLogManager() {
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  // 1. EXPORT LAPORAN ACTIVITY LOG (Langsung gunakan filter luar)
+  // 1. EXPORT LAPORAN ACTIVITY LOG
   const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
@@ -182,7 +197,7 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 2. EXPORT LAPORAN OPNAME (Langsung unduh pakai filter luar tanpa pop-up)
+  // 2. EXPORT LAPORAN OPNAME
   const handleExportOpname = async () => {
     const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
     try {
@@ -196,7 +211,6 @@ export default function ActivityLogManager() {
         let assetsData = resJson.data || resJson || [];
         if (!Array.isArray(assetsData)) assetsData = [];
 
-        // Filter data sesuai filter halaman luar
         let filteredAssets = assetsData.filter(item => !item.deleted_at);
 
         filteredAssets = filteredAssets.filter(item => {
@@ -331,7 +345,7 @@ export default function ActivityLogManager() {
           >
             <Trash2 size={20} />
           </button>
-          {/* Tombol Laporan Opname (Langsung Unduh) */}
+          {/* Tombol Laporan Opname */}
           <button 
             onClick={handleExportOpname}
             className="flex items-center justify-center gap-2 bg-white text-zinc-700 border border-zinc-200 hover:bg-emerald-50 hover:text-[#00664b] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer"
@@ -400,6 +414,7 @@ export default function ActivityLogManager() {
             <option value="Tahun">Berdasarkan Tahun</option>
           </select>
 
+          {/* DROPDOWN BULAN */}
           {periodType === 'Bulan' && (
             <select 
               value={selectedMonth}
@@ -412,20 +427,22 @@ export default function ActivityLogManager() {
             </select>
           )}
 
+          {/* DROPDOWN TAHUN */}
           {(periodType === 'Bulan' || periodType === 'Tahun') && (
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
+              {yearRange.map(y => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
             </select>
           )}
         </div>
       </div>
 
-      {/* LIST RIWAYAT */}
+      {/* LIST DATA */}
       {loading ? (
         <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
           Memuat data log dari database...
