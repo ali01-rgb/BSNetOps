@@ -3,8 +3,10 @@ import { Plus, Edit3, Trash2, Search, RefreshCw, ArrowLeft, XCircle, AlertTriang
 import TambahItem from './TambahItem';
 import EditItem from './EditItem';
 import toast from 'react-hot-toast'; 
-import * as XLSX from 'xlsx';
 import { API_URL } from '@/api';
+
+// 🔥 IMPORT HELPER EXPORT LAPORAN OPNAME (ExcelJS)
+import { exportLaporanOpnameStyled } from '../../Laporan/LaporanOpname'; 
 
 export default function StokBarang({ role = 'admin' }) {
   const isAdmin = role === 'admin' || role === 'ADMIN';
@@ -111,7 +113,6 @@ export default function StokBarang({ role = 'admin' }) {
           setItems(items.filter(item => item.id !== id));
           toast.success("Barang dihapus permanen.");
         } else {
-          // 🔥 JIKA GAGAL (KARENA ADA RIWAYAT TRANSAKSI / FOREIGN KEY), TAMPILKAN ERROR INI
           toast.error("Gagal! Barang ini sudah pernah diajukan/memiliki riwayat. Tidak dapat dihapus permanen demi audit data.");
         }
       }
@@ -145,7 +146,7 @@ export default function StokBarang({ role = 'admin' }) {
     }
   };
 
-  const handleExportOpname = () => {
+  const handleExportOpname = async () => {
     const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
     
     let dataToFilter = items.filter(item => !item.deleted_at);
@@ -171,29 +172,27 @@ export default function StokBarang({ role = 'admin' }) {
     }
 
     const dataToExport = dataToFilter.map(item => ({
-      "Kode Barang": item.kode_barang || '-',
-      "Nama Barang": item.nama_barang || item.nama_aset || item.name || '-',
-      "Kategori": item.category?.name || '-',
-      "Sisa Stok (Unit)": item.stok ?? item.stock ?? 0,
-      "Lokasi": item.location || '-',
-      "Tanggal Masuk": formatDate(item.createdAt || item.date)
+      kodeBarang: item.kode_barang || '-',
+      namaBarang: item.nama_barang || item.nama_aset || item.name || '-',
+      kategori: item.category?.name || '-',
+      stokAwal: item.stok ?? item.stock ?? 0,
+      barangMasuk: 0,
+      barangKeluar: 0,
+      stokAkhir: item.stok ?? item.stock ?? 0
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const columnWidths = [
-      { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 18 }
-    ];
-    worksheet['!cols'] = columnWidths;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Opname");
-    
     const fileName = `Laporan_Opname_Stok_${opnameType === 'bulanan' ? opnameMonth + '-' : ''}${opnameYear}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-
-    toast.dismiss(loadingToast);
-    toast.success("Laporan Opname berhasil diunduh.");
-    setIsOpnameModalOpen(false);
+    
+    try {
+      await exportLaporanOpnameStyled(dataToExport, fileName);
+      toast.dismiss(loadingToast);
+      toast.success("Laporan Opname berhasil diunduh.");
+      setIsOpnameModalOpen(false);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Gagal mengunduh laporan opname.");
+      console.error(error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -231,14 +230,22 @@ export default function StokBarang({ role = 'admin' }) {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* 🔥 HOVER "Sampah" DENGAN ATRIBUT TITLE */}
           {!showTrash && (
-            <button onClick={() => setShowTrash(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md">
+            <button 
+              title="Sampah" 
+              onClick={() => setShowTrash(true)} 
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md"
+            >
               <Trash2 size={16} /> 
             </button>
           )}
 
           {!showTrash && (
-            <button onClick={() => setIsOpnameModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-emerald-50 hover:text-[#00664b] transition-all cursor-pointer shadow-md">
+            <button 
+              onClick={() => setIsOpnameModalOpen(true)} 
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-emerald-50 hover:text-[#00664b] transition-all cursor-pointer shadow-md"
+            >
               <Download size={16} /> Laporan Opname
             </button>
           )}
@@ -256,7 +263,7 @@ export default function StokBarang({ role = 'admin' }) {
           <Search size={18} className="absolute left-3 text-zinc-400" />
           <input 
             type="text" 
-            value={searchQuery}
+            value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari berdasarkan kode atau nama barang..." 
             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
@@ -266,11 +273,9 @@ export default function StokBarang({ role = 'admin' }) {
 
       <div className="bg-white border border-zinc-200 rounded-xl shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          {/* 🔥 TABLE-FIXED: Mengunci tabel agar lebar kolom tidak bergeser */}
           <table className="w-full text-sm text-left table-fixed">
             <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
               <tr>
-                {/* 🔥 PEMBAGIAN PERSENTASE KOLOM YANG PAS (Total 100%) */}
                 <th className="p-4 w-[15%]">Kode Barang</th>
                 <th className="p-4 w-[28%]">Nama Barang</th>
                 <th className="p-4 w-[15%]">Kategori</th>
@@ -298,7 +303,6 @@ export default function StokBarang({ role = 'admin' }) {
                       {item.kode_barang || '-'}
                     </td>
                     
-                    {/* 🔥 TRUNCATE BISA BEKERJA KARENA TABLE SUDAH FIXED */}
                     <td className="p-4 font-semibold text-zinc-900 truncate block max-w-full" title={item.nama_barang || item.nama_aset || item.name}>
                       <span className="block truncate max-w-full">{item.nama_barang || item.nama_aset || item.name}</span>
                     </td>
@@ -436,7 +440,7 @@ export default function StokBarang({ role = 'admin' }) {
               {deleteModal.type === 'soft' ? 'Pindahkan ke Trash?' : 'Hapus Permanen Barang?'}
             </h3>
             
-                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
+            <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {deleteModal.type === 'soft' ? (
                 <>
                   Apakah Anda yakin ingin memindahkan item 
@@ -478,12 +482,12 @@ export default function StokBarang({ role = 'admin' }) {
 
       {isAddOpen && (
         <TambahItem 
-         onClose={() => setIsAddOpen(false)} 
-         onSuccess={() => {
-         setIsAddOpen(false);
-         fetchItems();
-        }} 
-         existingItemsCount={items.length} 
+          onClose={() => setIsAddOpen(false)} 
+          onSuccess={() => {
+            setIsAddOpen(false);
+            fetchItems();
+          }} 
+          existingItemsCount={items.length} 
         />
       )}
 
@@ -491,7 +495,10 @@ export default function StokBarang({ role = 'admin' }) {
         <EditItem 
           itemData={selectedItem} 
           onClose={() => setIsEditOpen(false)} 
-          onSuccess={() => { setIsEditOpen(false); fetchItems(); }} 
+          onSuccess={() => { 
+            setIsEditOpen(false); 
+            fetchItems(); 
+          }} 
         />
       )}
     </div>

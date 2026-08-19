@@ -362,9 +362,9 @@ export default function PenyetujuanBarang() {
                     <span className="font-medium text-zinc-500">Nama Lengkap</span><span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
                     <span className="font-medium text-zinc-500">Unit / Cabang</span><span>: {selectedRequest.unit}</span>
                     
-                    {/* 🔥 1. STATUS AKSI: TANPA HIGHLIGHT, WARNA #013F27 */}
+                    {/* STATUS AKSI: TANPA HIGHLIGHT, WARNA #013F27, TITLE CASE */}
                     <span className="font-medium text-zinc-500">Status Aksi</span>
-                    <span>: <span className="ml-1 uppercase font-bold text-[#013F27]">{getStatusInfo(selectedRequest.status).label}</span></span>
+                    <span>: <span className="ml-1 font-bold text-[#013F27]">{getStatusInfo(selectedRequest.status).label}</span></span>
                     
                     <span className="font-medium text-zinc-500">Keterangan</span><span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
                   </div>
@@ -376,7 +376,6 @@ export default function PenyetujuanBarang() {
                     alt="QR Pemohon" 
                     className="w-16 h-16 mix-blend-multiply opacity-90"
                   />
-                  {/* 🔥 2. NAMA PEMOHON DINAMIS DI BAWAH QR */}
                   <span className="text-[10px] text-zinc-700 font-mono mt-1 font-bold truncate max-w-full" title={selectedRequest.pemohon}>
                     {selectedRequest.pemohon}
                   </span>
@@ -459,7 +458,6 @@ export default function PenyetujuanBarang() {
               </div>
             </div>
 
-            {/* 🔥 3. TOMBOL SEJAJAR DI KIRI: flex justify-start gap-3 */}
             <div className="px-6 py-4 border-t border-zinc-200 bg-white flex justify-start items-center rounded-b-2xl gap-3">
               <button 
                 onClick={() => setShowBonPreview(true)}
