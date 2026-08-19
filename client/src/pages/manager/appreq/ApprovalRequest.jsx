@@ -349,13 +349,13 @@ export default function ApprovalRequest() {
           </div>
         </div>
 
-        {/* Tabel Request Utama */}
+        {/* Tabel Request Utama dengan Proporsi Layout Rapi */}
         <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-zinc-100 text-[11px] font-bold text-white uppercase bg-[#58a27d]">
-                  <th className="py-3 px-4 w-12 text-center">
+                  <th className="py-3.5 px-4 w-[4%] text-center">
                     {selectableInPage.length > 0 && (
                       <input 
                         type="checkbox"
@@ -365,12 +365,12 @@ export default function ApprovalRequest() {
                       />
                     )}
                   </th>
-                  <th className="py-3 px-2 w-[18%]">ID Permintaan</th>
-                  <th className="py-3 px-4 w-[20%]">Pemohon</th>
-                  <th className="py-3 px-4 w-[26%]">Daftar Barang</th>
-                  <th className="py-3 px-4 w-[14%] text-center">Prioritas Utama</th>
-                  <th className="py-3 px-4 w-[12%]">Tanggal</th>
-                  <th className="py-3 px-4 w-[10%] text-center">Status</th>
+                  <th className="py-3.5 px-3 w-[15%]">ID Permintaan</th>
+                  <th className="py-3.5 px-4 w-[18%]">Pemohon</th>
+                  <th className="py-3.5 px-4 w-[23%]">Daftar Barang</th>
+                  <th className="py-3.5 px-3 w-[12%] text-center">Prioritas</th>
+                  <th className="py-3.5 px-4 w-[12%]">Tanggal</th>
+                  <th className="py-3.5 px-4 w-[16%] text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-xs font-medium">
@@ -398,7 +398,9 @@ export default function ApprovalRequest() {
                           />
                         )}
                       </td>
-                      <td className="py-4 px-2 font-mono font-bold text-zinc-900 truncate" title={item.id}>{item.id}</td>
+                      <td className="py-4 px-3 font-mono font-bold text-zinc-900 truncate" title={item.id}>
+                        {item.id}
+                      </td>
                       <td className="py-4 px-4 min-w-0">
                         <div className="flex flex-col">
                           <span className="font-bold text-zinc-800 truncate" title={item.namaPemohon}>{item.namaPemohon}</span>
@@ -411,8 +413,8 @@ export default function ApprovalRequest() {
                         </span>
                         <span className="text-[10px] text-zinc-400 font-medium">Total: {item.items.length} jenis barang</span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black border ${
+                      <td className="py-4 px-3 text-center">
+                        <span className={`inline-flex items-center justify-center min-w-[65px] px-2.5 py-0.5 rounded-md text-[10px] font-black border ${
                           item.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600 border-red-200' : 
                           item.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 
                           'bg-gray-100 text-gray-600 border-gray-200'
@@ -426,10 +428,11 @@ export default function ApprovalRequest() {
                           <span className="text-[10px] text-zinc-400">{item.jam}</span>
                         </div>
                       </td>
+                      {/* 🔥 STATUS CELL: TIDAK AKAN PERNAH BERTUMPUK DUA BARIS */}
                       <td className="py-4 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize ${
-                          item.status.toLowerCase() === 'menunggu manager' ? 'bg-amber-100/70 text-amber-600 border-amber-200/50' :
-                          item.status.toLowerCase() === 'selesai' || item.status.toLowerCase() === 'disetujui' ? 'bg-emerald-100/70 text-emerald-600 border-emerald-200/50' : 'bg-red-100/70 text-red-600 border-red-200/50'
+                        <span className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1 rounded-md text-[11px] font-bold border capitalize shadow-xs ${
+                          item.status.toLowerCase() === 'menunggu manager' ? 'bg-amber-100/80 text-amber-700 border-amber-300' :
+                          item.status.toLowerCase() === 'selesai' || item.status.toLowerCase() === 'disetujui' ? 'bg-emerald-100/80 text-emerald-700 border-emerald-300' : 'bg-red-100/80 text-red-600 border-red-300'
                         }`}>
                           {item.status}
                         </span>
@@ -473,7 +476,7 @@ export default function ApprovalRequest() {
         </div>
       </div>
 
-      {/* 🔥 MODAL DETAIL BERKAS (DIPERBAIKI DENGAN TABLE-FIXED & BREAK-ALL) */}
+      {/* MODAL DETAIL BERKAS */}
       {isModalOpen && activeDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]">
@@ -519,7 +522,6 @@ export default function ApprovalRequest() {
                   <CheckSquare size={16} className="text-[#00664b]" /> Daftar Barang (Penyesuaian Admin)
                 </h4>
                 
-                {/* 🔥 TABEL DAFTAR BARANG YANG SUDAH AMAN DARI TEKS PANJANG */}
                 <div className="border border-zinc-200 rounded-lg overflow-hidden">
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead className="bg-zinc-100 text-[10px] uppercase text-zinc-500 border-b border-zinc-200 font-semibold">
@@ -537,7 +539,6 @@ export default function ApprovalRequest() {
                         <tr key={index} className="hover:bg-zinc-50">
                           <td className="p-3 text-center text-zinc-400 font-mono">{index + 1}</td>
                           <td className="p-3 font-bold text-zinc-700 min-w-0">
-                            {/* break-all memastikan teks panjang tanpa spasi otomatis terpotong ke bawah */}
                             <span className="block break-all leading-relaxed" title={item.namaBarang}>
                               {item.namaBarang}
                             </span>

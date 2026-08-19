@@ -1,7 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, CartesianGrid, LabelList } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 import { ClipboardList, AlertTriangle, CheckSquare, ShieldAlert, Building2, Package } from 'lucide-react';
 import { API_URL } from '@/api';
+
+// 🔥 KOMPONEN CUSTOM TOOLTIP POP-UP SAAT HOVER
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-4 rounded-2xl shadow-2xl border border-zinc-100 min-w-[220px] space-y-3 pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+        {/* Header Unit / Cabang */}
+        <div className="flex items-center gap-2.5 pb-2.5 border-b border-zinc-100">
+          <div className="w-8 h-8 rounded-xl bg-[#004d38] flex items-center justify-center text-white shrink-0 shadow-sm">
+            <Building2 size={16} />
+          </div>
+          <span className="font-bold text-zinc-900 text-sm tracking-tight">{label}</span>
+        </div>
+
+        {/* Data List */}
+        <div className="space-y-2 text-xs">
+          {/* Barang Diminta */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] shrink-0" />
+              <span className="text-zinc-700 font-semibold">Barang Diminta</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-600 font-bold rounded-lg border border-blue-100/80">
+              <span>{data.Diminta ?? 0}</span>
+              <ClipboardList size={12} />
+            </div>
+          </div>
+
+          {/* Telah Didistribusi (Barang Keluar) */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#58a27d] shrink-0" />
+              <span className="text-zinc-700 font-semibold">Telah Didistribusi</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-[#58a27d] font-bold rounded-lg border border-emerald-100/80">
+              <span>{data.Keluar ?? 0}</span>
+              <Package size={12} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const CustomLegend = (props) => {
   const { payload } = props;
@@ -98,7 +144,7 @@ export default function ManagerDashboard() {
       );
       const totalBarangKeluar = approvedRequests.reduce((acc, curr) => acc + (parseInt(curr.jumlah) || 0), 0);
 
-      // 🔥 C. Restock Segera: Stok kritis diubah menjadi < 10
+      // C. Restock Segera: Stok kritis < 10
       const restockCount = rawAssets.filter(a => (parseInt(a.stok) || parseInt(a.stock) || 0) < 10).length;
 
       setStats({
@@ -160,7 +206,6 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Antrean Approval</h3>
-              {/* 🔥 Menggunakan font-bold (angka) dan font-medium (teks) */}
               <div className="flex items-baseline gap-1.5 mt-2">
                 <span className="text-4xl font-bold text-zinc-900 tracking-tight leading-none">{stats.antreanApproval}</span>
                 <span className="text-sm font-medium text-zinc-600">Tiket</span>
@@ -214,6 +259,12 @@ export default function ManagerDashboard() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
               <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} dy={5} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} />
+
+              {/* 🔥 CUSTOM TOOLTIP MENGIKUTI PERGERAKAN KURSOR */}
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ fill: 'rgba(0, 0, 0, 0.03)', radius: 8 }} 
+              />
 
               <Legend verticalAlign="top" content={<CustomLegend />} />
               

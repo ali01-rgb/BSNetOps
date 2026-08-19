@@ -425,7 +425,7 @@ export default function LogAktifitasAdmin() {
 
             <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {!hasDownloaded ? (
-                <>Anda <b>wajib mengunduh (Export Laporan)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
+                <>Anda <b>wajib mengunduh (Export Laporan & Laporan Opname)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
               ) : (
                 <>Apakah Anda yakin ingin menghapus <b>{filteredHistory.length} riwayat</b> dari database untuk periode {periodType === 'Semua' ? 'Semua Waktu' : periodType === 'Bulan' ? `Bulan ${selectedMonth}-${selectedYear}` : `Tahun ${selectedYear}`}?</>
               )}

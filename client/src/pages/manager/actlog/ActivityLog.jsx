@@ -15,7 +15,7 @@ export default function ActivityLogManager() {
   const currentYear = new Date().getFullYear();
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
 
-  // Definisi Array Bulan & Tahun (Mencegah Blank Putih)
+  // Definisi Array Bulan & Tahun
   const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
   const months = [
     { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
@@ -161,7 +161,7 @@ export default function ActivityLogManager() {
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  // 1. EXPORT LAPORAN ACTIVITY LOG
+  // 🔥 1. EXPORT LAPORAN ACTIVITY LOG
   const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
@@ -197,82 +197,116 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 2. EXPORT LAPORAN OPNAME
+  // 🔥 2. EXPORT LAPORAN OPNAME (REAL-TIME HITUNG MUTASI BARANG KELUAR)
   const handleExportOpname = async () => {
-    const loadingToast = toast.loading("Menyiapkan Laporan Opname...");
+    const loadingToast = toast.loading("Menghitung data mutasi stok & menyiapkan Laporan Opname...");
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`${API_URL}/inventory/assets`, {
-        headers: { "Authorization": `Bearer ${token}` }
+      
+      // Ambil data aset & data request secara bersamaan
+      const [assetsRes, reqRes] = await Promise.all([
+        fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`${API_URL}/inventory/manager/requests`, { headers: { "Authorization": `Bearer ${token}` } })
+          .then(res => res.ok ? res : fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } }))
+      ]);
+
+      if (!assetsRes.ok) throw new Error("Gagal mengambil data aset/stok");
+
+      const assetsJson = await assetsRes.json();
+      const rawAssets = assetsJson.data || assetsJson || [];
+
+      let rawRequests = [];
+      if (reqRes.ok) {
+        const reqJson = await reqRes.json();
+        rawRequests = reqJson.data || reqJson || [];
+      }
+
+      // Filter request yang sudah disetujui pada periode yang dipilih
+      const approvedRequestsInPeriod = rawRequests.filter(req => {
+        const stat = (req.status || '').toUpperCase();
+        const isApproved = ['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(stat);
+        if (!isApproved) return false;
+
+        if (periodType === 'Semua') return true;
+
+        const reqDate = new Date(req.createdAt || req.tanggal_dibutuhkan || Date.now());
+        if (isNaN(reqDate.getTime())) return true;
+
+        const reqMonth = String(reqDate.getMonth() + 1).padStart(2, '0');
+        const reqYear = String(reqDate.getFullYear());
+
+        if (periodType === 'Bulan') {
+          return reqMonth === selectedMonth && reqYear === selectedYear;
+        } else if (periodType === 'Tahun') {
+          return reqYear === selectedYear;
+        }
+        return true;
       });
 
-      if (res.ok) {
-        const resJson = await res.json();
-        let assetsData = resJson.data || resJson || [];
-        if (!Array.isArray(assetsData)) assetsData = [];
+      // Akumulasi total barang keluar berdasarkan nama barang
+      const barangKeluarMap = {};
+      approvedRequestsInPeriod.forEach(req => {
+        const nama = (req.nama_aset || req.nama_barang || '').trim().toLowerCase();
+        const qty = Number(req.jumlah_disetujui ?? req.jumlah ?? 0) || 0;
+        barangKeluarMap[nama] = (barangKeluarMap[nama] || 0) + qty;
+      });
 
-        let filteredAssets = assetsData.filter(item => !item.deleted_at);
+      // Filter master aset berdasarkan query pencarian
+      let filteredAssets = rawAssets.filter(item => !item.deleted_at).filter(item => {
+        const name = item.nama_barang || item.nama_aset || item.name || '';
+        const kode = item.kode_barang || item.id || '';
+        return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
+      });
 
-        filteredAssets = filteredAssets.filter(item => {
-          if (periodType === 'Semua') return true;
-
-          const itemDate = new Date(item.createdAt || item.date || Date.now());
-          if (isNaN(itemDate.getTime())) return true;
-          
-          const itemMonth = String(itemDate.getMonth() + 1).padStart(2, '0');
-          const itemYear = String(itemDate.getFullYear());
-
-          if (periodType === 'Bulan') {
-            return itemMonth === selectedMonth && itemYear === selectedYear;
-          } else if (periodType === 'Tahun') {
-            return itemYear === selectedYear;
-          }
-          return true;
-        }).filter(item => {
-          const name = item.nama_barang || item.nama_aset || item.name || '';
-          const kode = item.kode_barang || item.id || '';
-          return name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                 kode.toString().toLowerCase().includes(searchQuery.toLowerCase());
-        });
-
-        if (filteredAssets.length === 0) {
-          toast.dismiss(loadingToast);
-          toast.error("Tidak ada data stok pada periode filter yang dipilih.");
-          return;
-        }
-
-        const dataToExport = filteredAssets.map(item => ({
-          kodeBarang: item.kode_barang || '-',
-          namaBarang: item.nama_barang || item.nama_aset || item.name || '-',
-          kategori: item.category?.name || '-',
-          stokAwal: item.stok ?? item.stock ?? 0,
-          barangMasuk: 0,
-          barangKeluar: 0,
-          stokAkhir: item.stok ?? item.stock ?? 0
-        }));
-
-        let namaPeriode = 'Semua_Waktu';
-        if (periodType === 'Bulan') {
-          namaPeriode = `Bulan_${selectedMonth}_${selectedYear}`;
-        } else if (periodType === 'Tahun') {
-          namaPeriode = `Tahun_${selectedYear}`;
-        }
-
-        const fileName = `Laporan_Opname_Stok_${namaPeriode}.xlsx`;
-        
-        await exportLaporanOpnameStyled(dataToExport, fileName);
+      if (filteredAssets.length === 0) {
         toast.dismiss(loadingToast);
-        toast.success("Laporan Opname berhasil diunduh.");
-      } else {
-        throw new Error("Gagal mengambil data dari server");
+        toast.error("Tidak ada data stok yang sesuai dengan pencarian.");
+        return;
       }
+
+      // Hitung: Stok Awal = Stok Akhir + Barang Keluar - Barang Masuk
+      const dataToExport = filteredAssets.map(item => {
+        const namaBarang = item.nama_barang || item.nama_aset || item.name || '-';
+        const namaKey = namaBarang.trim().toLowerCase();
+
+        const stokAkhirSaatIni = Number(item.stok ?? item.stock ?? 0) || 0;
+        const totalKeluar = barangKeluarMap[namaKey] || 0;
+        const totalMasuk = 0; 
+        const stokAwal = stokAkhirSaatIni + totalKeluar - totalMasuk;
+
+        return {
+          kodeBarang: item.kode_barang || '-',
+          namaBarang: namaBarang,
+          kategori: item.category?.name || item.kategori || '-',
+          stokAwal: stokAwal,
+          barangMasuk: totalMasuk,
+          barangKeluar: totalKeluar,
+          stokAkhir: stokAkhirSaatIni
+        };
+      });
+
+      let namaPeriode = 'Semua_Waktu';
+      if (periodType === 'Bulan') {
+        namaPeriode = `Bulan_${selectedMonth}_${selectedYear}`;
+      } else if (periodType === 'Tahun') {
+        namaPeriode = `Tahun_${selectedYear}`;
+      }
+
+      const fileName = `Laporan_Opname_Stok_${namaPeriode}.xlsx`;
+      
+      await exportLaporanOpnameStyled(dataToExport, fileName);
+      toast.dismiss(loadingToast);
+      toast.success("Laporan Opname berhasil diunduh.");
+
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Gagal mengunduh Laporan Opname.");
+      toast.error("Gagal mengunduh Laporan Opname: " + error.message);
       console.error(error);
     }
   };
 
+  // 🔥 3. HAPUS RIWAYAT (HANYA MENGHAPUS LOG TRANSAKSI REQUEST)
   const handleDeleteHistory = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk dihapus!");
@@ -283,7 +317,16 @@ export default function ActivityLogManager() {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const idsToDelete = filteredHistory.map(item => item.originalId);
+      // Hanya menghapus ID request (barang keluar), master aset aman
+      const idsToDelete = filteredHistory
+        .filter(item => item.type === 'Keluar')
+        .map(item => item.originalId);
+
+      if (idsToDelete.length === 0) {
+        toast.dismiss(loadingToast);
+        toast.error("Tidak ada riwayat transaksi pengeluaran yang dapat dihapus.");
+        return;
+      }
 
       const res = await fetch(`${API_URL}/inventory/requests/bulk-delete`, {
         method: "DELETE",
@@ -299,7 +342,7 @@ export default function ActivityLogManager() {
       if (res.ok) {
         setHistory(prev => prev.filter(item => !idsToDelete.includes(item.originalId)));
         toast.dismiss(loadingToast);
-        toast.success(`${filteredHistory.length} data riwayat berhasil dihapus permanen dari database!`);
+        toast.success(`${idsToDelete.length} data riwayat berhasil dihapus permanen dari database!`);
         setIsDeleteModalOpen(false);
         setHasDownloaded(false);
       } else {
@@ -337,7 +380,6 @@ export default function ActivityLogManager() {
         </div>
 
         <div className="flex items-center gap-3 self-start md:self-auto">
-          {/* Tombol Hapus Riwayat */}
           <button 
             title="Hapus Riwayat"
             onClick={() => setIsDeleteModalOpen(true)}
@@ -345,14 +387,12 @@ export default function ActivityLogManager() {
           >
             <Trash2 size={20} />
           </button>
-          {/* Tombol Laporan Opname */}
           <button 
             onClick={handleExportOpname}
             className="flex items-center justify-center gap-2 bg-white text-zinc-700 border border-zinc-200 hover:bg-emerald-50 hover:text-[#00664b] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Laporan Opname
           </button>
-          {/* Tombol Export Laporan Activity Log */}
           <button 
             onClick={handleExport}
             className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
@@ -518,7 +558,7 @@ export default function ActivityLogManager() {
 
             <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
               {!hasDownloaded ? (
-                <>Anda <b>wajib mengunduh (Export Laporan)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
+                <>Anda <b>wajib mengunduh (Export Laporan & Laporan Opname)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
               ) : (
                 <>Apakah Anda yakin ingin menghapus <b>{filteredHistory.length} riwayat</b> dari database untuk periode {periodType === 'Semua' ? 'Semua Waktu' : periodType === 'Bulan' ? `Bulan ${selectedMonth}-${selectedYear}` : `Tahun ${selectedYear}`}?</>
               )}
