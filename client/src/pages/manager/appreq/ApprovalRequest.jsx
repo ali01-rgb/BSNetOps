@@ -16,7 +16,7 @@ export default function ApprovalRequest() {
   const [selectedPriority, setSelectedPriority] = useState('Semua Prioritas');
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // 🔥 STATE PAGINATION
+  // STATE PAGINATION
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
@@ -124,7 +124,6 @@ export default function ApprovalRequest() {
     }
   };
 
-  // 🔥 RESET PAGINATION SAAT FILTER BERUBAH
   useEffect(() => {
     setSelectedRows([]);
     setCurrentPage(1);
@@ -142,12 +141,10 @@ export default function ApprovalRequest() {
     return matchTab && matchPriority && matchSearch;
   });
 
-  // 🔥 LOGIKA PAGINATION
   const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Hanya item yang berstatus 'Menunggu Manager' yang dapat dipilih
   const selectableInPage = paginatedRequests.filter(r => r.status?.toLowerCase() === 'menunggu manager');
   const isAllSelected = selectableInPage.length > 0 && selectableInPage.every(r => selectedRows.includes(r.id));
 
@@ -224,7 +221,7 @@ export default function ApprovalRequest() {
       fetchRequestsFromAPI(); 
 
     } catch (error) {
-      toast.dismiss(loadingToast);
+      toast.dismiss(loadingToast); 
       console.error('Gagal memproses:', error.message);
       toast.error('Terjadi kesalahan saat memproses data ke database server.');
     }
@@ -352,14 +349,13 @@ export default function ApprovalRequest() {
           </div>
         </div>
 
-        {/* Tabel Request */}
+        {/* Tabel Request Utama */}
         <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-zinc-100 text-[11px] font-bold text-white uppercase bg-[#58a27d]">
                   <th className="py-3 px-4 w-12 text-center">
-                    {/* Checkbox Header hanya muncul jika ada item 'Menunggu Manager' di halaman ini */}
                     {selectableInPage.length > 0 && (
                       <input 
                         type="checkbox"
@@ -369,12 +365,12 @@ export default function ApprovalRequest() {
                       />
                     )}
                   </th>
-                  <th className="py-3 px-2">ID Permintaan</th>
-                  <th className="py-3 px-4">Pemohon</th>
-                  <th className="py-3 px-4">Daftar Barang</th>
-                  <th className="py-3 px-4 text-center">Prioritas Utama</th>
-                  <th className="py-3 px-4">Tanggal Pengajuan</th>
-                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-2 w-[18%]">ID Permintaan</th>
+                  <th className="py-3 px-4 w-[20%]">Pemohon</th>
+                  <th className="py-3 px-4 w-[26%]">Daftar Barang</th>
+                  <th className="py-3 px-4 w-[14%] text-center">Prioritas Utama</th>
+                  <th className="py-3 px-4 w-[12%]">Tanggal</th>
+                  <th className="py-3 px-4 w-[10%] text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-xs font-medium">
@@ -392,7 +388,6 @@ export default function ApprovalRequest() {
                       className={`hover:bg-zinc-50/80 transition-colors cursor-pointer ${selectedRows.includes(item.id) ? 'bg-emerald-50/40' : ''}`}
                     >
                       <td className="py-4 px-4 text-center">
-                        {/* Checkbox baris hanya muncul jika status masih 'Menunggu Manager' */}
                         {item.status?.toLowerCase() === 'menunggu manager' && (
                           <input 
                             type="checkbox"
@@ -403,15 +398,17 @@ export default function ApprovalRequest() {
                           />
                         )}
                       </td>
-                      <td className="py-4 px-2 font-mono font-bold text-zinc-900">{item.id}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-2 font-mono font-bold text-zinc-900 truncate" title={item.id}>{item.id}</td>
+                      <td className="py-4 px-4 min-w-0">
                         <div className="flex flex-col">
-                          <span className="font-bold text-zinc-800">{item.namaPemohon}</span>
-                          <span className="text-[10px] text-zinc-400 font-medium">{item.unit}</span>
+                          <span className="font-bold text-zinc-800 truncate" title={item.namaPemohon}>{item.namaPemohon}</span>
+                          <span className="text-[10px] text-zinc-400 font-medium truncate">{item.unit}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4 min-w-0">
-                        <span className="font-semibold text-zinc-700 block truncate max-w-[200px]">{item.items.map(i => i.namaBarang).join(', ')}</span>
+                        <span className="font-semibold text-zinc-700 block truncate" title={item.items.map(i => i.namaBarang).join(', ')}>
+                          {item.items.map(i => i.namaBarang).join(', ')}
+                        </span>
                         <span className="text-[10px] text-zinc-400 font-medium">Total: {item.items.length} jenis barang</span>
                       </td>
                       <td className="py-4 px-4 text-center">
@@ -451,7 +448,7 @@ export default function ApprovalRequest() {
             </table>
           </div>
           
-          {/* Controls Pagination (Ditempatkan di Paling Kanan) */}
+          {/* Controls Pagination */}
           {!loading && filteredRequests.length > 0 && (
             <div className="flex items-center justify-end p-4 border-t border-zinc-100 bg-white">
               <div className="flex items-center gap-3">
@@ -476,12 +473,12 @@ export default function ApprovalRequest() {
         </div>
       </div>
 
-      {/* Modal Detail Berkas */}
+      {/* 🔥 MODAL DETAIL BERKAS (DIPERBAIKI DENGAN TABLE-FIXED & BREAK-ALL) */}
       {isModalOpen && activeDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 relative flex flex-col max-h-[90vh]">
             
-            <div className="flex items-center justify-between p-5 border-b border-zinc-100 bg-zinc-50/50">
+            <div className="flex items-center justify-between p-5 border-b border-zinc-100 bg-zinc-50/50 shrink-0">
               <div>
                 <h3 className="text-base font-black text-zinc-900 tracking-tight">Detail Berkas Permintaan</h3>
                 <p className="text-[10px] font-mono font-bold text-[#00664b] mt-0.5 tracking-wider">{activeDetail.id}</p>
@@ -494,7 +491,7 @@ export default function ApprovalRequest() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 text-xs font-medium text-zinc-700 overflow-y-auto">
+            <div className="p-6 space-y-6 text-xs font-medium text-zinc-700 overflow-y-auto flex-1">
               <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 grid grid-cols-2 gap-4">
                 <div>
                   <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Nama Pemohon</span>
@@ -521,16 +518,18 @@ export default function ApprovalRequest() {
                 <h4 className="font-bold text-zinc-900 mb-3 flex items-center gap-2 text-sm">
                   <CheckSquare size={16} className="text-[#00664b]" /> Daftar Barang (Penyesuaian Admin)
                 </h4>
+                
+                {/* 🔥 TABEL DAFTAR BARANG YANG SUDAH AMAN DARI TEKS PANJANG */}
                 <div className="border border-zinc-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-zinc-100 text-[10px] uppercase text-zinc-500 border-b border-zinc-200">
+                  <table className="w-full text-left border-collapse table-fixed">
+                    <thead className="bg-zinc-100 text-[10px] uppercase text-zinc-500 border-b border-zinc-200 font-semibold">
                       <tr>
-                        <th className="p-3 w-10 text-center">No</th>
-                        <th className="p-3">Nama Barang</th>
-                        <th className="p-3 text-center">Prioritas Item</th>
-                        <th className="p-3 text-center w-20">Diminta</th>
-                        <th className="p-3 text-center w-24">Disetujui Admin</th>
-                        <th className="p-3">Alasan / Remark</th>
+                        <th className="p-3 w-[6%] text-center">No</th>
+                        <th className="p-3 w-[32%]">Nama Barang</th>
+                        <th className="p-3 w-[18%] text-center">Prioritas Item</th>
+                        <th className="p-3 w-[12%] text-center">Diminta</th>
+                        <th className="p-3 w-[16%] text-center">Disetujui Admin</th>
+                        <th className="p-3 w-[16%]">Alasan / Remark</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 bg-white">
@@ -538,10 +537,13 @@ export default function ApprovalRequest() {
                         <tr key={index} className="hover:bg-zinc-50">
                           <td className="p-3 text-center text-zinc-400 font-mono">{index + 1}</td>
                           <td className="p-3 font-bold text-zinc-700 min-w-0">
-                            <span className="block truncate max-w-full" title={item.namaBarang}>{item.namaBarang}</span>
+                            {/* break-all memastikan teks panjang tanpa spasi otomatis terpotong ke bawah */}
+                            <span className="block break-all leading-relaxed" title={item.namaBarang}>
+                              {item.namaBarang}
+                            </span>
                           </td>
                           <td className="p-3 text-center">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
                               item.prioritas === 'Tinggi' ? 'bg-red-50 text-red-600' :
                               item.prioritas === 'Sedang' ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-100 text-gray-600'
                             }`}>
@@ -550,7 +552,11 @@ export default function ApprovalRequest() {
                           </td>
                           <td className="p-3 text-center font-bold text-zinc-500">{item.jumlahDiminta}</td>
                           <td className="p-3 text-center font-bold text-[#00664b]">{item.jumlahDisetujui ?? item.jumlahDiminta} Unit</td>
-                          <td className="p-3 text-zinc-500 italic">{item.remark || '-'}</td>
+                          <td className="p-3 text-zinc-500 italic min-w-0">
+                            <span className="block break-all leading-relaxed">
+                              {item.remark || '-'}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

@@ -27,7 +27,7 @@ export default function RegisterPage() {
   const [verifyStatus, setVerifyStatus] = useState(null);
   const [error, setError] = useState({});
 
-  // 🔥 STATE BARU UNTUK MENYIMPAN TOKEN URL
+  // STATE UNTUK MENYIMPAN TOKEN URL
   const [currentVerifyToken, setCurrentVerifyToken] = useState("");
   const [isResending, setIsResending] = useState(false);
 
@@ -56,7 +56,7 @@ export default function RegisterPage() {
     const token = urlParams.get("verifyToken");
 
     if (token) {
-      setCurrentVerifyToken(token); // Simpan token di state
+      setCurrentVerifyToken(token);
       handleVerifyEmail(token);
     }
   }, [location.search]);
@@ -78,7 +78,6 @@ export default function RegisterPage() {
     }
   };
 
-  // 🔥 LOGIKA 1-KLIK RESEND MEMAKAI TOKEN
   const handleResendVerification = async () => {
     setIsResending(true);
     const loadingToast = toast.loading("Meminta link baru...");
@@ -272,8 +271,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* 🔥 MODAL VERIFIKASI GAGAL 1-KLIK (Tanpa Input Teks) */}
-      {verifyStatus === 'fail' && (
+      {verifyStatus === "fail" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
             <button onClick={() => setVerifyStatus(null)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-800">
@@ -462,11 +460,11 @@ export default function RegisterPage() {
                           setIsDropdownOpen(false);
                           setError({ ...error, unit: "" });
                         }}
-                        className={`w-full flex items-center cursor-pointer transition-colors duration-150 ease-out px-4 py-2 ${
+                        className={`w-full flex items-center cursor-pointer transition-colors duration-150 ease-out px-4 py-2.5 ${
                           isActive
-                            ? "bg-[#1A5CFF] text-white font-semibold text-[12px]"
-                            : `text-slate-800 font-medium text-[11.5px] ${
-                                !isLast ? "border-b border-white" : ""
+                            ? "bg-[#00634b] text-white font-semibold text-[12.5px]"
+                            : `text-slate-800 font-medium text-[12px] ${
+                                !isLast ? "border-b border-white/60" : ""
                               }`
                         }`}
                       >
