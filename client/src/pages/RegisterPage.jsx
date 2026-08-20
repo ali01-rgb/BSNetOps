@@ -27,8 +27,11 @@ export default function RegisterPage() {
   const [verifyStatus, setVerifyStatus] = useState(null);
   const [error, setError] = useState({});
 
-  // STATE UNTUK MENYIMPAN TOKEN URL
+  // STATE UNTUK TOKEN & POPUP VALIDASI KODE
   const [currentVerifyToken, setCurrentVerifyToken] = useState("");
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [registrationCode, setRegistrationCode] = useState("");
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
   const unitList = [
@@ -51,30 +54,61 @@ export default function RegisterPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // DETEKSI TOKEN DARI LINK EMAIL DAN BUKA POPUP INPUT KODE
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const token = urlParams.get("verifyToken");
 
     if (token) {
       setCurrentVerifyToken(token);
-      handleVerifyEmail(token);
+      setShowCodeModal(true);
     }
   }, [location.search]);
 
-  const handleVerifyEmail = async (token) => {
+  // HANDLE VALIDASI KODE REGISTRASI & TOKEN EMAIL
+  const handleVerifyWithCode = async (e) => {
+    e.preventDefault();
+    if (!registrationCode.trim()) {
+      toast.error("Kode validasi registrasi wajib diisi");
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    const loadingToast = toast.loading("Memvalidasi kode...");
+
     try {
-      const res = await fetch(`${API_URL}/auth/verify-email?token=${token}`, {
-        method: "GET",
+      const res = await fetch(`${API_URL}/auth/verify-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: currentVerifyToken,
+          registrationCode: registrationCode.trim().toUpperCase(),
+        }),
       });
+
+      const data = await res.json();
+      toast.dismiss(loadingToast);
+
       if (res.ok) {
+        setShowCodeModal(false);
         setVerifyStatus("success");
+        window.history.replaceState(null, "", "/register");
       } else {
-        setVerifyStatus("fail");
+        if (
+          data.message?.toLowerCase().includes("kedaluwarsa") ||
+          data.message?.toLowerCase().includes("sesi")
+        ) {
+          setShowCodeModal(false);
+          setVerifyStatus("fail");
+        } else {
+          toast.error(data.message || "Kode validasi tidak valid");
+        }
       }
     } catch {
-      setVerifyStatus("fail");
+      toast.dismiss(loadingToast);
+      toast.error("Gagal terhubung ke server");
     } finally {
-      window.history.replaceState(null, "", "/register");
+      setIsVerifyingCode(false);
     }
   };
 
@@ -98,7 +132,7 @@ export default function RegisterPage() {
       } else {
         toast.error(data.message || "Gagal mengirim link verifikasi baru");
       }
-    } catch (err) {
+    } catch {
       toast.dismiss(loadingToast);
       toast.error("Gagal terhubung ke server");
     } finally {
@@ -128,22 +162,6 @@ export default function RegisterPage() {
       form.password !== form.confirmPassword
     ) {
       newError.confirmPassword = "Password tidak sama";
-    }
-
-    if (form.email) {
-      const allowedDomains = [
-        "@btn.co.id",
-        "@bankbsn.co.id",
-        "@bsn.co.id",
-        "@gmail.com",
-      ];
-      if (
-        !allowedDomains.some((domain) =>
-          form.email.toLowerCase().endsWith(domain)
-        )
-      ) {
-        newError.email = "Gunakan email resmi BSN";
-      }
     }
 
     setError(newError);
@@ -196,7 +214,7 @@ export default function RegisterPage() {
             </div>
             <div className="flex-1 flex flex-col justify-center">
               <p className="text-[13px] font-bold text-slate-800 leading-tight">
-                registrasi berhasil! Link verifikasi telah dikirim ke
+                Registrasi berhasil! Link aktivasi telah dikirim ke
               </p>
               <p className="text-[13px] font-bold text-slate-800 leading-tight mt-0.5">
                 {form.email}
@@ -237,6 +255,58 @@ export default function RegisterPage() {
       />
       <div className="absolute inset-0 bg-black/40" />
 
+      {/* POPUP 1: INPUT KODE VALIDASI REGISTRASI */}
+      {showCodeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => {
+                setShowCodeModal(false);
+                window.history.replaceState(null, "", "/register");
+              }}
+              className="absolute right-5 top-5 text-slate-400 hover:text-slate-700 transition"
+            >
+              <FaXmark size={20} />
+            </button>
+
+            <div className="mb-6 text-center">
+              <h2 className="text-[22px] font-bold text-[#00634b] leading-tight">
+                Validasi Akun Anda
+              </h2>
+              <p className="text-[13px] text-[#4a9b7c] mt-1 font-medium">
+                masukkan kode validasi dari admin kantor
+              </p>
+            </div>
+
+            <form onSubmit={handleVerifyWithCode}>
+              <div className="mb-5">
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-800">
+                  Kode Validasi Registrasi
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={registrationCode}
+                  onChange={(e) => setRegistrationCode(e.target.value.toUpperCase())}
+                  placeholder="CONTOH: 7K9X2P"
+                  autoFocus
+                  className="w-full rounded-xl bg-[#dce9e3] px-4 py-3.5 text-[14px] text-center uppercase tracking-widest font-mono font-bold text-[#00634b] outline-none focus:ring-2 focus:ring-[#00634b]/30 placeholder:text-slate-400 placeholder:normal-case placeholder:font-sans placeholder:tracking-normal"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isVerifyingCode}
+                className="w-full flex justify-center items-center cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md shadow-[#00634b]/20 hover:bg-[#004d3a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isVerifyingCode ? "Memvalidasi..." : "Aktivasi Akun Saya"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP 2: SUKSES VERIFIKASI */}
       {verifyStatus === "success" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[400px] rounded-[16px] bg-white px-8 py-10 shadow-2xl text-center">
@@ -256,47 +326,52 @@ export default function RegisterPage() {
               </svg>
             </div>
             <h2 className="text-[20px] font-bold text-[#00634b]">
-              Verifikasi Berhasil
+              Aktivasi Berhasil!
             </h2>
             <p className="mt-2 text-[13px] text-slate-500 font-medium">
-              Email berhasil diverifikasi. Akun sudah aktif
+              Akun Anda telah aktif dan siap digunakan.
             </p>
-            <p
-              className="mt-6 text-[13px] font-bold text-[#00634b] cursor-pointer hover:underline"
+            <button
+              className="mt-6 w-full rounded-xl bg-[#00634b] py-3 text-[13px] font-bold text-white hover:bg-[#004d3a] transition"
               onClick={() => navigate("/login")}
             >
-              Anda akan diarahkan ke halaman login...
-            </p>
+              Masuk ke Aplikasi Sekarang
+            </button>
           </div>
         </div>
       )}
 
+      {/* POPUP 3: GAGAL / TOKEN EXPIRED */}
       {verifyStatus === "fail" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
-            <button onClick={() => setVerifyStatus(null)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-800">
+            <button
+              onClick={() => setVerifyStatus(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-800"
+            >
               <FaXmark size={20} />
             </button>
-            
+
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4">
               <FaXmark className="h-8 w-8 text-red-500" />
             </div>
-            <h2 className="text-[20px] font-bold text-red-500">Verifikasi Gagal</h2>
+            <h2 className="text-[20px] font-bold text-red-500">Sesi Kedaluwarsa</h2>
             <p className="mt-2 text-[13px] text-slate-700 font-medium leading-relaxed px-2">
-              Link verifikasi sudah kedaluwarsa. Email belum diverifikasi.
+              Link aktivasi email sudah kedaluwarsa (lewat 5 menit).
             </p>
 
-            <button 
+            <button
               onClick={handleResendVerification}
               disabled={isResending}
               className="mt-7 w-full flex justify-center items-center rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
             >
-              {isResending ? "Memproses..." : "Kirim Ulang Email Verifikasi"}
+              {isResending ? "Memproses..." : "Kirim Ulang Email Aktivasi"}
             </button>
           </div>
         </div>
       )}
 
+      {/* FORM UTAMA PENDAFTARAN */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="relative w-full max-w-[650px] rounded-[20px] bg-white px-10 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
           <button
@@ -481,7 +556,14 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="md:col-span-2 pt-3">
+            {/* INFO KODE VALIDASI DI BAWAH PILIH UNIT */}
+            <div className="md:col-span-2 -mt-1 text-center">
+              <p className="text-[12px] text-slate-500 font-medium leading-relaxed">
+                Hubungi <span className="font-semibold text-[#00634b]">Admin Kantor</span> untuk mendapatkan kode validasi registrasi akun Anda.
+              </p>
+            </div>
+
+            <div className="md:col-span-2 pt-1">
               <button
                 type="submit"
                 disabled={isLoading}

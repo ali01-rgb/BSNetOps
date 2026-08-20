@@ -22,9 +22,8 @@ export default function LoginPage() {
   const [resetExpired, setResetExpired] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
-  // 🔥 1. BACA DATA "INGAT SAYA" & TOKEN RESET DARI URL SAAT HALAMAN DIBUKA
+  // 🔥 DETEKSI "INGAT SAYA" & VALIDASI EXPIRED TOKEN URL SECARA LANGSUNG
   useEffect(() => {
-    // Cek apakah ada data akun yang tersimpan sebelumnya
     const savedEmail = localStorage.getItem("bsn_remembered_email");
     const savedPassword = localStorage.getItem("bsn_remembered_password");
     const savedRemember = localStorage.getItem("bsn_remember_me") === "true";
@@ -38,15 +37,36 @@ export default function LoginPage() {
       }));
     }
 
-    // Tangani token reset password dari URL
+    // Tangani parameter URL reset password
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     const email = urlParams.get("email");
     
     if (token && email) {
-      setResetToken(token);
       setForgotEmail(email);
-      setForgotEmailStep(3); 
+      setResetToken(token);
+
+      // Cek apakah token JWT kedaluwarsa langsung dari payload token
+      let isTokenExpired = false;
+      try {
+        const payloadBase64 = token.split(".")[1];
+        if (payloadBase64) {
+          const payload = JSON.parse(atob(payloadBase64));
+          if (payload.exp && payload.exp * 1000 < Date.now()) {
+            isTokenExpired = true;
+          }
+        }
+      } catch (e) {
+        isTokenExpired = true;
+      }
+
+      if (isTokenExpired) {
+        setForgotEmailStep(0); // Jangan tampilkan form buat password
+        setResetExpired(true);  // Langsung munculkan popup verifikasi gagal
+      } else {
+        setForgotEmailStep(3); // Tampilkan form jika token masih valid
+      }
+
       window.history.replaceState(null, '', '/login');
     }
   }, []);
@@ -83,7 +103,6 @@ export default function LoginPage() {
       toast.dismiss(loadingToast);
 
       if (res.ok) {
-        // 🔥 2. LOGIKA SIMPAN / HAPUS KREDENSIAL BERDASARKAN STATUS CHECKBOX
         if (form.remember) {
           localStorage.setItem("bsn_remembered_email", form.username);
           localStorage.setItem("bsn_remembered_password", form.password);
@@ -123,14 +142,6 @@ export default function LoginPage() {
 
     if (!forgotEmail) {
       toast.error("Alamat email wajib diisi!");
-      return;
-    }
-
-    const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id", "@gmail.com"];
-    const isDomainValid = allowedDomains.some(domain => forgotEmail.toLowerCase().endsWith(domain));
-
-    if (!isDomainValid) {
-      toast.error("Gunakan email resmi institusi (@btn.co.id, @bankbsn.co.id, @bsn.co.id)");
       return;
     }
 
@@ -271,6 +282,8 @@ export default function LoginPage() {
         ), { position: "top-center", duration: 5000 });
 
       } else {
+        // 🔥 JIKA BACKEND MENOLAK KARENA EXPIRED, TUTUP FORM DAN MUNCULKAN POPUP
+        setForgotEmailStep(0);
         setResetExpired(true);
       }
     } catch (err) {
@@ -289,11 +302,11 @@ export default function LoginPage() {
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/40" /> 
 
-      {/* MODAL LUPA PASSWORD KEDALUWARSA */}
+      {/* POPUP: MODAL RESET PASSWORD KEDALUWARSA */}
       {resetExpired && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-[380px] rounded-[16px] bg-white px-8 py-9 shadow-2xl text-center">
-            <button onClick={() => setResetExpired(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-800">
+          <div className="relative w-full max-w-[380px] rounded-[24px] bg-white px-8 py-9 shadow-2xl text-center animate-in zoom-in-95 duration-200">
+            <button onClick={() => setResetExpired(false)} className="absolute right-5 top-5 text-slate-400 hover:text-slate-800 transition">
               <FaXmark size={20} />
             </button>
             
@@ -308,7 +321,7 @@ export default function LoginPage() {
             <button 
               onClick={handleResendExpiredReset}
               disabled={isResending}
-              className="mt-7 w-full flex justify-center items-center rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50"
+              className="mt-7 w-full flex justify-center items-center rounded-xl bg-[#00634b] py-3.5 text-[14px] font-bold text-white shadow-md hover:bg-[#004d3a] transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isResending ? "Memproses..." : "Kirim Ulang Email Verifikasi"}
             </button>
@@ -316,7 +329,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* ================= STEP 0: LOGIN ================= */}
+      {/* STEP 0: LOGIN */}
       {forgotStep === 0 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
           <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
@@ -338,7 +351,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   value={form.username}
                   onChange={handleChange}
-                  placeholder="contoh@bsn.go.id"
+                  placeholder="contoh@gmail.com"
                   className="w-full rounded-xl bg-[#dce9e3] px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#00634b]/30 font-medium text-slate-900 placeholder:text-slate-500"
                 />
               </div>
@@ -358,7 +371,7 @@ export default function LoginPage() {
                   <button 
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute right-3.5 flex items-center justify-center text-[#00634b] hover:opacity-80 transition-opacity"
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b] hover:opacity-80 transition-opacity cursor-pointer"
                   >
                     {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                   </button>
@@ -366,7 +379,6 @@ export default function LoginPage() {
                 {error.password && <p className="mt-1.5 text-xs text-red-500 font-medium">{error.password}</p>}
               </div>
 
-              {/* 🔥 CHECKBOX INGAT SAYA (TERHUBUNG KE STATE & LOCALSTORAGE) */}
               <div className="flex justify-between items-center pt-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input 
@@ -397,7 +409,7 @@ export default function LoginPage() {
         </section>
       )}
 
-      {/* ================= STEP 1: REQUEST FORGOT PASSWORD ================= */}
+      {/* STEP 1: REQUEST FORGOT PASSWORD */}
       {forgotStep === 1 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
           <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -418,7 +430,7 @@ export default function LoginPage() {
                   required
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="Admin@bsn.go.id"
+                  placeholder="contoh@gmail.com"
                   className="w-full rounded-xl bg-white border border-slate-300 px-4 py-3 text-[13px] outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] font-medium text-slate-900 placeholder:text-slate-400"
                 />
               </div>
@@ -431,10 +443,10 @@ export default function LoginPage() {
         </section>
       )}
 
-      {/* ================= STEP 3: EXECUTE NEW PASSWORD ================= */}
+      {/* STEP 3: FORM PASSWORD BARU */}
       {forgotStep === 3 && (
         <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="relative w-full max-w-[430px] rounded-[20px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-[430px] rounded-[24px] bg-white px-8 py-9 shadow-2xl animate-in zoom-in-95 duration-200">
             <button type="button" onClick={() => setForgotEmailStep(0)} className="absolute right-5 top-5 cursor-pointer text-xl text-slate-500 transition hover:text-slate-800">
               <FaXmark />
             </button>
@@ -459,7 +471,7 @@ export default function LoginPage() {
                   <button 
                     type="button" 
                     onClick={() => setShowNewPassword(!showNewPassword)} 
-                    className="absolute right-3.5 flex items-center justify-center text-[#00634b]"
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b] cursor-pointer"
                   >
                     {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                   </button>
@@ -480,7 +492,7 @@ export default function LoginPage() {
                   <button 
                     type="button" 
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-                    className="absolute right-3.5 flex items-center justify-center text-[#00634b]"
+                    className="absolute right-3.5 flex items-center justify-center text-[#00634b] cursor-pointer"
                   >
                     {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                   </button>
@@ -488,7 +500,7 @@ export default function LoginPage() {
               </div>
 
               <div className="pt-2">
-                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3 text-[14px] font-semibold text-white shadow-md transition-all hover:bg-[#004d3a]">
+                <button type="submit" className="w-full cursor-pointer rounded-xl bg-[#00634b] py-3.5 text-[14px] font-semibold text-white shadow-md transition-all hover:bg-[#004d3a]">
                   Simpan Password Baru
                 </button>
               </div>

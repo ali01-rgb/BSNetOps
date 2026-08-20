@@ -7,31 +7,34 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  employeeId    String         @unique                // Sesuai form: ID Staff
-  email         String         @unique                // Buat reset password & login
-  password      String?                              
-  fullName      String?                               // Tetap ada buat nama asli karyawan
-  divisi        String?                               // Divisi Karyawan
-  phone         String?                               // Nomor Telepon Karyawan
-  avatar        String?
-  role          String         @default("USER")      
-  hasSignedUp   Boolean        @default(false)        
-  isVerified    Boolean        @default(false)        // 🔥 DITAMBAHKAN UNTUK EMAIL VERIFIKASI
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  requests      Request[] 
-  notifications Notification[]
-  is_suspended  Boolean?       @default(false)
-  deleted_at    DateTime?
+  id               String            @id @default(uuid())
+  employeeId       String            @unique                // Sesuai form: ID Staff
+  email            String            @unique                // Buat reset password & login
+  password         String?                                  
+  fullName         String?                                  // Tetap ada buat nama asli karyawan
+  divisi           String?                                  // Divisi Karyawan
+  phone            String?                                  // Nomor Telepon Karyawan
+  avatar           String?
+  role             String            @default("USER")       
+  hasSignedUp      Boolean           @default(false)        
+  isVerified       Boolean           @default(false)        // DITAMBAHKAN UNTUK EMAIL VERIFIKASI
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  requests         Request[] 
+  notifications    Notification[]
+  is_suspended     Boolean?          @default(false)
+  deleted_at       DateTime?
+  
+  // Relasi opsional ke kode registrasi yang digunakan
+  registrationCode RegistrationCode?
 }
 
 model Request {
-  id                 String   @id @default(uuid())
+  id                 String    @id @default(uuid())
   userId             String
-  user               User     @relation(fields: [userId], references: [id])
+  user               User      @relation(fields: [userId], references: [id])
   assetId            String?
-  asset              Asset?   @relation(fields: [assetId], references: [id])
+  asset              Asset?    @relation(fields: [assetId], references: [id])
   nama_aset          String
   jumlah             Int
   jumlah_disetujui   Int?      
@@ -39,11 +42,11 @@ model Request {
   prioritas          String
   tanggal_dibutuhkan DateTime
   alasan             String?
-  status             String   @default("Pending")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  adminName   String?   // Akan terisi saat Admin klik 'Diteruskan'
-  managerName String?   // Akan terisi saat Manager klik 'Disetujui'
+  status             String    @default("Pending")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  adminName          String?   // Akan terisi saat Admin klik 'Diteruskan'
+  managerName        String?   // Akan terisi saat Manager klik 'Disetujui'
 }
 
 // --- TABEL KATEGORI BARANG ---
@@ -76,7 +79,7 @@ model Asset {
 
   kategori_sebelumnya String? 
 
-  // 🔥 PENYELAMAT: Tambahkan baris ini biar relasi Request <-> Asset dua arah!
+  // PENYELAMAT: Tambahkan baris ini biar relasi Request <-> Asset dua arah!
   requests            Request[]
 }
 
@@ -92,4 +95,17 @@ model Notification {
   // Relasi ke tabel User (Siapa yang nerima notif ini)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- TABEL KODE REGISTRASI PEGAWAI ---
+model RegistrationCode {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  isUsed      Boolean   @default(false)
+  usedByEmail String?   // Email yang mengklaim kode ini
+  usedAt      DateTime? // Waktu klaim
+  createdAt   DateTime  @default(now())
+
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

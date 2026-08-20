@@ -1,4 +1,8 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Req, Inject, forwardRef, Query } from '@nestjs/common';
+import { 
+  Controller, Post, Body, Get, Patch, UseGuards, Req, 
+  Inject, forwardRef, Res, HttpStatus 
+} from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard'; 
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
@@ -7,7 +11,7 @@ import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 export class AuthController {
   constructor(
     @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {}
 
   @Post('register')
@@ -15,14 +19,33 @@ export class AuthController {
     return this.authService.register(body);
   }
 
+  // 🔥 VERIFIKASI EMAIL SEKALIGUS VALIDASI KODE SEKALI PAKAI
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { token: string; registrationCode: string }) {
+    return this.authService.verifyEmail(body.token, body.registrationCode);
+  }
+
+  // 🔥 FITUR ADMIN: GENERATE KODE KE DB & DOWNLOAD EXCEL DENGAN HIGHLIGHT HIJAU
+  @Post('generate-registration-codes')
+  async generateRegistrationCodes(
+    @Body('count') count: number,
+    @Res() res: Response,
+  ) {
+    const total = Number(count) || 10;
+    const { buffer, filename } = await this.authService.generateRegistrationCodes(total);
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+
+    res.status(HttpStatus.OK).send(buffer);
+  }
+
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     return this.authService.login(body.email, body.password);
-  }
-
-  @Get('verify-email')
-  async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
   }
 
   @Post('resend-verification')
@@ -30,7 +53,7 @@ export class AuthController {
     return this.authService.resendVerification(body.email);
   }
 
-  // 🔥 RUTE BARU: KIRIM ULANG EMAIL VIA TOKEN KEDALUWARSA (1-KLIK)
+  // 🔥 KIRIM ULANG EMAIL VIA TOKEN KEDALUWARSA (1-KLIK)
   @Post('resend-verification-token')
   async resendVerificationToken(@Body() body: { token: string }) {
     return this.authService.resendVerificationByExpiredToken(body.token);
