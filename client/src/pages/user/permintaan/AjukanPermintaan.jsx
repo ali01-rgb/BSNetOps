@@ -20,7 +20,12 @@ export default function AjukanPermintaan() {
   const [submitResult, setSubmitResult] = useState(null);
   
   const [formData, setFormData] = useState(savedDraft?.formData || {
-    namaLengkap: '', nipPegawai: '', divisi: '', jabatan: '', email: '', noTelepon: '',
+    namaLengkap: '', 
+    nipPegawai: '', 
+    cabang: '', 
+    jabatan: '', 
+    email: '', 
+    unit: '',
     tanggalDibutuhkan: ''
   });
 
@@ -89,10 +94,10 @@ export default function AjukanPermintaan() {
             ...prev,
             namaLengkap: prev.namaLengkap || data.fullName || data.name || data.username || '',
             nipPegawai: data.employeeId || data.id || 'BSN-USR-001',
-            divisi: prev.divisi || data.divisi || data.unit || '',
+            cabang: prev.cabang || data.cabang || data.divisi || '',
             jabatan: data.role || data.jabatan || 'User',
             email: data.email || 'user@bsn.go.id',
-            noTelepon: prev.noTelepon || data.phone || data.noTelepon || ''
+            unit: prev.unit || data.unit || ''
           }));
         }
       } catch (err) {
@@ -218,7 +223,8 @@ export default function AjukanPermintaan() {
         body: JSON.stringify({
           namaLengkap: formData.namaLengkap,
           nipPegawai: formData.nipPegawai,
-          divisi: formData.divisi,
+          cabang: formData.cabang,
+          unit: formData.unit,
           jabatan: formData.jabatan,
           tanggalDibutuhkan: formData.tanggalDibutuhkan,
           items: daftarBarang.map(b => ({
@@ -365,9 +371,9 @@ export default function AjukanPermintaan() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit</label>
-                      <select name="divisi" value={formData.divisi} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
-                        <option value="" disabled hidden>Pilih Unit</option>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cabang</label>
+                      <select name="cabang" value={formData.cabang} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
+                        <option value="" disabled hidden>Pilih Cabang</option>
                         <option value="KC Semarang">KC Semarang</option>
                         <option value="KCP Majapahit">KCP Majapahit</option>
                         <option value="KCP Ngaliyan">KCP Ngaliyan</option>
@@ -395,8 +401,21 @@ export default function AjukanPermintaan() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">No Telephone</label>
-                      <input type="tel" name="noTelepon" value={formData.noTelepon} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] transition-all" required />
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit</label>
+                      <select name="unit" value={formData.unit} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
+                        <option value="" disabled hidden>Pilih Unit</option>
+                        <option value="CWO">CWO</option>
+                        <option value="FA & FD">FA & FD</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Operasional">Operasional</option>
+                        <option value="Teller">Teller</option>
+                        <option value="FS">FS</option>
+                        <option value="CS">CS</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Sekretaris">Sekretaris</option>
+                        <option value="Funding">Funding</option>
+                        <option value="Consumer">Consumer</option>
+                      </select>
                     </div>
                   </div>
                   <div className="text-center text-xs text-gray-500 mt-10">1/3</div>
@@ -430,7 +449,6 @@ export default function AjukanPermintaan() {
                       return (
                         <div key={barang.kodeAset} className="border border-zinc-200 rounded-xl p-5 bg-white shadow-sm">
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-4">
-                            {/* 🔥 NAMA BARANG DIBUAT SEMI-BOLD DENGAN UKURAN PAS */}
                             <div className="min-w-0 flex-1">
                               <h4 className="font-semibold text-base text-zinc-800 capitalize tracking-tight break-all leading-snug">
                                 {barang.namaAset}
@@ -512,7 +530,8 @@ export default function AjukanPermintaan() {
                 <h2 className="text-[19px] font-bold mb-5 text-zinc-900">Informasi Pemohon</h2>
                 <div className="grid grid-cols-[150px_10px_1fr] gap-y-2.5 text-sm text-zinc-800 font-semibold">
                   <span className="text-zinc-600">Nama Lengkap</span><span>:</span><span className="text-zinc-900 break-all">{formData.namaLengkap}</span>
-                  <span className="text-zinc-600">Unit</span><span>:</span><span className="text-zinc-900">{formData.divisi}</span>
+                  <span className="text-zinc-600">Cabang</span><span>:</span><span className="text-zinc-900">{formData.cabang}</span>
+                  <span className="text-zinc-600">Unit</span><span>:</span><span className="text-zinc-900">{formData.unit}</span>
                   <span className="text-zinc-600">Tanggal dibutuhkan</span><span>:</span><span className="text-zinc-900">{formData.tanggalDibutuhkan}</span>
                   <span className="text-zinc-600">Prioritas</span><span>:</span><span className="text-zinc-900">{highestPriority}</span>
                 </div>
@@ -534,7 +553,6 @@ export default function AjukanPermintaan() {
                   {/* Table Body */}
                   {daftarBarang.map((b, i) => (
                     <div key={b.kodeAset} className={`px-5 py-4 grid grid-cols-[1fr_120px_100px] gap-4 items-center ${i !== daftarBarang.length - 1 ? 'border-b border-zinc-100' : ''}`}>
-                      {/* 🔥 NAMA BARANG DIBUAT SEMI-BOLD */}
                       <div className="min-w-0 pr-2">
                         <span className="block font-semibold text-zinc-800 text-[14px] capitalize break-all leading-snug">
                           {b.namaAset}
