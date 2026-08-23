@@ -167,7 +167,7 @@ export default function LoginPage() {
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[24px] bg-white px-8 py-9 shadow-2xl text-center animate-in zoom-in-95 duration-200">
-            <button onClick={() => setShowForgotModal(false)} className="absolute right-5 top-5 text-slate-400 hover:text-slate-800 transition">
+            <button onClick={() => setShowForgotModal(false)} className="absolute right-5 top-5 text-slate-400 hover:text-slate-800 transition cursor-pointer">
               <FaXmark size={20} />
             </button>
             
@@ -185,7 +185,7 @@ export default function LoginPage() {
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowForgotModal(false)}
-                className="flex-1 rounded-xl bg-slate-100 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                className="flex-1 rounded-xl bg-slate-100 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 Saya Mengerti
               </button>
@@ -270,6 +270,17 @@ export default function LoginPage() {
       {/* FORM LOGIN UTAMA */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+          
+          {/* 🔥 TOMBOL X UNTUK KEMBALI KE LANDING PAGE */}
+          <button 
+            type="button"
+            onClick={() => navigate('/')} 
+            className="absolute right-6 top-6 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all cursor-pointer"
+            title="Kembali ke Halaman Utama"
+          >
+            <FaXmark size={18} />
+          </button>
+
           <div className="mb-8 text-center">
             <h1 className="text-[26px] font-bold text-[#00634b] tracking-tight leading-tight mb-1">Selamat Datang!</h1>
             <p className="text-[13px] text-slate-500 font-medium">Masuk untuk mengakses aplikasi BSNetOps</p>
