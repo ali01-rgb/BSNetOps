@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, LogOut, ChevronDown, CheckCircle2, XCircle, PackagePlus, Clock, TriangleAlert, Trash2, CheckCheck } from 'lucide-react';
+import { Menu, Bell, LogOut, ChevronDown, PackagePlus, TriangleAlert, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '@/api';
 
@@ -16,13 +16,13 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
 
-  // 🔥 FETCH NOTIFIKASI DARI BACKEND
+  // 🔥 FETCH NOTIFIKASI & FILTER OTOMATIS (LEWAT 1 HARI)
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
 
-      const res = await fetch(`${API_URL}/notifications`, { // 🔥 REVISI URL
+      const res = await fetch(`${API_URL}/notifications`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -31,9 +31,21 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
         const dataList = resJson.data || resJson; 
         
         if (Array.isArray(dataList)) {
-          dataList.sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
+          const now = new Date();
           
-          const formattedNotifs = dataList.map(n => ({
+          // Filter: Jika sudah dibaca dan lewat 24 jam, hilangkan dari UI (hapus otomatis)
+          const validNotifs = dataList.filter(n => {
+            const isRead = n.isRead || n.is_read;
+            const notifDate = new Date(n.createdAt || n.created_at);
+            const diffHours = (now - notifDate) / (1000 * 60 * 60);
+            
+            if (isRead && diffHours >= 24) return false;
+            return true;
+          });
+
+          validNotifs.sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
+          
+          const formattedNotifs = validNotifs.map(n => ({
             id: n.id,
             title: n.title || n.judul || 'Pemberitahuan',
             message: n.message || n.pesan || '',
@@ -63,7 +75,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     }
 
     try {
-      await fetch(`${API_URL}/notifications/${id}/read`, { // 🔥 REVISI URL
+      await fetch(`${API_URL}/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -79,7 +91,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     
     try {
-      await fetch(`${API_URL}/notifications/read-all`, { // 🔥 REVISI URL
+      await fetch(`${API_URL}/notifications/read-all`, {
         method: 'PATCH',
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -96,29 +108,12 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     setNotifications(prev => prev.filter(n => n.id !== id));
 
     try {
-      await fetch(`${API_URL}/notifications/${id}`, { // 🔥 REVISI URL
+      await fetch(`${API_URL}/notifications/${id}`, {
         method: 'DELETE',
         headers: { "Authorization": `Bearer ${token}` }
       });
     } catch (error) {
       console.error("Gagal menghapus notifikasi:", error);
-    }
-  };
-
-  // 🔥 FUNGSI HAPUS SEMUA NOTIFIKASI
-  const handleDeleteAllNotifs = async () => {
-    if (!window.confirm("Hapus semua notifikasi?")) return;
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-
-    setNotifications([]);
-
-    try {
-      await fetch(`${API_URL}/notifications`, { // 🔥 REVISI URL
-        method: 'DELETE',
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-    } catch (error) {
-      console.error("Gagal menghapus semua notifikasi:", error);
     }
   };
 
@@ -128,7 +123,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
         const token = localStorage.getItem('token') || localStorage.getItem('access_token');
         if (!token) return;
 
-        const res = await fetch(`${API_URL}/auth/profile`, { // 🔥 REVISI URL
+        const res = await fetch(`${API_URL}/auth/profile`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -182,25 +177,28 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
     navigate('/');
   };
 
-  const renderNotifIcon = (type) => {
+  const renderNotifIcon = (type, isUnread) => {
+    const iconClass = isUnread ? "text-blue-600" : "text-zinc-400";
+    const alertClass = isUnread ? "text-red-600" : "text-zinc-400";
+
     switch (type) {
       case 'alert': 
-        return <TriangleAlert size={16} className="text-red-600 shrink-0 mt-0.5" />;
+        return <TriangleAlert size={18} className={alertClass} />;
       case 'request': 
-        return <PackagePlus size={16} className="text-blue-600 shrink-0 mt-0.5" />;
+        return <PackagePlus size={18} className={iconClass} />;
       default: 
-        return <Bell size={16} className="text-blue-600 shrink-0 mt-0.5" />;
+        return <Bell size={18} className={iconClass} />;
     }
   };
 
-  const formatTime = (dateString) => {
-    const notifDate = new Date(dateString);
-    const now = new Date();
-    const diff = Math.floor((now - notifDate) / 60000);
-    if (diff < 1) return 'Baru saja';
-    if (diff < 60) return `${diff} menit lalu`;
-    if (diff < 1440) return `${Math.floor(diff/60)} jam lalu`;
-    return `${Math.floor(diff/1440)} hari lalu`;
+  // 🔥 FORMAT TANGGAL SESUAI GAMBAR (e.g., 22 aug, 22.38)
+  const formatNotifDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('id-ID', { month: 'short' }).toLowerCase();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day} ${month}, ${hours}.${minutes}`;
   };
 
   return (
@@ -229,13 +227,13 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 mt-2 w-84 bg-white border border-zinc-200 shadow-2xl rounded-2xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
+            <div className="absolute right-0 mt-2 w-84 bg-white border border-zinc-200 shadow-2xl rounded-xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
               
               {/* HEADER DROPDOWN NOTIFIKASI */}
-              <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
+              <div className="px-4 py-3 bg-white border-b border-zinc-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-zinc-900">Notifikasi</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-[#00664b] rounded-md capitalize tracking-wide border border-emerald-200">
+                  <span className="text-[13px] font-bold text-zinc-900">Notifikasi :</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-[#e7f0ec] text-[#00664b] rounded-md capitalize tracking-wide">
                     {userData.role}
                   </span>
                 </div>
@@ -244,26 +242,16 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
                   {unreadCount > 0 && (
                     <button 
                       onClick={markAllAsRead} 
-                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
-                      title="Tandai Semua Dibaca"
+                      className="text-[11px] font-semibold text-[#00664b] hover:text-[#004d38] cursor-pointer"
                     >
-                      <CheckCheck size={13} /> Dibaca
-                    </button>
-                  )}
-                  {notifications.length > 0 && (
-                    <button 
-                      onClick={handleDeleteAllNotifs} 
-                      className="text-[10px] font-bold text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer ml-1"
-                      title="Hapus Semua"
-                    >
-                      <Trash2 size={12} /> Hapus
+                      Tandai Dibaca
                     </button>
                   )}
                 </div>
               </div>
 
               {/* LIST NOTIFIKASI */}
-              <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100">
+              <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="p-8 text-center text-zinc-400 text-xs font-medium flex flex-col items-center gap-2">
                     <Bell size={28} className="text-zinc-300 opacity-50" />
@@ -271,53 +259,43 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
                   </div>
                 ) : (
                   notifications.map((notif) => {
-                    const isAlert = notif.type === 'alert'; // Notif Stok Menipis (Merah)
                     const isUnread = !notif.isRead;
-
-                    // 🔥 PEMILIHAN WARNA BACKGROUND SESUAI DESAIN PERMINTAAN
-                    let bgStyle = "bg-white hover:bg-zinc-50/80";
-                    if (isUnread) {
-                      bgStyle = isAlert 
-                        ? "bg-red-50/80 hover:bg-red-100/60"   // Merah Sedang (Unread Alert)
-                        : "bg-blue-50/80 hover:bg-blue-100/60"; // Biru Sedang (Unread Request)
-                    } else {
-                      bgStyle = isAlert 
-                        ? "bg-red-50/20 hover:bg-red-50/40"    // Merah Transparan (Read Alert)
-                        : "bg-blue-50/20 hover:bg-blue-50/40";  // Biru Transparan (Read Request)
-                    }
 
                     return (
                       <div 
                         key={notif.id}
                         onClick={() => handleNotifClick(notif.id, notif.target)}
-                        className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer relative group ${bgStyle}`}
+                        className="px-4 py-3 flex items-start gap-3 cursor-pointer relative group bg-white hover:bg-zinc-50 border-b border-zinc-100 last:border-0"
                       >
-                        {/* 🔥 DOT INDIKATOR BULAT (HILANG JIKA SUDAH DIBACA) */}
-                        {isUnread && (
-                          <span className={`absolute left-1.5 top-5 w-2 h-2 rounded-full ${isAlert ? 'bg-red-500' : 'bg-blue-500'}`} />
-                        )}
+                        <div className="flex items-center gap-2 pt-0.5">
+                          {/* 🔥 DOT INDIKATOR */}
+                          {isUnread ? (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 shrink-0" /> 
+                          )}
+                          {renderNotifIcon(notif.type, isUnread)}
+                        </div>
 
-                        {renderNotifIcon(notif.type)}
-
-                        <div className="flex-1 space-y-0.5 pr-5">
-                          <div className="flex items-center justify-between">
-                            <p className={`text-xs font-bold ${isAlert ? 'text-red-700' : (isUnread ? 'text-zinc-900' : 'text-zinc-600')}`}>
-                              {notif.title}
-                            </p>
-                            <span className="text-[9px] text-zinc-400 font-medium">{formatTime(notif.createdAt)}</span>
-                          </div>
-                          <p className={`text-[11px] leading-snug ${isAlert ? 'text-red-600 font-medium' : (isUnread ? 'text-zinc-700 font-medium' : 'text-zinc-400')}`}>
+                        <div className="flex-1 pr-6">
+                          <p className={`text-[13px] font-bold mb-0.5 ${isUnread ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                            {notif.title}
+                          </p>
+                          <p className={`text-[11px] leading-snug mb-1.5 ${isUnread ? 'text-zinc-600' : 'text-zinc-400'}`}>
                             {notif.message}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 font-medium">
+                            {formatNotifDate(notif.createdAt)}
                           </p>
                         </div>
 
-                        {/* 🔥 TOMBOL HAPUS PER PESAN (MUNCUL SAAT HOVER / SELALU ADA) */}
+                        {/* 🔥 TOMBOL X UNTUK HAPUS */}
                         <button
                           onClick={(e) => handleDeleteNotif(e, notif.id)}
-                          className="absolute right-2 top-3.5 p-1 text-zinc-300 hover:text-red-600 hover:bg-red-100 rounded-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                          title="Hapus Notifikasi Ini"
+                          className="absolute right-3 top-3.5 p-1 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          title="Hapus"
                         >
-                          <Trash2 size={13} />
+                          <X size={14} />
                         </button>
                       </div>
                     );

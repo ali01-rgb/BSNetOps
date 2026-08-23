@@ -80,14 +80,19 @@ export default function ActivityLogManager() {
             }
 
             const padId = String(req.no_urut || index + 1).padStart(3, '0');
-            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const tglFormatId = rawDate.toISOString().slice(0, 10).replace(/-/g, '');
             const prettyId = `REQ-${tglFormatId}-${padId}`;
+
+            const pemohonName = req.user?.fullName || req.user?.username || 'Pemohon';
+            const cabangPemohon = req.user?.cabang || req.user?.divisi || 'KC Semarang';
+            const unitPemohon = req.user?.unit || '';
 
             combinedLogs.push({
               id: prettyId,
               originalId: req.id, 
-              requester: req.user?.fullName || req.user?.username || 'Pemohon',
-              unit: req.user?.divisi || req.unit || 'KC Semarang',
+              requester: pemohonName,
+              cabang: cabangPemohon,
+              unit: unitPemohon,
               itemName: req.nama_aset || 'Barang',
               qty: req.jumlah || 1,
               date: rawDate.toISOString(),
@@ -113,7 +118,8 @@ export default function ActivityLogManager() {
               id: ast.kode_barang || ast.id || 'AST-NEW',
               originalId: ast.id,
               requester: 'Admin Gudang',
-              unit: 'Gudang Utama',
+              cabang: 'Gudang Utama',
+              unit: '',
               itemName: ast.nama_barang || ast.nama_aset || 'Barang Baru',
               qty: ast.stok ?? ast.stock ?? 0,
               date: rawDate.toISOString(),
@@ -156,6 +162,7 @@ export default function ActivityLogManager() {
     })
     .filter(item =>
       (item.requester || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.cabang || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.itemName || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
@@ -173,8 +180,9 @@ export default function ActivityLogManager() {
     const dataToExport = filteredHistory.map(item => ({
       "ID Transaksi": item.id,
       "Tipe Transaksi": item.type,
-      "Nama Pemohon": item.requester,
-      "Unit / KC": item.unit,
+      "Nama Pemohon": item.requester + (item.unit ? ` (${item.unit})` : ''),
+      "Cabang": item.cabang,
+      "Unit": item.unit || '-',
       "Nama Barang / Logistik": item.itemName,
       "Jumlah (Unit)": item.qty,
       "Tanggal Transaksi": new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -197,13 +205,12 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 🔥 2. EXPORT LAPORAN OPNAME (REAL-TIME HITUNG MUTASI BARANG KELUAR)
+  // 🔥 2. EXPORT LAPORAN OPNAME
   const handleExportOpname = async () => {
     const loadingToast = toast.loading("Menghitung data mutasi stok & menyiapkan Laporan Opname...");
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Ambil data aset & data request secara bersamaan
       const [assetsRes, reqRes] = await Promise.all([
         fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } }),
         fetch(`${API_URL}/inventory/manager/requests`, { headers: { "Authorization": `Bearer ${token}` } })
@@ -221,7 +228,6 @@ export default function ActivityLogManager() {
         rawRequests = reqJson.data || reqJson || [];
       }
 
-      // Filter request yang sudah disetujui pada periode yang dipilih
       const approvedRequestsInPeriod = rawRequests.filter(req => {
         const stat = (req.status || '').toUpperCase();
         const isApproved = ['DISETUJUI', 'SELESAI', 'APPROVED', 'DITERIMA'].includes(stat);
@@ -243,7 +249,6 @@ export default function ActivityLogManager() {
         return true;
       });
 
-      // Akumulasi total barang keluar berdasarkan nama barang
       const barangKeluarMap = {};
       approvedRequestsInPeriod.forEach(req => {
         const nama = (req.nama_aset || req.nama_barang || '').trim().toLowerCase();
@@ -251,7 +256,6 @@ export default function ActivityLogManager() {
         barangKeluarMap[nama] = (barangKeluarMap[nama] || 0) + qty;
       });
 
-      // Filter master aset berdasarkan query pencarian
       let filteredAssets = rawAssets.filter(item => !item.deleted_at).filter(item => {
         const name = item.nama_barang || item.nama_aset || item.name || '';
         const kode = item.kode_barang || item.id || '';
@@ -265,7 +269,6 @@ export default function ActivityLogManager() {
         return;
       }
 
-      // Hitung: Stok Awal = Stok Akhir + Barang Keluar - Barang Masuk
       const dataToExport = filteredAssets.map(item => {
         const namaBarang = item.nama_barang || item.nama_aset || item.name || '-';
         const namaKey = namaBarang.trim().toLowerCase();
@@ -306,7 +309,7 @@ export default function ActivityLogManager() {
     }
   };
 
-  // 🔥 3. HAPUS RIWAYAT (HANYA MENGHAPUS LOG TRANSAKSI REQUEST)
+  // 🔥 3. HAPUS RIWAYAT
   const handleDeleteHistory = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk dihapus!");
@@ -317,7 +320,6 @@ export default function ActivityLogManager() {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      // Hanya menghapus ID request (barang keluar), master aset aman
       const idsToDelete = filteredHistory
         .filter(item => item.type === 'Keluar')
         .map(item => item.originalId);
@@ -329,7 +331,7 @@ export default function ActivityLogManager() {
       }
 
       const res = await fetch(`${API_URL}/inventory/requests/bulk-delete`, {
-        method: "DELETE",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -411,7 +413,7 @@ export default function ActivityLogManager() {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
+              placeholder="Cari ID request, pemohon, unit, cabang, atau nama barang..." 
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
@@ -502,23 +504,22 @@ export default function ActivityLogManager() {
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 <div className="space-y-1.5 min-w-0">
                   <p className="text-sm text-zinc-700 leading-relaxed break-words">
-                    <span className="font-bold text-zinc-900">{item.requester}</span> 
-                    {item.type === 'Masuk' 
-                      ? ' mendaftarkan barang masuk/restock berupa ' 
-                      : ' melakukan pengambilan barang untuk dikirim ke '}
-                    {item.type !== 'Masuk' && (
-                      <span className="font-bold text-zinc-900 mr-1">
-                        {item.unit}
-                      </span>
+                    <span className="font-bold text-zinc-900">
+                      {item.requester}{item.unit ? ` (${item.unit})` : ''}
+                    </span> 
+                    {item.type === 'Masuk' ? (
+                      <> mendaftarkan barang masuk/restock berupa </>
+                    ) : (
+                      <> melakukan pengambilan barang untuk dikirim ke <span className="font-bold text-zinc-900 mr-1">{item.cabang}</span> berupa </>
                     )}
-                    berupa <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
+                    <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
                     <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
-                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
+                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0, 10)}</span>
                     <span className="text-zinc-500 font-medium flex items-center gap-1">
-                      <MapPin size={12} /> {item.unit}
+                      <MapPin size={12} /> {item.cabang}{item.unit ? ` (${item.unit})` : ''}
                     </span>
                   </div>
                 </div>

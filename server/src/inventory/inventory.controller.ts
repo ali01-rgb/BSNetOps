@@ -71,7 +71,6 @@ export class InventoryController {
   }
 
   // ================= REQUESTS (USER) =================
-  // 🔥 PERBAIKAN: Admin & Manager sekarang bisa create request juga (gak akan 403 Forbidden)
   @Post('requests')
   @Roles('USER', 'user', 'ADMIN', 'admin', 'MANAGER', 'manager')
   async createRequest(@Body() body: any, @Request() req: any) {
@@ -84,7 +83,6 @@ export class InventoryController {
     }
   }
 
-  // 🔥 PERBAIKAN: Admin & Manager sekarang berhak melihat halaman Riwayatnya sendiri
   @Get('my-requests')
   @Roles('USER', 'user', 'ADMIN', 'admin', 'MANAGER', 'manager')
   async getMyRequests(@Request() req: any) {
@@ -98,7 +96,6 @@ export class InventoryController {
   }
 
   // ================= REQUESTS (ADMIN & MANAGER) =================
-  
   @Get('admin/requests')
   @Roles('ADMIN', 'admin', 'MANAGER', 'manager') 
   async getAllRequestsForAdmin() {
@@ -135,7 +132,6 @@ export class InventoryController {
     }
   }
 
-  // 🔥 REVISI 2: MENGUBAH @Delete MENJADI @Post UNTUK MENGHINDARI ERROR CORS/BODY STRIPPING DI FRONTEND
   @Post('requests/bulk-delete')
   @Roles('ADMIN', 'admin', 'MANAGER', 'manager')
   async bulkDeleteRequests(@Body('ids') ids: string[]) {
@@ -216,6 +212,19 @@ export class InventoryController {
     try {
       const data = await this.inventoryService.createUserByAdmin(body);
       return { status: 'success', message: 'User/Staf baru berhasil ditambahkan', data: data };
+    } catch (error) {
+      const err = error as Error;
+      throw new HttpException(err.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // 🔥 ENDPOINT BARU: BATCH IMPORT EXCEL
+  @Post('users/import')
+  @Roles('ADMIN', 'admin')
+  async importUsersByAdmin(@Body() body: { users: any[] }) {
+    try {
+      const data = await this.inventoryService.importUsersByAdmin(body.users);
+      return { status: 'success', message: `${data.imported} User berhasil diimport`, data: data };
     } catch (error) {
       const err = error as Error;
       throw new HttpException(err.message, HttpStatus.BAD_REQUEST);

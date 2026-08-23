@@ -23,9 +23,8 @@ export default function AjukanPermintaan() {
     namaLengkap: '', 
     nipPegawai: '', 
     cabang: '', 
-    jabatan: '', 
-    email: '', 
     unit: '',
+    jabatan: '', 
     tanggalDibutuhkan: ''
   });
 
@@ -92,12 +91,11 @@ export default function AjukanPermintaan() {
           
           setFormData(prev => ({
             ...prev,
-            namaLengkap: prev.namaLengkap || data.fullName || data.name || data.username || '',
+            namaLengkap: prev.namaLengkap || data.fullName || data.name || '',
             nipPegawai: data.employeeId || data.id || 'BSN-USR-001',
             cabang: prev.cabang || data.cabang || data.divisi || '',
-            jabatan: data.role || data.jabatan || 'User',
-            email: data.email || 'user@bsn.go.id',
-            unit: prev.unit || data.unit || ''
+            unit: prev.unit || data.unit || '',
+            jabatan: data.role || 'USER',
           }));
         }
       } catch (err) {
@@ -359,20 +357,42 @@ export default function AjukanPermintaan() {
               {currentStep === 1 && (
                 <>
                   <h2 className="text-xl font-bold mb-6 text-zinc-900">Informasi Pemohon</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap</label>
-                      <input type="text" name="namaLengkap" value={formData.namaLengkap} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] transition-all" required />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* ROW 1: NAMA LENGKAP */}
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">Nama Lengkap</label>
+                      <input 
+                        type="text" 
+                        name="namaLengkap" 
+                        value={formData.namaLengkap} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] transition-all text-sm font-medium text-zinc-800" 
+                        required 
+                      />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">NIP/ ID pegawai</label>
-                      <input type="text" name="nipPegawai" value={formData.nipPegawai} disabled className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none" />
+                    {/* ROW 1: ID PEGAWAI */}
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">ID Pegawai</label>
+                      <input 
+                        type="text" 
+                        name="nipPegawai" 
+                        value={formData.nipPegawai} 
+                        disabled 
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 font-bold cursor-not-allowed select-none text-sm" 
+                      />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cabang</label>
-                      <select name="cabang" value={formData.cabang} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
+                    {/* ROW 2: CABANG */}
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">Cabang</label>
+                      <select 
+                        name="cabang" 
+                        value={formData.cabang} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all text-sm font-medium text-zinc-800" 
+                        required
+                      >
                         <option value="" disabled hidden>Pilih Cabang</option>
                         <option value="KC Semarang">KC Semarang</option>
                         <option value="KCP Majapahit">KCP Majapahit</option>
@@ -384,25 +404,16 @@ export default function AjukanPermintaan() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Jabatan</label>
-                      <input 
-                        type="text" 
-                        name="jabatan" 
-                        value={formData.jabatan?.toUpperCase() === 'USER' ? 'User' : formData.jabatan} 
-                        disabled 
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none capitalize" 
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
-                      <input type="email" name="email" value={formData.email} disabled className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed select-none" />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Unit</label>
-                      <select name="unit" value={formData.unit} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all" required>
+                    {/* ROW 2: UNIT (SEBELAH KANAN CABANG) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">Unit</label>
+                      <select 
+                        name="unit" 
+                        value={formData.unit} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00664b] focus:border-[#00664b] cursor-pointer transition-all text-sm font-medium text-zinc-800" 
+                        required
+                      >
                         <option value="" disabled hidden>Pilih Unit</option>
                         <option value="CWO">CWO</option>
                         <option value="FA & FD">FA & FD</option>
@@ -417,8 +428,20 @@ export default function AjukanPermintaan() {
                         <option value="Consumer">Consumer</option>
                       </select>
                     </div>
+
+                    {/* ROW 3: JABATAN / ROLE (MEMANJANG PENUH DARI KIRI KE KANAN) */}
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700">Jabatan / Role</label>
+                      <input 
+                        type="text" 
+                        name="jabatan" 
+                        value={formData.jabatan?.toUpperCase()} 
+                        disabled 
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 font-bold uppercase cursor-not-allowed select-none text-sm" 
+                      />
+                    </div>
                   </div>
-                  <div className="text-center text-xs text-gray-500 mt-10">1/3</div>
+                  <div className="text-center text-xs text-gray-500 mt-8">1/3</div>
                 </>
               )}
 
@@ -476,7 +499,7 @@ export default function AjukanPermintaan() {
                                     max={stokTersedia !== '-' ? stokTersedia : undefined}
                                     value={barang.jumlah} 
                                     onChange={(e) => handleQtyChange(idx, e.target.value)} 
-                                    className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]"
+                                    className="w-12 border border-zinc-300 text-center rounded-md py-1 text-sm font-bold focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b]" 
                                     required
                                   />
                                   <span className="text-[11px] text-zinc-400 font-medium whitespace-nowrap">/ {stokTersedia} Stok</span>
@@ -492,9 +515,9 @@ export default function AjukanPermintaan() {
                             <input 
                               type="text" 
                               placeholder="Contoh: Stok alat tulis habis..." 
-                              value={barang.keterangan || ''}
+                              value={barang.keterangan || ''} 
                               onChange={(e) => handleKeteranganItemChange(idx, e.target.value)}
-                              className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all"
+                              className="w-full text-sm border border-zinc-200 rounded-lg bg-zinc-50 py-2.5 px-3 focus:outline-none focus:border-[#00664b] focus:ring-1 focus:ring-[#00664b] focus:bg-white transition-all" 
                             />
                           </div>
                         </div>
@@ -591,7 +614,7 @@ export default function AjukanPermintaan() {
                   <button 
                     type="button" 
                     onClick={handleSubmitFinal} 
-                    disabled={isExporting}
+                    disabled={isExporting} 
                     className="px-7 py-2.5 bg-[#00664b] hover:bg-[#004d38] text-white rounded-xl text-sm font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50"
                   >
                     {isExporting ? 'Mengirim...' : 'Ajukan Permintaan'}

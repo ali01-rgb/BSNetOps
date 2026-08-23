@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Shield, Camera, Save, Building, Briefcase, Layers, Loader2 } from 'lucide-react';
+import { User, Shield, Camera, Save, Building, Briefcase, Layers, Loader2 } from 'lucide-react';
 import { motion, useAnimation } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
@@ -9,7 +9,6 @@ export default function EditProfil() {
   const [profile, setProfile] = useState({
     namaLengkap: '',
     nipPegawai: '',
-    email: '',
     cabang: '',
     jabatan: 'LOADING...',
     unit: '',
@@ -55,7 +54,6 @@ export default function EditProfil() {
           setProfile({
             namaLengkap: data.fullName || '',
             nipPegawai: data.employeeId || '',
-            email: data.email || '',
             cabang: data.cabang || data.divisi || '',
             jabatan: data.role || '',
             unit: data.unit || '',
@@ -89,15 +87,6 @@ export default function EditProfil() {
     e.preventDefault();
     setIsLoading(true);
 
-    const allowedDomains = ["@btn.co.id", "@bankbsn.co.id", "@bsn.co.id"];
-    const isDomainValid = allowedDomains.some(domain => profile.email.toLowerCase().endsWith(domain));
-
-    if (!isDomainValid) {
-      toast.error("Gagal: Gunakan email resmi BSN (@btn.co.id, @bankbsn.co.id, @bsn.co.id)");
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
@@ -110,7 +99,6 @@ export default function EditProfil() {
         body: JSON.stringify({
           fullName: profile.namaLengkap,
           employeeId: profile.nipPegawai,
-          email: profile.email,
           cabang: profile.cabang,
           unit: profile.unit,
           avatar: profile.avatar
@@ -199,6 +187,7 @@ export default function EditProfil() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* ROW 1: NAMA LENGKAP */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Nama Lengkap</label>
               <div className="relative flex items-center">
@@ -214,6 +203,7 @@ export default function EditProfil() {
               </div>
             </div>
 
+            {/* ROW 1: ID PEGAWAI */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">ID Pegawai</label>
               <div className="relative flex items-center">
@@ -228,6 +218,7 @@ export default function EditProfil() {
               </div>
             </div>
 
+            {/* ROW 2: CABANG */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Cabang</label>
               <div className="relative flex items-center">
@@ -251,35 +242,7 @@ export default function EditProfil() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Jabatan / Role</label>
-              <div className="relative flex items-center">
-                <Briefcase size={16} className="absolute left-3 text-zinc-400" />
-                <input
-                  type="text"
-                  name="jabatan"
-                  value={profile.jabatan}
-                  disabled
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-100 border border-zinc-200 rounded-lg text-sm text-zinc-600 font-bold uppercase cursor-not-allowed select-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Alamat Email</label>
-              <div className="relative flex items-center">
-                <Mail size={16} className="absolute left-3 text-zinc-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={profile.email}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#58a27d] focus:bg-white font-medium text-zinc-800 transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
+            {/* ROW 2: UNIT (SEBELAH KANAN CABANG) */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Unit</label>
               <div className="relative flex items-center">
@@ -304,6 +267,21 @@ export default function EditProfil() {
                   <option value="Funding">Funding</option>
                   <option value="Consumer">Consumer</option>
                 </select>
+              </div>
+            </div>
+
+            {/* ROW 3: JABATAN / ROLE (MEMANJANG FULL DARI KIRI KE KANAN) */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Jabatan / Role</label>
+              <div className="relative flex items-center">
+                <Briefcase size={16} className="absolute left-3 text-zinc-400" />
+                <input
+                  type="text"
+                  name="jabatan"
+                  value={profile.jabatan}
+                  disabled
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-100 border border-zinc-200 rounded-lg text-sm text-zinc-600 font-bold uppercase cursor-not-allowed select-none"
+                />
               </div>
             </div>
           </div>

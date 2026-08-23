@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcrypt';
@@ -23,7 +23,6 @@ export class InventoryService {
     }
   }
 
-  // 🔥 KODE STOK BARANG: AUTO INCREMENT (BRG-001, BRG-002, DST)
   async createAsset(data: any) {
     let kodeBarang = data.kode_barang || data.id;
 
@@ -54,7 +53,7 @@ export class InventoryService {
         nama_barang: namaBarang,
         stok: stok,
         location: data.location || null,
-        status: data.status || (stok <= 3 ? 'Kritis' : 'Aman'),
+        status: data.status || (stok < 10 ? 'Kritis' : 'Aman'),
         image_url: data.image_url || data.image || null,
         categoryId: data.categoryId || null,
       },
@@ -133,16 +132,14 @@ export class InventoryService {
           this.notificationsService.createNotification({
             userId: admin.id,
             title: 'Request Barang Baru',
-            message: `${userYangRequest?.fullName || userYangRequest?.email || 'User'} mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
+            message: `${userYangRequest?.fullName || 'User'} (${userYangRequest?.unit || userYangRequest?.divisi || '-'}) mengajukan ${data.items.length} jenis barang. Butuh divalidasi!`,
             type: 'request',
             target: 'penyetujuan-barang',
           })
         );
         await Promise.all(notifPromises);
       })
-      .catch((error) => {
-        console.log('Gagal mengirim notif ke Admin (Background Task Error):', error);
-      });
+      .catch((error) => console.log('Gagal mengirim notif ke Admin (Background Task Error):', error));
 
     return newRequests;
   }
@@ -180,7 +177,7 @@ export class InventoryService {
 
     return requests.map((req) => ({
       ...req,
-      user: req.user || { fullName: 'User Terhapus', email: 'deleted_user@system', divisi: '-' },
+      user: req.user || { fullName: 'User Terhapus', cabang: 'KC Semarang', unit: '-', divisi: '-' },
     }));
   }
 
@@ -197,9 +194,7 @@ export class InventoryService {
         },
       },
       include: {
-        user: {
-          select: { id: true, fullName: true, divisi: true, email: true },
-        },
+        user: { select: { id: true, employeeId: true, fullName: true, cabang: true, divisi: true, unit: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -216,7 +211,7 @@ export class InventoryService {
       const matchedAsset = assets.find((a) => a.nama_barang === req.nama_aset);
       return {
         ...req,
-        user: req.user || { fullName: 'User Terhapus', divisi: '-' },
+        user: req.user || { fullName: 'User Terhapus', cabang: 'KC Semarang', unit: '-', divisi: '-' },
         category: matchedAsset?.category?.name || 'Inventaris Umum',
         categoryName: matchedAsset?.category?.name || 'Inventaris Umum',
       };
@@ -227,9 +222,7 @@ export class InventoryService {
     if (!ids || ids.length === 0) {
       return { count: 0, message: 'Tidak ada ID yang diberikan.' };
     }
-
     const result = await this.prisma.request.deleteMany({ where: { id: { in: ids } } });
-
     return {
       success: true,
       count: result.count,
@@ -237,7 +230,6 @@ export class InventoryService {
     };
   }
 
-  // ================= UPDATE STATUS & PEMOTONGAN STOK OTOMATIS =================
   async updateRequestStatus(id: string, payload: any, currentUser?: any) {
     const status = typeof payload === 'string' ? payload : payload?.status;
     const jumlahDisetujuiInput = typeof payload === 'object' ? payload?.jumlah_disetujui : undefined;
@@ -259,21 +251,17 @@ export class InventoryService {
         if (userDb) {
           const roleUpper = (userDb.role || '').toUpperCase();
           if (roleUpper === 'ADMIN' && statusUpper === 'DITERUSKAN') {
-            updateData.adminName = userDb.fullName || userDb.email;
+            updateData.adminName = userDb.fullName || 'Admin Gudang';
           }
           if (roleUpper === 'MANAGER' && ['DISETUJUI', 'DITOLAK', 'SELESAI'].includes(statusUpper)) {
-            updateData.managerName = userDb.fullName || userDb.email;
+            updateData.managerName = userDb.fullName || 'Manager Operasional';
           }
         }
-      } catch (e) {
-        console.log("Gagal merekam jejak nama pemroses", e);
-      }
+      } catch (e) { console.log("Gagal merekam jejak nama", e); }
     }
 
     const existingRequest = await this.prisma.request.findUnique({ where: { id } });
-    if (!existingRequest) {
-      throw new NotFoundException(`Request dengan ID ${id} tidak ditemukan.`);
-    }
+    if (!existingRequest) throw new NotFoundException(`Request dengan ID ${id} tidak ditemukan.`);
 
     const isApproving = ['DISETUJUI', 'SELESAI', 'APPROVED'].includes(statusUpper);
     const wasAlreadyApproved = ['DISETUJUI', 'SELESAI', 'APPROVED'].includes((existingRequest.status || '').toUpperCase());
@@ -308,12 +296,11 @@ export class InventoryService {
           const managerUsers = await this.prisma.user.findMany({
             where: { role: { in: ['MANAGER', 'manager', 'Manager'] } },
           });
-
           const notifPromises = managerUsers.map((manager) =>
             this.notificationsService.createNotification({
               userId: manager.id,
               title: 'Menunggu Approval (ACC)',
-              message: `Admin telah meneruskan request ${updatedRequest.jumlah} ${updatedRequest.nama_aset}. Butuh ACC Anda.`,
+              message: `Admin meneruskan request ${updatedRequest.jumlah} ${updatedRequest.nama_aset}.`,
               type: 'request',
               target: 'approval-request',
             })
@@ -336,9 +323,7 @@ export class InventoryService {
             target: 'riwayat-permintaan',
           });
         }
-      } catch (error) {
-        console.log('Gagal mengirim notif update status', error);
-      }
+      } catch (error) { console.log('Gagal mengirim notif', error); }
     })();
 
     return updatedRequest;
@@ -355,21 +340,13 @@ export class InventoryService {
     });
 
     if (existingCategory) {
-      if (existingCategory.deleted_at) {
-        throw new ConflictException(
-          `Kategori "${existingCategory.name}" sedang berada di Trash. Silakan Restore dari Trash, jangan buat baru!`
-        );
-      }
-      throw new ConflictException(`Kategori "${existingCategory.name}" sudah terdaftar di sistem!`);
+      if (existingCategory.deleted_at) throw new ConflictException(`Kategori "${existingCategory.name}" ada di Trash. Restore dari Trash!`);
+      throw new ConflictException(`Kategori "${existingCategory.name}" sudah terdaftar!`);
     }
 
     if (data.category_code) {
-      const existingCode = await this.prisma.category.findUnique({
-        where: { category_code: data.category_code },
-      });
-      if (existingCode) {
-        throw new ConflictException(`Kode kategori ${data.category_code} sudah digunakan!`);
-      }
+      const existingCode = await this.prisma.category.findUnique({ where: { category_code: data.category_code } });
+      if (existingCode) throw new ConflictException(`Kode kategori ${data.category_code} sudah digunakan!`);
     }
 
     const newCategory = await this.prisma.category.create({
@@ -407,7 +384,6 @@ export class InventoryService {
         data: { kategori_sebelumnya: category.name, categoryId: null },
       });
     }
-
     return await this.prisma.category.delete({ where: { id: id } });
   }
 
@@ -415,26 +391,17 @@ export class InventoryService {
   async getAllUsers() {
     return await this.prisma.user.findMany({
       select: {
-        id: true, employeeId: true, email: true, fullName: true, divisi: true,
-        phone: true, role: true, hasSignedUp: true, isVerified: true,
+        id: true, employeeId: true, email: true, fullName: true, divisi: true, unit: true, cabang: true,
+        phone: true, role: true, hasSignedUp: true, isVerified: true, isFirstLogin: true,
         createdAt: true, updatedAt: true, is_suspended: true, deleted_at: true,
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  // TAMBAH USER MANUAL OLEH ADMIN (TANPA EMAIL DUMMY)
   async createUserByAdmin(data: any) {
-    const cleanEmail = (data.email || '').trim().toLowerCase();
-
-    const existingEmployee = await this.prisma.user.findFirst({
-      where: { email: { equals: cleanEmail, mode: 'insensitive' } },
-    });
-
-    if (existingEmployee) {
-      throw new ConflictException('Email sudah terdaftar di sistem!');
-    }
-
-    const roleString = (data.role || 'STAFF').toUpperCase();
+    const roleString = (data.role || 'USER').toUpperCase();
     let prefix = 'USR';
     if (roleString === 'ADMIN') prefix = 'ADM';
     if (roleString === 'MANAGER') prefix = 'MGR';
@@ -456,32 +423,110 @@ export class InventoryService {
     const nextNumber = String(maxNumber + 1).padStart(3, '0');
     const autoGeneratedId = `BSN-${prefix}-${nextNumber}`;
 
-    let hashedPassword = null;
-    if (data.password) {
-      hashedPassword = await bcrypt.hash(data.password, 10);
+    let cleanEmail: string | null = null;
+    if (data.email && data.email.trim() !== '') {
+      cleanEmail = data.email.trim().toLowerCase();
+      const existingEmployee = await this.prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: 'insensitive' } },
+      });
+      if (existingEmployee) throw new ConflictException('Email sudah terdaftar di sistem!');
     }
+
+    const hashedPassword = await bcrypt.hash(data.password || '12345678', 10);
+    const resolvedUnit = data.unit || data.divisi || null;
 
     return await this.prisma.user.create({
       data: {
         employeeId: autoGeneratedId,
-        email: cleanEmail,
+        email: cleanEmail, // Langsung null murni jika tidak diisi
         password: hashedPassword,
-        fullName: data.fullName || data.name || cleanEmail.split('@')[0],
-        divisi: data.divisi || data.unit || 'KC Semarang',
+        fullName: data.fullName || data.name,
+        divisi: resolvedUnit,
+        unit: resolvedUnit,
+        cabang: data.cabang || null,
         role: roleString === 'STAFF' ? 'USER' : roleString,
-        hasSignedUp: data.hasSignedUp ?? true,
+        is_suspended: data.is_suspended || false,
+        hasSignedUp: true,
         isVerified: true,
+        isFirstLogin: true,
       },
-      select: { id: true, employeeId: true, email: true, fullName: true, role: true },
+      select: { id: true, employeeId: true, fullName: true, role: true, cabang: true, unit: true, divisi: true },
     });
+  }
+
+  // IMPORT EXCEL BATCH USER OLEH ADMIN (TANPA EMAIL DUMMY)
+  async importUsersByAdmin(users: any[]) {
+    if (!users || users.length === 0) throw new BadRequestException("Data file kosong");
+    
+    const defaultPassword = await bcrypt.hash('12345678', 10);
+    let successCount = 0;
+    
+    const existingUsers = await this.prisma.user.findMany({ select: { employeeId: true } });
+    let maxAdm = 0, maxMgr = 0, maxUsr = 0;
+    
+    existingUsers.forEach(u => {
+      if (!u.employeeId) return;
+      const parts = u.employeeId.split('-');
+      if (parts.length < 3) return;
+      const num = parseInt(parts[2], 10);
+      if (isNaN(num)) return;
+      
+      if (parts[1] === 'ADM' && num > maxAdm) maxAdm = num;
+      if (parts[1] === 'MGR' && num > maxMgr) maxMgr = num;
+      if (parts[1] === 'USR' && num > maxUsr) maxUsr = num;
+    });
+
+    const payload = [];
+
+    for (const data of users) {
+      if (!data.name) continue;
+
+      const roleString = (data.role || 'User').toUpperCase();
+      let prefix = 'USR';
+      let num = 0;
+
+      if (roleString === 'ADMIN' || roleString === 'ADMINISTRATOR') {
+        prefix = 'ADM'; maxAdm++; num = maxAdm;
+      } else if (roleString === 'MANAGER') {
+        prefix = 'MGR'; maxMgr++; num = maxMgr;
+      } else {
+        prefix = 'USR'; maxUsr++; num = maxUsr;
+      }
+      
+      const autoGeneratedId = `BSN-${prefix}-${String(num).padStart(3, '0')}`;
+      const resolvedUnit = data.unit || data.divisi || null;
+
+      payload.push({
+        employeeId: autoGeneratedId,
+        fullName: data.name,
+        email: null, // Murni null tanpa email dummy
+        password: defaultPassword,
+        cabang: data.cabang || null,
+        divisi: resolvedUnit,
+        unit: resolvedUnit,
+        role: prefix === 'ADM' ? 'ADMIN' : (prefix === 'MGR' ? 'MANAGER' : 'USER'),
+        isFirstLogin: true,
+        hasSignedUp: true,
+        isVerified: true
+      });
+      successCount++;
+    }
+    
+    await this.prisma.user.createMany({ data: payload, skipDuplicates: true });
+    return { imported: successCount };
   }
 
   async updateUserByAdmin(id: string, data: any) {
     const updatePayload: any = {};
 
     if (data.fullName !== undefined) updatePayload.fullName = data.fullName;
-    if (data.email !== undefined) updatePayload.email = data.email.trim().toLowerCase();
+    if (data.email !== undefined) updatePayload.email = data.email ? data.email.trim().toLowerCase() : null;
     if (data.divisi !== undefined) updatePayload.divisi = data.divisi;
+    if (data.unit !== undefined) {
+      updatePayload.unit = data.unit;
+      if (data.divisi === undefined) updatePayload.divisi = data.unit;
+    }
+    if (data.cabang !== undefined) updatePayload.cabang = data.cabang;
     if (data.phone !== undefined) updatePayload.phone = data.phone;
     if (data.role !== undefined) updatePayload.role = data.role.toUpperCase();
     if (data.employeeId !== undefined) updatePayload.employeeId = data.employeeId;
@@ -498,7 +543,7 @@ export class InventoryService {
       data: updatePayload,
       select: {
         id: true, employeeId: true, email: true, fullName: true, role: true,
-        divisi: true, phone: true, is_suspended: true, deleted_at: true,
+        divisi: true, unit: true, cabang: true, phone: true, is_suspended: true, deleted_at: true,
       },
     });
   }

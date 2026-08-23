@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, 
-  RotateCcw, XCircle, ArrowLeft, AlertTriangle, X, Download, KeyRound, FileSpreadsheet 
-} from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, Filter, Shield, UserCheck, RotateCcw, XCircle, ArrowLeft, AlertTriangle, X } from 'lucide-react';
 import TambahUser from './TambahUser';
 import EditUser from './EditUser';
 import toast from 'react-hot-toast';
@@ -21,11 +18,6 @@ export default function UserManagement() {
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, user: null });
   const [restoreModal, setRestoreModal] = useState({ isOpen: false, originalId: null, name: '' });
-
-  // STATE GENERATE KODE REGISTRASI & EXCEL
-  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [generateCount, setGenerateCount] = useState(50);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     fetchUsersFromAPI();
@@ -53,9 +45,9 @@ export default function UserManagement() {
             id: u.employeeId || u.staff_id || u.id, 
             originalId: u.id, 
             name: u.fullName || u.username || 'Tanpa Nama',
-            email: u.email,
+            cabang: u.cabang || u.divisi || 'KC Semarang',
+            unit: u.unit || '-',
             role: rawRole,
-            unit: u.divisi || u.unit || 'KC Semarang',
             isSuspended: u.is_suspended || false,
             status: u.is_suspended ? 'Ditangguhkan' : 'Aktif', 
             isDeleted: u.deleted_at ? true : false,
@@ -70,61 +62,6 @@ export default function UserManagement() {
       console.error('Gagal memuat data user:', error.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // HANDLE GENERATE KODE DAN UNDUH FILE EXCEL
-  const handleGenerateCodes = async (e) => {
-    e.preventDefault();
-    const countNum = parseInt(generateCount, 10);
-    
-    if (isNaN(countNum) || countNum < 1) {
-      toast.error("Jumlah kode minimal 1");
-      return;
-    }
-    if (countNum > 1000) {
-      toast.error("Maksimal 1000 kode per sekali unduh");
-      return;
-    }
-
-    setIsGenerating(true);
-    const loadingToast = toast.loading("Membuat kode & menyiapkan file Excel...");
-
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const res = await fetch(`${API_URL}/auth/generate-registration-codes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ count: countNum })
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || "Gagal membuat kode registrasi");
-      }
-
-      // Download file binary Excel dari response
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `Kode_Registrasi_BSNetOps_${Date.now()}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-
-      toast.dismiss(loadingToast);
-      toast.success(`Berhasil membuat ${countNum} kode registrasi!`);
-      setIsGenerateOpen(false);
-    } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error(err.message || "Gagal mengunduh file Excel");
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -144,9 +81,8 @@ export default function UserManagement() {
         },
         body: JSON.stringify({
           fullName: updatedUser.name,
-          username: updatedUser.name.toLowerCase().replace(/\s+/g, ''),
-          email: updatedUser.email,
           role: updatedUser.role.toUpperCase(),
+          cabang: updatedUser.cabang,
           divisi: updatedUser.unit,
           is_suspended: updatedUser.isSuspended
         })
@@ -252,7 +188,12 @@ export default function UserManagement() {
     .filter(user => (roleFilter === 'Semua' ? true : user.role === roleFilter))
     .filter(user => {
       const query = searchQuery.toLowerCase();
-      return user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+      return (
+        user.name.toLowerCase().includes(query) || 
+        user.id.toLowerCase().includes(query) ||
+        user.cabang.toLowerCase().includes(query) ||
+        user.unit.toLowerCase().includes(query)
+      );
     });
 
   return (
@@ -279,23 +220,12 @@ export default function UserManagement() {
           {!showTrash && (
             <button 
               onClick={() => setShowTrash(true)} 
-              title="Lihat Sampah"
-              className="flex items-center justify-center p-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md group"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-zinc-700 border border-zinc-200 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer shadow-md group"
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} />
             </button>
           )}
           
-          {/* 🔥 TOMBOL GENERATE KODE VALIDASI DI ANTARA SAMPAH & DAFTAR USER */}
-          {!showTrash && (
-            <button 
-              onClick={() => setIsGenerateOpen(true)} 
-              className="flex items-center gap-2 bg-white text-[#00664b] border border-[#00664b]/30 hover:bg-emerald-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
-            >
-              <KeyRound size={16} /> Generate Kode
-            </button>
-          )}
-
           {!showTrash && (
             <button 
               onClick={() => setIsAddOpen(true)} 
@@ -314,7 +244,7 @@ export default function UserManagement() {
             type="text" 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
-            placeholder="Cari nama user atau alamat email resmi..." 
+            placeholder="Cari nama user, ID, cabang, atau unit..." 
             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
           />
         </div>
@@ -341,7 +271,8 @@ export default function UserManagement() {
               <tr className="bg-[#58a27d] border-[#58a27d] text-white text-xs uppercase font-semibold tracking-wider border-b">
                 <th className="p-4 rounded-tl-xl">ID User</th>
                 <th className="p-4">Nama Lengkap</th>
-                <th className="p-4">Email Resmi</th>
+                <th className="p-4">Cabang</th>
+                <th className="p-4">Unit</th>
                 <th className="p-4">Hak Akses</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right rounded-tr-xl">Aksi Kontrol</th>
@@ -350,13 +281,13 @@ export default function UserManagement() {
             <tbody className="divide-y divide-zinc-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium">
+                  <td colSpan={7} className="p-12 text-center text-zinc-400 font-medium">
                     Memuat data dari database...
                   </td>
                 </tr>
               ) : processedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-400 font-medium">
+                  <td colSpan={7} className="p-12 text-center text-zinc-400 font-medium">
                     {showTrash 
                       ? "Keranjang sampah kosong." 
                       : "Tidak ditemukan data user yang cocok dengan kriteria pencarian."}
@@ -367,7 +298,8 @@ export default function UserManagement() {
                   <tr key={user.originalId} className="hover:bg-zinc-50/40 transition-colors">
                     <td className="p-4 font-mono text-xs font-bold text-zinc-900">{user.id}</td>
                     <td className="p-4 font-semibold text-zinc-900">{user.name}</td>
-                    <td className="p-4 text-zinc-900 font-medium">{user.email}</td>
+                    <td className="p-4 text-zinc-800 font-medium">{user.cabang}</td>
+                    <td className="p-4 text-zinc-800 font-medium">{user.unit}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
                         user.role === 'Admin' 
@@ -434,92 +366,6 @@ export default function UserManagement() {
           </table>
         </div>
       </div>
-
-      {/* 🔥 MODAL GENERATE KODE REGISTRASI & DOWNLOAD EXCEL */}
-      {isGenerateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-[20px] shadow-2xl border border-zinc-100 p-7 animate-in zoom-in-95 duration-200 relative">
-            <button 
-              onClick={() => setIsGenerateOpen(false)} 
-              className="absolute top-5 right-5 p-1 text-zinc-400 hover:text-zinc-700 transition"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Header Modal */}
-            <div className="flex items-center gap-3.5 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-[#00664b] shrink-0">
-                <FileSpreadsheet size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-zinc-900 leading-tight">
-                  Generate Kode Registrasi
-                </h3>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Buat kode validasi sekali pakai & unduh format Excel
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleGenerateCodes} className="space-y-5">
-              <div>
-                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2">
-                  Jumlah Kode yang Dibuat
-                </label>
-                <input 
-                  type="number" 
-                  min="1"
-                  max="1000"
-                  value={generateCount} 
-                  onChange={(e) => setGenerateCount(e.target.value)}
-                  placeholder="Contoh: 100"
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-2 focus:ring-[#00664b]/30 focus:border-[#00664b] transition-all"
-                />
-              </div>
-
-              {/* Tombol Cepat Pilihan Kuota */}
-              <div>
-                <span className="block text-[11px] font-semibold text-zinc-400 mb-1.5">Pilihan Cepat:</span>
-                <div className="grid grid-cols-4 gap-2">
-                  {[10, 25, 50, 100].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setGenerateCount(num)}
-                      className={`py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                        Number(generateCount) === num 
-                          ? 'bg-[#00664b] text-white border-[#00664b]' 
-                          : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
-                      }`}
-                    >
-                      {num} Kode
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
-                <button 
-                  type="button"
-                  onClick={() => setIsGenerateOpen(false)} 
-                  className="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={isGenerating}
-                  className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-[#00664b] hover:bg-[#00553e] rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                >
-                  <Download size={16} />
-                  {isGenerating ? "Memproses..." : "Unduh Excel"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* MODAL DELETE */}
       {deleteModal.isOpen && (

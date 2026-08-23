@@ -60,7 +60,8 @@ export default function PenyetujuanBarang() {
 
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
           const pemohonName = curr.user?.fullName || curr.user?.username || 'Pemohon BSN';
-          const divisiPemohon = curr.user?.divisi || 'KC Semarang';
+          const cabangPemohon = curr.user?.cabang || 'KC Semarang';
+          const unitPemohon = curr.user?.unit || curr.user?.divisi || '-';
 
           const groupKey = `${tglStr}-${curr.userId}`;
 
@@ -78,13 +79,14 @@ export default function PenyetujuanBarang() {
 
           if (!acc[groupKey]) {
             const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
-            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const tglFormatId = rawDate.toISOString().slice(0, 10).replace(/-/g, '');
             const prettyId = `REQ-${tglFormatId}-${padId}`;
 
             acc[groupKey] = {
               id: prettyId,
               pemohon: pemohonName,
-              unit: divisiPemohon,
+              cabang: cabangPemohon,
+              unit: unitPemohon,
               tanggal: tglStr,
               status: currentStatus,
               rawStatus: curr.status,
@@ -112,7 +114,7 @@ export default function PenyetujuanBarang() {
           acc[groupKey].items.push({
             idItem: curr.id,
             namaBarang: curr.nama_aset || 'Barang Logistik',
-            kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-',
+            kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3, '0')}` : '-',
             stokGudang: latestStock,
             jmlDiminta: initialDiminta,
             jmlDisetujui: curr.jumlah_disetujui ?? initialDisetujui, 
@@ -136,6 +138,7 @@ export default function PenyetujuanBarang() {
   const filteredRequests = requests.filter(req =>
     (req.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (req.pemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (req.cabang || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (req.unit || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -254,6 +257,8 @@ export default function PenyetujuanBarang() {
   const loggedInProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
   
   const mappedFormData = selectedRequest ? {
+    cabang: selectedRequest.cabang,
+    unit: selectedRequest.unit,
     divisi: selectedRequest.unit,
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
     namaLengkap: selectedRequest.pemohon,
@@ -286,7 +291,7 @@ export default function PenyetujuanBarang() {
             type="text" 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari ID, Pemohon, atau Unit..." 
+            placeholder="Cari ID, Pemohon, Cabang, atau Unit..." 
             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b]"
           />
         </div>
@@ -296,19 +301,20 @@ export default function PenyetujuanBarang() {
         <table className="w-full text-sm text-left table-fixed">
           <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
             <tr>
-              <th className="p-4 w-[18%]">ID Permintaan</th>
-              <th className="p-4 w-[22%]">Pemohon</th>
-              <th className="p-4 w-[18%]">Unit</th>
-              <th className="p-4 w-[16%]">Tgl Dibutuhkan</th>
-              <th className="p-4 w-[14%] text-center">Status</th>
+              <th className="p-4 w-[16%]">ID Permintaan</th>
+              <th className="p-4 w-[20%]">Pemohon</th>
+              <th className="p-4 w-[14%]">Cabang</th>
+              <th className="p-4 w-[13%]">Unit</th>
+              <th className="p-4 w-[14%]">Tgl Dibutuhkan</th>
+              <th className="p-4 w-[11%] text-center">Status</th>
               <th className="p-4 w-[12%] text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {loading ? (
-              <tr><td colSpan="6" className="p-8 text-center text-zinc-400 text-sm">Memuat data dari database...</td></tr>
+              <tr><td colSpan="7" className="p-8 text-center text-zinc-400 text-sm">Memuat data dari database...</td></tr>
             ) : filteredRequests.length === 0 ? (
-              <tr><td colSpan="6" className="p-8 text-center text-zinc-500 text-sm">Tidak ada data permintaan ditemukan</td></tr>
+              <tr><td colSpan="7" className="p-8 text-center text-zinc-500 text-sm">Tidak ada data permintaan ditemukan</td></tr>
             ) : (
               filteredRequests.map((req) => {
                 const statusData = getStatusInfo(req.status);
@@ -316,7 +322,8 @@ export default function PenyetujuanBarang() {
                   <tr key={req.id} className="hover:bg-zinc-50/40 transition-colors">
                     <td className="p-4 font-mono text-xs font-bold text-zinc-900 truncate" title={req.id}>{req.id}</td>
                     <td className="p-4 font-bold text-zinc-800 truncate" title={req.pemohon}>{req.pemohon}</td>
-                    <td className="p-4 text-zinc-600 truncate" title={req.unit}>{req.unit}</td>
+                    <td className="p-4 text-zinc-600 truncate" title={req.cabang}>{req.cabang}</td>
+                    <td className="p-4 text-zinc-600 font-medium truncate" title={req.unit}>{req.unit}</td>
                     <td className="p-4 text-zinc-600 truncate">{req.tanggal}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-wider border ${statusData.color}`}>
@@ -359,14 +366,20 @@ export default function PenyetujuanBarang() {
                 <div className="flex-1">
                   <h3 className="text-sm font-bold text-gray-800 mb-3 border-b border-zinc-100 pb-2">Informasi Pemohon</h3>
                   <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-y-2 text-sm text-gray-700">
-                    <span className="font-medium text-zinc-500">Nama Lengkap</span><span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
-                    <span className="font-medium text-zinc-500">Unit / Cabang</span><span>: {selectedRequest.unit}</span>
+                    <span className="font-medium text-zinc-500">Nama Lengkap</span>
+                    <span className="font-bold text-zinc-900">: {selectedRequest.pemohon}</span>
+
+                    <span className="font-medium text-zinc-500">Cabang</span>
+                    <span className="font-medium text-zinc-800">: {selectedRequest.cabang}</span>
+
+                    <span className="font-medium text-zinc-500">Unit</span>
+                    <span className="font-medium text-zinc-800">: {selectedRequest.unit}</span>
                     
-                    {/* STATUS AKSI: TANPA HIGHLIGHT, WARNA #013F27, TITLE CASE */}
                     <span className="font-medium text-zinc-500">Status Aksi</span>
                     <span>: <span className="ml-1 font-bold text-[#013F27]">{getStatusInfo(selectedRequest.status).label}</span></span>
                     
-                    <span className="font-medium text-zinc-500">Keterangan</span><span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
+                    <span className="font-medium text-zinc-500">Keterangan</span>
+                    <span className="italic text-zinc-600">: {selectedRequest.keteranganPemohon || '-'}</span>
                   </div>
                 </div>
 

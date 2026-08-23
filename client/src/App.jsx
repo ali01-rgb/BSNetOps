@@ -9,7 +9,7 @@ import SyaratKetentuan from "./pages/barketentuan/SyaratKetentuan";
 import KebijakanPrivasi from "./pages/barketentuan/KebijakanPrivasi";
 
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+// ❌ Import RegisterPage sudah dihapus
 
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
@@ -158,7 +158,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* ❌ Route path="/register" sudah dihapus total */}
 
           <Route path="/kebijakan-privasi" element={
             <PublicDocLayout title="Kebijakan Privasi" subtitle="Dokumen Kebijakan Internal">

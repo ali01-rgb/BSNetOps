@@ -36,7 +36,6 @@ export default function LogAktifitasAdmin() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
-      // Fetch dua endpoint: Requests (Keluar) dan Assets (Masuk)
       const [reqRes, assetsRes] = await Promise.all([
         fetch(`${API_URL}/inventory/admin/requests`, { headers: { "Authorization": `Bearer ${token}` } }),
         fetch(`${API_URL}/inventory/assets`, { headers: { "Authorization": `Bearer ${token}` } })
@@ -68,11 +67,16 @@ export default function LogAktifitasAdmin() {
             const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
             const prettyId = `REQ-${tglFormatId}-${padId}`;
 
+            const pemohonName = req.user?.fullName || req.user?.username || 'Pemohon';
+            const cabangPemohon = req.user?.cabang || req.user?.divisi || 'KC Semarang';
+            const unitPemohon = req.user?.unit || '';
+
             combinedLogs.push({
               id: prettyId,
               originalId: req.id, 
-              requester: req.user?.fullName || req.user?.username || 'Pemohon',
-              unit: req.user?.divisi || req.unit || 'KC Semarang',
+              requester: pemohonName,
+              cabang: cabangPemohon,
+              unit: unitPemohon,
               itemName: req.nama_aset || 'Barang',
               qty: req.jumlah || 1,
               date: rawDate.toISOString(),
@@ -98,7 +102,8 @@ export default function LogAktifitasAdmin() {
               id: ast.kode_barang || ast.id || 'AST-NEW',
               originalId: ast.id,
               requester: 'Admin Gudang',
-              unit: 'Gudang Utama',
+              cabang: 'Gudang Utama',
+              unit: '',
               itemName: ast.nama_barang || ast.nama_aset || 'Barang Baru',
               qty: ast.stok ?? ast.stock ?? 0,
               date: rawDate.toISOString(),
@@ -110,7 +115,6 @@ export default function LogAktifitasAdmin() {
         }
       }
 
-      // Urutkan berdasarkan tanggal terbaru
       combinedLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
       setHistory(combinedLogs);
 
@@ -142,12 +146,12 @@ export default function LogAktifitasAdmin() {
     })
     .filter(item =>
       (item.requester || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.cabang || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.unit || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.itemName || '').toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  // 🔥 HANDLE EXPORT MENGGUNAKAN HELPER EXCELJS
   const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
@@ -159,8 +163,9 @@ export default function LogAktifitasAdmin() {
     const dataToExport = filteredHistory.map(item => ({
       "ID Transaksi": item.id,
       "Tipe Transaksi": item.type,
-      "Nama Pemohon": item.requester,
-      "Unit / KC": item.unit,
+      "Nama Pemohon": item.requester + (item.unit ? ` (${item.unit})` : ''),
+      "Cabang": item.cabang,
+      "Unit": item.unit || '-',
       "Nama Barang / Logistik": item.itemName,
       "Jumlah (Unit)": item.qty,
       "Tanggal Transaksi": new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -196,7 +201,7 @@ export default function LogAktifitasAdmin() {
       const idsToDelete = filteredHistory.map(item => item.originalId);
 
       const res = await fetch(`${API_URL}/inventory/requests/bulk-delete`, {
-        method: "DELETE",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -273,7 +278,7 @@ export default function LogAktifitasAdmin() {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari ID request, pemohon, unit KC, atau nama barang..." 
+              placeholder="Cari ID request, pemohon, unit, cabang, atau nama barang..." 
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white transition-colors"
             />
           </div>
@@ -369,23 +374,22 @@ export default function LogAktifitasAdmin() {
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 <div className="space-y-1.5 min-w-0">
                   <p className="text-sm text-zinc-700 leading-relaxed break-words">
-                    <span className="font-bold text-zinc-900">{item.requester}</span> 
-                    {item.type === 'Masuk' 
-                      ? ' mendaftarkan barang masuk/restock berupa ' 
-                      : ' melakukan pengambilan barang untuk dikirim ke '}
-                    {item.type !== 'Masuk' && (
-                      <span className="font-bold text-zinc-900 mr-1">
-                        {item.unit}
-                      </span>
+                    <span className="font-bold text-zinc-900">
+                      {item.requester}{item.unit ? ` (${item.unit})` : ''}
+                    </span> 
+                    {item.type === 'Masuk' ? (
+                      <> mendaftarkan barang masuk/restock berupa </>
+                    ) : (
+                      <> melakukan pengambilan barang untuk dikirim ke <span className="font-bold text-zinc-900 mr-1">{item.cabang}</span> berupa </>
                     )}
-                    berupa <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
+                    <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
                     <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
                     <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
                     <span className="text-zinc-500 font-medium flex items-center gap-1">
-                      <MapPin size={12} /> {item.unit}
+                      <MapPin size={12} /> {item.cabang}{item.unit ? ` (${item.unit})` : ''}
                     </span>
                   </div>
                 </div>

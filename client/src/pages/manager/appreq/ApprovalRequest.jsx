@@ -57,7 +57,8 @@ export default function ApprovalRequest() {
 
           const tglStr = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
           const pemohonName = curr.user?.fullName || curr.user?.username || 'Pemohon BSN';
-          const divisiPemohon = curr.user?.divisi || 'KC Semarang';
+          const cabangPemohon = curr.user?.cabang || 'KC Semarang';
+          const unitPemohon = curr.user?.unit || curr.user?.divisi || '-';
 
           const groupKey = `${tglStr}-${curr.userId}`;
 
@@ -74,13 +75,14 @@ export default function ApprovalRequest() {
 
           if (!acc[groupKey]) {
             const padId = String(Object.keys(acc).length + 1).padStart(3, '0');
-            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const tglFormatId = rawDate.toISOString().slice(0, 10).replace(/-/g, '');
             const prettyId = `REQ-${tglFormatId}-${padId}`; 
 
             acc[groupKey] = {
               id: prettyId, 
               namaPemohon: pemohonName,
-              unit: divisiPemohon,
+              cabang: cabangPemohon,
+              unit: unitPemohon,
               prioritas: curr.prioritas || 'Rendah',
               tanggal: tglStr,
               jam: rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
@@ -102,7 +104,7 @@ export default function ApprovalRequest() {
 
           acc[groupKey].items.push({
             idItem: curr.id, 
-            kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3,'0')}` : '-', 
+            kodeBarang: curr.no_urut ? `RQ-${String(curr.no_urut).padStart(3, '0')}` : '-', 
             namaBarang: curr.nama_aset || 'Barang Logistik',
             jumlahDiminta: curr.jumlah || 1,
             jumlahDisetujui: curr.jumlah_disetujui ?? curr.jumlah ?? 1,
@@ -135,6 +137,8 @@ export default function ApprovalRequest() {
     
     const matchSearch = 
       (r.namaPemohon || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (r.cabang || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (r.unit || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (r.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.items.some(item => (item.namaBarang || '').toLowerCase().includes(searchQuery.toLowerCase()));
     
@@ -253,6 +257,8 @@ export default function ApprovalRequest() {
   const activeDetail = requests.find(item => item.id === selectedId);
 
   const mappedFormData = activeDetail ? {
+    cabang: activeDetail.cabang,
+    unit: activeDetail.unit,
     divisi: activeDetail.unit,
     alasanDibutuhkan: activeDetail.keperluan,
     namaLengkap: activeDetail.namaPemohon,
@@ -304,7 +310,7 @@ export default function ApprovalRequest() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input 
                 type="text" 
-                placeholder="Cari ID, pemohon, atau barang..."
+                placeholder="Cari ID, pemohon, cabang, atau barang..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs focus:outline-none focus:border-[#00664b] transition-colors"
@@ -349,7 +355,7 @@ export default function ApprovalRequest() {
           </div>
         </div>
 
-        {/* Tabel Request Utama dengan Penyesuaian Posisi Kolom Tanggal */}
+        {/* Tabel Request Utama */}
         <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-fixed">
@@ -366,10 +372,9 @@ export default function ApprovalRequest() {
                     )}
                   </th>
                   <th className="py-3.5 px-3 w-[14%]">ID Permintaan</th>
-                  <th className="py-3.5 px-4 w-[17%]">Pemohon</th>
-                  <th className="py-3.5 px-4 w-[24%]">Daftar Barang</th>
-                  <th className="py-3.5 px-3 w-[12%] text-center">Prioritas</th>
-                  {/* Kolom Tanggal Digeser Sedikit ke Kanan dengan padding px-6 */}
+                  <th className="py-3.5 px-4 w-[20%]">Pemohon</th>
+                  <th className="py-3.5 px-4 w-[22%]">Daftar Barang</th>
+                  <th className="py-3.5 px-3 w-[11%] text-center">Prioritas</th>
                   <th className="py-3.5 px-6 w-[14%]">Tanggal</th>
                   <th className="py-3.5 px-4 w-[15%] text-center">Status</th>
                 </tr>
@@ -405,7 +410,9 @@ export default function ApprovalRequest() {
                       <td className="py-4 px-4 min-w-0">
                         <div className="flex flex-col">
                           <span className="font-bold text-zinc-800 truncate" title={item.namaPemohon}>{item.namaPemohon}</span>
-                          <span className="text-[10px] text-zinc-400 font-medium truncate">{item.unit}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium truncate">
+                            {item.cabang}{item.unit && item.unit !== '-' ? ` (${item.unit})` : ''}
+                          </span>
                         </div>
                       </td>
                       <td className="py-4 px-4 min-w-0">
@@ -423,7 +430,6 @@ export default function ApprovalRequest() {
                           {item.prioritas}
                         </span>
                       </td>
-                      {/* Tanggal diberi px-6 agar seimbang jaraknya dengan Prioritas dan Status */}
                       <td className="py-4 px-6 text-zinc-500 font-medium">
                         <div className="flex flex-col">
                           <span className="whitespace-nowrap">{item.tanggal}</span>
@@ -502,8 +508,10 @@ export default function ApprovalRequest() {
                   <span className="text-zinc-900 font-bold text-sm">{activeDetail.namaPemohon}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Unit / Cabang</span>
-                  <span className="text-zinc-900 font-bold">{activeDetail.unit}</span>
+                  <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Cabang / Unit</span>
+                  <span className="text-zinc-900 font-bold">
+                    {activeDetail.cabang}{activeDetail.unit && activeDetail.unit !== '-' ? ` (${activeDetail.unit})` : ''}
+                  </span>
                 </div>
                 <div>
                   <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-1">Tanggal Pengajuan</span>
