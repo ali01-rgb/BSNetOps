@@ -45,8 +45,8 @@ export default function UserManagement() {
             id: u.employeeId || u.staff_id || u.id, 
             originalId: u.id, 
             name: u.fullName || u.username || 'Tanpa Nama',
-            cabang: u.cabang || u.divisi || 'KC Semarang',
-            unit: u.unit || '-',
+            cabang: u.cabang || 'KC Semarang',
+            unit: u.unit || u.divisi || '-', // 🔥 Fallback ke divisi jika data unit sebelumnya masih kosong di database
             role: rawRole,
             isSuspended: u.is_suspended || false,
             status: u.is_suspended ? 'Ditangguhkan' : 'Aktif', 
@@ -55,7 +55,7 @@ export default function UserManagement() {
           };
         });
         
-        formattedData.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        formattedData.sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
         setUsers(formattedData);
       }
     } catch (error) {
@@ -73,19 +73,28 @@ export default function UserManagement() {
   const handleUpdateUser = async (updatedUser) => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
+      const payload = {
+        fullName: updatedUser.name,
+        role: updatedUser.role.toUpperCase(),
+        cabang: updatedUser.cabang,
+        divisi: updatedUser.unit,
+        unit: updatedUser.unit, // 🔥 Kirim properti unit ke backend
+        is_suspended: updatedUser.isSuspended
+      };
+
+      // 🔥 Kirim password jika diisi di modal EditUser
+      if (updatedUser.password && updatedUser.password.trim() !== '') {
+        payload.password = updatedUser.password;
+      }
+
       const res = await fetch(`${API_URL}/inventory/users/${updatedUser.originalId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          fullName: updatedUser.name,
-          role: updatedUser.role.toUpperCase(),
-          cabang: updatedUser.cabang,
-          divisi: updatedUser.unit,
-          is_suspended: updatedUser.isSuspended
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) throw new Error("Gagal memperbarui");

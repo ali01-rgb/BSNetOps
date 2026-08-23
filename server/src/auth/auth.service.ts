@@ -19,7 +19,6 @@ export class AuthService {
   async login(identifier: string, pass: string) {
     const cleanId = (identifier || '').trim();
     
-    // Cari user menggunakan Email ATAU ID Pegawai ATAU Nama Karyawan
     const user = await this.prisma.user.findFirst({ 
       where: { 
         OR: [
@@ -44,19 +43,22 @@ export class AuthService {
     
     return {
       access_token: await this.jwtService.signAsync(payload),
-      isFirstLogin: user.isFirstLogin, // 🔥 FLAG TRIGGER POPUP GANTI PASSWORD
+      isFirstLogin: user.isFirstLogin,
       role: userRole, 
       user: {
         id: user.id, 
         email: user.email, 
         employeeId: user.employeeId,
         role: userRole, 
+        fullName: user.fullName,
         namaLengkap: user.fullName, 
+        cabang: user.cabang,
+        unit: user.unit || user.divisi,
       },
     };
   }
 
-  // 🔥 FUNGSI EKSEKUSI GANTI PASSWORD PERTAMA KALI OLEH KARYAWAN
+  // 🔥 FUNGSI GANTI PASSWORD PERTAMA KALI
   async changeFirstPassword(userId: string, newPass: string) {
     const hashedPassword = await bcrypt.hash(newPass, 10);
     await this.prisma.user.update({
@@ -66,14 +68,24 @@ export class AuthService {
     return { message: 'Password berhasil diperbarui! Silakan lanjut ke Dashboard.' };
   }
 
-  // MANAJEMEN PROFIL
+  // 🔥 GET PROFILE (DITAMBAHKAN unit: true)
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, employeeId: true, email: true, fullName: true,
-        divisi: true, cabang: true, phone: true, avatar: true, role: true, 
-        isFirstLogin: true, is_suspended: true, deleted_at: true, 
+        id: true, 
+        employeeId: true, 
+        email: true, 
+        fullName: true,
+        divisi: true, 
+        unit: true, // 👈 Ditambahkan agar unit terambil
+        cabang: true, 
+        phone: true, 
+        avatar: true, 
+        role: true, 
+        isFirstLogin: true, 
+        is_suspended: true, 
+        deleted_at: true, 
       },
     });
     if (!user) throw new NotFoundException('User tidak ditemukan');
@@ -81,8 +93,10 @@ export class AuthService {
     return user;
   }
 
+  // 🔥 UPDATE PROFILE (DITAMBAHKAN penanganan data.unit)
   async updateProfile(userId: string, data: any) {
-    // Izinkan karyawan memperbarui email dummy dengan email asli mereka
+    const resolvedUnit = data.unit || data.divisi || undefined;
+
     let payloadUpdate: any = {
       fullName: data.fullName,
       phone: data.phone,
@@ -92,15 +106,25 @@ export class AuthService {
     if (data.email) {
       payloadUpdate.email = data.email.trim().toLowerCase();
     }
-    if (data.cabang) payloadUpdate.cabang = data.cabang;
-    if (data.divisi) payloadUpdate.divisi = data.divisi;
+    if (data.cabang !== undefined) payloadUpdate.cabang = data.cabang;
+    if (resolvedUnit !== undefined) {
+      payloadUpdate.unit = resolvedUnit;
+      payloadUpdate.divisi = resolvedUnit; // Disinkronkan dengan divisi
+    }
 
     return this.prisma.user.update({
       where: { id: userId },
       data: payloadUpdate,
       select: { 
-        id: true, fullName: true, email: true, divisi: true, cabang: true, 
-        phone: true, avatar: true, role: true 
+        id: true, 
+        fullName: true, 
+        email: true, 
+        divisi: true, 
+        unit: true, // 👈 Ditambahkan di return response
+        cabang: true, 
+        phone: true, 
+        avatar: true, 
+        role: true 
       },
     });
   }
