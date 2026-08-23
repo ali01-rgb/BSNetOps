@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaXmark, FaEye, FaEyeSlash, FaCheckCircle } from "react-icons/fa6";
+import { FaXmark, FaEye, FaEyeSlash, FaCircleCheck } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { API_URL } from '@/api';
@@ -63,7 +63,6 @@ export default function LoginPage() {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Username yang dikirim bisa berupa Nama Lengkap, ID Pegawai, atau Email
         body: JSON.stringify({ email: form.username, password: form.password }),
       });
 
@@ -75,7 +74,7 @@ export default function LoginPage() {
         if (data.isFirstLogin) {
           setTempToken(data.access_token);
           setTempUser(data);
-          setShowFirstLoginModal(true); // Tahan user, tunjukkan modal ganti password
+          setShowFirstLoginModal(true);
           return;
         }
 
@@ -141,7 +140,6 @@ export default function LoginPage() {
       if (res.ok) {
         toast.dismiss(toastId);
         setShowFirstLoginModal(false);
-        // Lanjut ke dashboard memakai data yang disimpan tadi, tapi passwordnya pake yg baru buat 'remember me'
         proceedToDashboard(tempUser, form.remember, form.username, newPassword);
       } else {
         const errorData = await res.json();
@@ -165,7 +163,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 scale-105 bg-cover bg-center blur-[2px]" style={{ backgroundImage: "url('/images/landingpage-bg.jpeg')" }} />
       <div className="absolute inset-0 bg-black/40" /> 
 
-      {/* 🔥 MODAL 1: LUPA PASSWORD (INFO WA) */}
+      {/* 🔥 MODAL 1: LUPA PASSWORD */}
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-[380px] rounded-[24px] bg-white px-8 py-9 shadow-2xl text-center animate-in zoom-in-95 duration-200">
@@ -199,10 +197,9 @@ export default function LoginPage() {
       {/* 🔥 MODAL 2: GANTI PASSWORD PERTAMA KALI LOGIN */}
       {showFirstLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          {/* Tanda Peringatan Melayang */}
           <div className="absolute top-[10%] lg:top-8 bg-white border border-slate-200 shadow-xl rounded-xl p-4 flex items-center gap-3 w-full max-w-sm animate-in slide-in-from-top-10 duration-300">
             <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#00634b] flex items-center justify-center shrink-0">
-              <FaCheckCircle size={18} />
+              <FaCircleCheck size={18} />
             </div>
             <p className="text-[12px] font-semibold text-slate-700 leading-tight">
               Akun baru terdeteksi. Silakan ubah password Anda.
