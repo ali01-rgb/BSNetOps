@@ -124,7 +124,7 @@ export default function TambahUser({ onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-lg rounded-[20px] shadow-2xl border border-zinc-200 overflow-hidden animate-in zoom-in-95 duration-200">
-        
+
         {/* HEADER */}
         <div className="pt-6 px-6 pb-4 flex justify-between items-start">
           <div>
@@ -267,18 +267,18 @@ export default function TambahUser({ onClose, onSuccess }) {
           </form>
         )}
 
-        {/* CONTENT EXCEL */}
+        {/* CONTENT EXCEL (TEMA HIJAU) */}
         {activeTab === 'excel' && (
           <div className="p-6">
-            <div className="border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-2xl p-8 flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4">
+            <div className="border-2 border-dashed border-[#00664b]/30 bg-emerald-50/40 rounded-2xl p-8 flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-emerald-100 text-[#00664b] rounded-full flex items-center justify-center mb-4">
                 <UploadCloud size={24} />
               </div>
               <h4 className="text-[15px] font-bold text-slate-800 mb-2">Upload Data Bebas</h4>
               <p className="text-[12px] text-slate-500 font-medium leading-relaxed max-w-xs mb-6">
                 Sistem <b>Smart-Mapping</b> otomatis mendeteksi kolom Nama Karyawan, Penempatan Cabang, Unit, dan Hak Akses. ID BSN akan di-generate otomatis.
               </p>
-              
+
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -286,11 +286,11 @@ export default function TambahUser({ onClose, onSuccess }) {
                 accept=".xlsx, .xls" 
                 className="hidden" 
               />
-              
+
               <button 
-                type="button"
-                onClick={() => fileInputRef.current.click()}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[13px] px-6 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+                type="button" 
+                onClick={() => fileInputRef.current.click()} 
+                className="bg-[#00664b] hover:bg-[#004d3a] text-white font-bold text-[13px] px-6 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
               >
                 {selectedFile ? <FileText size={16} /> : <UploadCloud size={16} />}
                 {selectedFile ? selectedFile.name : "Pilih File Excel (.xlsx)"}
@@ -306,10 +306,10 @@ export default function TambahUser({ onClose, onSuccess }) {
                 Batal
               </button>
               <button 
-                type="button"
+                type="button" 
                 onClick={handleExcelSubmit} 
                 disabled={loading || !selectedFile} 
-                className="flex items-center gap-2 bg-[#6b8cff] hover:bg-[#5a7bed] text-white px-6 py-2.5 rounded-xl text-[14px] font-bold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:bg-slate-300"
+                className="flex items-center gap-2 bg-[#00664b] hover:bg-[#004d3a] text-white px-6 py-2.5 rounded-xl text-[14px] font-bold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:bg-slate-300"
               >
                 {loading ? 'Memproses...' : 'Mulai Import Dokumen'}
               </button>
