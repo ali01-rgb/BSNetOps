@@ -9,7 +9,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     const data = payload[0].payload;
     return (
       <div className="bg-white p-4 rounded-2xl shadow-2xl border border-zinc-100 min-w-[220px] space-y-3 pointer-events-none animate-in fade-in zoom-in-95 duration-150">
-        {/* Header Unit / Cabang */}
+        {/* Header Cabang */}
         <div className="flex items-center gap-2.5 pb-2.5 border-b border-zinc-100">
           <div className="w-8 h-8 rounded-xl bg-[#004d38] flex items-center justify-center text-white shrink-0 shadow-sm">
             <Building2 size={16} />
@@ -128,7 +128,7 @@ export default function ManagerDashboard() {
       const pendingItemsForManager = rawRequests.filter(r => 
         ['DITERUSKAN', 'DITERUSKAN KE MANAGER'].includes((r.status || '').toUpperCase())
       );
-      
+
       const uniquePendingReports = new Set(
         pendingItemsForManager.map(r => {
           const rawDate = new Date(r.createdAt || Date.now());
@@ -163,15 +163,16 @@ export default function ManagerDashboard() {
         { name: 'KCP Magelang', Diminta: 0, Keluar: 0 },
       ];
 
+      // 🔥 AKUMULASI DATA BERDASARKAN CABANG PENEMPATAN
       rawRequests.forEach(req => {
-        const userDivisi = (req.user?.divisi || req.unit || 'KC Semarang').trim();
+        const userCabang = (req.user?.cabang || req.cabang || 'KC Semarang').trim();
         const jumlahBarang = parseInt(req.jumlah) || 0;
         const statusUpper = (req.status || '').toUpperCase();
 
-        let targetUnit = baseUnits.find(u => u.name.toLowerCase() === userDivisi.toLowerCase());
+        let targetUnit = baseUnits.find(u => u.name.toLowerCase() === userCabang.toLowerCase());
 
         if (!targetUnit) {
-          targetUnit = { name: userDivisi, Diminta: 0, Keluar: 0 };
+          targetUnit = { name: userCabang, Diminta: 0, Keluar: 0 };
           baseUnits.push(targetUnit);
         }
 
@@ -191,16 +192,16 @@ export default function ManagerDashboard() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-zinc-800">
-      
+
       {/* 1. Header Halaman */}
       <div>
         <h2 className="text-xl font-bold text-white tracking-tight">Manager Oversight Dashboard</h2>
-        <p className="text-xs text-white font-normal mt-0.5">Ringkasan Analitik Distribusi Unit dan Status Urgensi Inventaris Global</p>
+        <p className="text-xs text-white font-normal mt-0.5">Ringkasan Analitik Distribusi Cabang dan Status Urgensi Inventaris Global</p>
       </div>
 
       {/* 2. Ringkasan Eksekutif */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         {/* Antrean Approval Card */}
         <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm border-l-4 border-l-amber-500 transition-all hover:scale-[1.01]">
           <div className="flex justify-between items-start">
@@ -250,8 +251,8 @@ export default function ManagerDashboard() {
       {/* 3. Visual Analitik Konten: Grafik Batang Distribusi */}
       <div className="bg-white p-6 border border-zinc-200/80 rounded-2xl shadow-sm">
         <div className="mb-4">
-          <h3 className="font-bold text-zinc-900 text-base">Statistik Permintaan vs Distribusi per Unit</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">Memantau rasio perbandingan jumlah barang yang diminta dengan barang yang telah didistribusikan</p>
+          <h3 className="font-bold text-zinc-900 text-base">Statistik Permintaan vs Distribusi per Cabang</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">Memantau rasio perbandingan jumlah barang yang diminta dengan barang yang telah didistribusikan ke setiap kantor cabang</p>
         </div>
         <div className="h-90 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
@@ -260,18 +261,17 @@ export default function ManagerDashboard() {
               <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} dy={5} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} />
 
-              {/* 🔥 CUSTOM TOOLTIP MENGIKUTI PERGERAKAN KURSOR */}
               <Tooltip 
                 content={<CustomTooltip />} 
                 cursor={{ fill: 'rgba(0, 0, 0, 0.03)', radius: 8 }} 
               />
 
               <Legend verticalAlign="top" content={<CustomLegend />} />
-              
+
               <Bar dataKey="Diminta" fill="#3b82f6" name="Barang Diminta" radius={[12, 12, 0, 0]}>
                 <LabelList dataKey="Diminta" position="top" fontSize={15} fill="#3b82f6" fontWeight="bold" />
               </Bar>
-              
+
               <Bar dataKey="Keluar" fill="#58a27d" name="Barang Keluar" radius={[12, 12, 0, 0]}>
                 <LabelList dataKey="Keluar" position="top" fontSize={15} fill="#58a27d" fontWeight="bold" />
               </Bar>

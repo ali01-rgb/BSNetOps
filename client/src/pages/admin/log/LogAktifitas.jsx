@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, CheckCircle2, Package, Hash, Download, ArrowDownRight, ArrowUpRight, Calendar, MapPin, Trash2, AlertTriangle, X } from 'lucide-react';
+import { 
+  Search, Clock, CheckCircle2, Package, Hash, Download, 
+  ArrowDownRight, ArrowUpRight, Calendar, MapPin, 
+  ChevronLeft, ChevronRight 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_URL } from '@/api';
 
@@ -9,22 +13,37 @@ export default function LogAktifitasAdmin() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Inisialisasi Tanggal & Tahun Dinamis
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+
+  // Definisi Array Bulan & Rentang Tahun
+  const yearRange = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const months = [
+    { value: '01', label: 'Januari' }, { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' }, { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' }, { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' }, { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' }, { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' }, { value: '12', label: 'Desember' }
+  ];
+
   // State Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [typeFilter, setTypeFilter] = useState('Semua');
   
   const [periodType, setPeriodType] = useState('Semua');
-  const [selectedMonth, setSelectedMonth] = useState('08'); 
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth); 
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
-  // Tracking Download & Modal
-  const [hasDownloaded, setHasDownloaded] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  // State Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
-  // Reset status download jika filter diubah
+  // Reset halaman ke 1 setiap kali filter berubah
   useEffect(() => {
-    setHasDownloaded(false);
+    setCurrentPage(1);
   }, [searchQuery, statusFilter, typeFilter, periodType, selectedMonth, selectedYear]);
 
   useEffect(() => {
@@ -64,7 +83,7 @@ export default function LogAktifitasAdmin() {
             }
 
             const padId = String(req.no_urut || index + 1).padStart(3, '0');
-            const tglFormatId = rawDate.toISOString().slice(0,10).replace(/-/g, '');
+            const tglFormatId = rawDate.toISOString().slice(0, 10).replace(/-/g, '');
             const prettyId = `REQ-${tglFormatId}-${padId}`;
 
             const pemohonName = req.user?.fullName || req.user?.username || 'Pemohon';
@@ -152,6 +171,11 @@ export default function LogAktifitasAdmin() {
       (item.id || '').toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+  // Kalkulasi Pagination
+  const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedHistory = filteredHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const handleExport = async () => {
     if (filteredHistory.length === 0) {
       toast.error("Tidak ada data untuk di-export!");
@@ -181,57 +205,14 @@ export default function LogAktifitasAdmin() {
 
     try {
       await generateLaporanActivityLog(dataToExport, namaPeriode, toastId);
-      setHasDownloaded(true);
     } catch (error) {
       console.error(error);
-      setHasDownloaded(false);
-    }
-  };
-
-  const handleDeleteHistory = async () => {
-    if (filteredHistory.length === 0) {
-      toast.error("Tidak ada data untuk dihapus!");
-      return;
-    }
-
-    const loadingToast = toast.loading("Menghapus riwayat dari database...");
-
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const idsToDelete = filteredHistory.map(item => item.originalId);
-
-      const res = await fetch(`${API_URL}/inventory/requests/bulk-delete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ ids: idsToDelete })
-      });
-
-      const resJson = await res.json();
-
-      if (res.ok) {
-        setHistory(prev => prev.filter(item => !idsToDelete.includes(item.originalId)));
-        
-        toast.dismiss(loadingToast);
-        toast.success(`${filteredHistory.length} data riwayat berhasil dihapus permanen dari database!`);
-        
-        setIsDeleteModalOpen(false);
-        setHasDownloaded(false);
-      } else {
-        throw new Error(resJson.message || "Gagal menghapus data dari server");
-      }
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      console.error('Error bulk delete:', error.message);
-      toast.error("Gagal menghapus riwayat dari database: " + error.message);
     }
   };
 
   const getStatusBadge = (status) => {
     const statLower = String(status).toLowerCase();
-    if (statLower === 'selesai') {
+    if (statLower === 'selesai' || statLower === 'approved' || statLower === 'disetujui') {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#e7f0ec] text-[#00664b] border border-[#00664b]/20"><CheckCircle2 size={13} /> Selesai</span>;
     }
     return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200"><Clock size={13} /> Menunggu</span>;
@@ -247,6 +228,7 @@ export default function LogAktifitasAdmin() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 relative">
       
+      {/* HEADER UTAMA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Activity Log & Laporan</h2>
@@ -255,21 +237,15 @@ export default function LogAktifitasAdmin() {
 
         <div className="flex items-center gap-3 self-start md:self-auto">
           <button 
-            title="Hapus Riwayat"
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center justify-center p-2.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <Trash2 size={20} />
-          </button>
-          <button 
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-white text-[#00664b] border border-zinc-200 hover:bg-emerald-50 hover:border-emerald-200 px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <Download size={16} /> Export Laporan
           </button>
         </div>
       </div>
 
+      {/* FILTER BOX */}
       <div className="bg-white p-4 rounded-xl shadow-md border border-zinc-200/80 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative flex items-center">
@@ -321,40 +297,35 @@ export default function LogAktifitasAdmin() {
             <option value="Tahun">Berdasarkan Tahun</option>
           </select>
 
+          {/* DROPDOWN BULAN */}
           {periodType === 'Bulan' && (
             <select 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
-              <option value="01">Januari</option>
-              <option value="02">Februari</option>
-              <option value="03">Maret</option>
-              <option value="04">April</option>
-              <option value="05">Mei</option>
-              <option value="06">Juni</option>
-              <option value="07">Juli</option>
-              <option value="08">Agustus</option>
-              <option value="09">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">Desember</option>
+              {months.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
             </select>
           )}
 
+          {/* DROPDOWN TAHUN */}
           {(periodType === 'Bulan' || periodType === 'Tahun') && (
             <select 
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 rounded-lg px-3 py-2 focus:outline-none focus:border-[#00664b] cursor-pointer font-medium"
             >
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
+              {yearRange.map(y => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
             </select>
           )}
         </div>
       </div>
 
+      {/* LIST DATA */}
       {loading ? (
         <div className="p-12 text-center text-xs text-zinc-400 bg-white rounded-xl shadow-sm border border-zinc-200">
           Memuat data log dari database...
@@ -364,101 +335,78 @@ export default function LogAktifitasAdmin() {
           Tidak ditemukan riwayat yang sesuai dengan filter.
         </div>
       ) : (
-        filteredHistory.map((item) => (
-          <div key={item.id} className="relative mb-4 pl-14 group">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
-              {getTypeIcon(item.type)}
-            </div>
+        <div className="space-y-4">
+          {paginatedHistory.map((item) => (
+            <div key={item.id} className="relative pl-14 group">
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 transition-transform group-hover:scale-110 z-10">
+                {getTypeIcon(item.type)}
+              </div>
 
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="space-y-1.5 min-w-0">
-                  <p className="text-sm text-zinc-700 leading-relaxed break-words">
-                    <span className="font-bold text-zinc-900">
-                      {item.requester}{item.unit ? ` (${item.unit})` : ''}
-                    </span> 
-                    {item.type === 'Masuk' ? (
-                      <> mendaftarkan barang masuk/restock berupa </>
-                    ) : (
-                      <> melakukan pengambilan barang untuk dikirim ke <span className="font-bold text-zinc-900 mr-1">{item.cabang}</span> berupa </>
-                    )}
-                    <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
-                  </p>
+              <div className="bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-300 transition-all shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
+                  <div className="space-y-1.5 min-w-0">
+                    <p className="text-sm text-zinc-700 leading-relaxed break-words">
+                      <span className="font-bold text-zinc-900">
+                        {item.requester}{item.unit ? ` (${item.unit})` : ''}
+                      </span> 
+                      {item.type === 'Masuk' ? (
+                        <> mendaftarkan barang masuk/restock berupa </>
+                      ) : (
+                        <> melakukan pengambilan barang untuk dikirim ke <span className="font-bold text-zinc-900 mr-1">{item.cabang}</span> berupa </>
+                      )}
+                      <span className="font-bold text-[#00664b] break-all">{item.qty} Unit {item.itemName}</span>.
+                    </p>
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
-                    <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
-                    <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0,10)}</span>
-                    <span className="text-zinc-500 font-medium flex items-center gap-1">
-                      <MapPin size={12} /> {item.cabang}{item.unit ? ` (${item.unit})` : ''}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1">
+                      <span><Hash size={12} className="inline mr-1 opacity-70" />{item.id}</span>
+                      <span><Clock size={12} className="inline mr-1 opacity-70" />{new Date(item.date).toISOString().slice(0, 10)}</span>
+                      <span className="text-zinc-500 font-medium flex items-center gap-1">
+                        <MapPin size={12} /> {item.cabang}{item.unit ? ` (${item.unit})` : ''}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
-                  <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
-                    item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
-                  }`}>
-                    <Package size={13} /> {item.type}
+                  <div className="flex flex-row items-center gap-2 sm:self-start shrink-0">
+                    <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold border ${
+                      item.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-100'
+                    }`}>
+                      <Package size={13} /> {item.type}
+                    </div>
+                    {getStatusBadge(item.managerStatus)}
                   </div>
-                  {getStatusBadge(item.managerStatus)}
                 </div>
               </div>
             </div>
-          </div>
-        ))
-      )}
+          ))}
 
-      {/* MODAL KONFIRMASI HAPUS RIWAYAT */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 p-8 text-center animate-in zoom-in-95 duration-200 relative">
-            <button 
-              onClick={() => setIsDeleteModalOpen(false)} 
-              className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-red-500 rounded-lg cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 ${!hasDownloaded ? 'bg-amber-100' : 'bg-red-100'}`}>
-              <AlertTriangle className={`w-8 h-8 ${!hasDownloaded ? 'text-amber-500' : 'text-red-500'}`} />
-            </div>
-
-            <h3 className="text-xl font-bold text-zinc-900 mb-2">
-              {!hasDownloaded ? 'Peringatan Keamanan' : 'Hapus Permanen Riwayat?'}
-            </h3>
-
-            <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
-              {!hasDownloaded ? (
-                <>Anda <b>wajib mengunduh (Export Laporan & Laporan Opname)</b> data ini ke format Excel (XLSX) terlebih dahulu sebelum sistem mengizinkan penghapusan riwayat untuk keperluan audit.</>
-              ) : (
-                <>Apakah Anda yakin ingin menghapus <b>{filteredHistory.length} riwayat</b> dari database untuk periode {periodType === 'Semua' ? 'Semua Waktu' : periodType === 'Bulan' ? `Bulan ${selectedMonth}-${selectedYear}` : `Tahun ${selectedYear}`}?</>
-              )}
+          {/* CONTROLLER PAGINATION */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 px-1 select-none">
+            <p className="text-xs font-medium text-white/90">
+              Menampilkan <span className="font-bold text-white">{startIndex + 1}</span>–<span className="font-bold text-white">{Math.min(startIndex + ITEMS_PER_PAGE, filteredHistory.length)}</span> dari <span className="font-bold text-white">{filteredHistory.length}</span> aktivitas
             </p>
 
-            <div className="flex justify-center gap-3">
-              {!hasDownloaded ? (
-                <button 
-                  onClick={() => setIsDeleteModalOpen(false)} 
-                  className="w-full px-6 py-2.5 text-sm font-semibold bg-zinc-100 text-zinc-600 hover:bg-zinc-200 rounded-xl transition-colors cursor-pointer"
-                >
-                  Kembali & Unduh Laporan
-                </button>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => setIsDeleteModalOpen(false)} 
-                    className="flex-1 px-6 py-2.5 text-sm font-semibold text-zinc-600 border border-zinc-200 hover:bg-zinc-50 rounded-xl transition-colors cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={handleDeleteHistory} 
-                    className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    Ya, Hapus
-                  </button>
-                </>
-              )}
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl shadow-md border border-zinc-200/80">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-[#00664b] hover:bg-emerald-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 transition-colors cursor-pointer"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              <div className="text-xs font-semibold text-zinc-700 px-2 tracking-wide">
+                Hal <span className="font-bold text-[#00664b]">{currentPage}</span> / {totalPages}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-[#00664b] hover:bg-emerald-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 transition-colors cursor-pointer"
+                title="Halaman Berikutnya"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         </div>
