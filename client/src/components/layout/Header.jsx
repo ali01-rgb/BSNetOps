@@ -227,7 +227,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 mt-2 w-84 bg-white border border-zinc-200 shadow-2xl rounded-xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
+            <div className="absolute right-0 mt-2 w-84 sm:w-96 bg-white border border-zinc-200 shadow-2xl rounded-xl p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50 text-zinc-700">
               
               {/* HEADER DROPDOWN NOTIFIKASI */}
               <div className="px-4 py-3 bg-white border-b border-zinc-100 flex items-center justify-between">
@@ -267,8 +267,8 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
                         onClick={() => handleNotifClick(notif.id, notif.target)}
                         className="px-4 py-3 flex items-start gap-3 cursor-pointer relative group bg-white hover:bg-zinc-50 border-b border-zinc-100 last:border-0"
                       >
-                        <div className="flex items-center gap-2 pt-0.5">
-                          {/* 🔥 DOT INDIKATOR */}
+                        {/* 🔥 Ikon & Dot diberi shrink-0 agar tidak mengecil/gepeng */}
+                        <div className="flex items-center gap-2 pt-0.5 shrink-0">
                           {isUnread ? (
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
                           ) : (
@@ -277,11 +277,12 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
                           {renderNotifIcon(notif.type, isUnread)}
                         </div>
 
-                        <div className="flex-1 pr-6">
-                          <p className={`text-[13px] font-bold mb-0.5 ${isUnread ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                        {/* 🔥 min-w-0 + break-words agar teks panjang otomatis turun ke baris berikutnya */}
+                        <div className="flex-1 min-w-0 pr-6">
+                          <p className={`text-[13px] font-bold mb-0.5 break-words leading-snug ${isUnread ? 'text-zinc-900' : 'text-zinc-500'}`}>
                             {notif.title}
                           </p>
-                          <p className={`text-[11px] leading-snug mb-1.5 ${isUnread ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                          <p className={`text-[11px] leading-relaxed mb-1.5 break-words ${isUnread ? 'text-zinc-700 font-medium' : 'text-zinc-400'}`}>
                             {notif.message}
                           </p>
                           <p className="text-[10px] text-zinc-400 font-medium">
@@ -292,7 +293,7 @@ export default function Header({ isOpen, setIsOpen, role = 'admin', setCurrentVi
                         {/* 🔥 TOMBOL X UNTUK HAPUS */}
                         <button
                           onClick={(e) => handleDeleteNotif(e, notif.id)}
-                          className="absolute right-3 top-3.5 p-1 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          className="absolute right-3 top-3.5 p-1 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
                           title="Hapus"
                         >
                           <X size={14} />

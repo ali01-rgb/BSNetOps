@@ -263,7 +263,7 @@ export default function PenyetujuanBarang() {
     alasanDibutuhkan: selectedRequest.keteranganPemohon,
     namaLengkap: selectedRequest.pemohon,
     status: selectedRequest.status,
-    adminName: selectedRequest.adminName || loggedInProfile.fullName || 'Admin Gudang',
+    adminName: selectedRequest.adminName || loggedInProfile.fullName || loggedInProfile.namaLengkap || 'Admin Gudang',
     managerName: selectedRequest.managerName || 'Manager Operasional'
   } : {};
 
@@ -301,13 +301,13 @@ export default function PenyetujuanBarang() {
         <table className="w-full text-sm text-left table-fixed">
           <thead className="bg-[#58a27d] text-white text-xs uppercase font-semibold">
             <tr>
-              <th className="p-4 w-[16%]">ID Permintaan</th>
-              <th className="p-4 w-[20%]">Pemohon</th>
-              <th className="p-4 w-[14%]">Cabang</th>
-              <th className="p-4 w-[13%]">Unit</th>
-              <th className="p-4 w-[14%]">Tgl Dibutuhkan</th>
-              <th className="p-4 w-[11%] text-center">Status</th>
-              <th className="p-4 w-[12%] text-center">Aksi</th>
+              <th className="p-4 w-[14%]">ID Permintaan</th>
+              <th className="p-4 w-[16%]">Pemohon</th>
+              <th className="p-4 w-[13%]">Cabang</th>
+              <th className="p-4 w-[12%]">Unit</th>
+              <th className="p-4 w-[13%]">Tgl Dibutuhkan</th>
+              <th className="p-4 w-[18%] text-center">Status</th>
+              <th className="p-4 w-[14%] text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -326,14 +326,14 @@ export default function PenyetujuanBarang() {
                     <td className="p-4 text-zinc-600 font-medium truncate" title={req.unit}>{req.unit}</td>
                     <td className="p-4 text-zinc-600 truncate">{req.tanggal}</td>
                     <td className="p-4 text-center">
-                      <span className={`px-2.5 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-wider border ${statusData.color}`}>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-[10px] uppercase font-bold tracking-wide border whitespace-nowrap ${statusData.color}`}>
                         {statusData.label}
                       </span>
                     </td>
                     <td className="p-4 flex justify-center">
                       <button 
                         onClick={() => handleReview(req)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00664b] text-white hover:bg-[#00553e] rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00664b] text-white hover:bg-[#00553e] rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap"
                       >
                         <CheckSquare size={14} /> Review / Bon
                       </button>
