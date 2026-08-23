@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaXmark, FaEye, FaEyeSlash, FaCircleCheck } from "react-icons/fa6";
+import { FaXmark, FaEye, FaEyeSlash, FaCircleCheck, FaWhatsapp } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { API_URL } from '@/api';
@@ -9,12 +9,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [form, setForm] = useState({ username: "", password: "", remember: false });
   const [error, setError] = useState({ username: "", password: "" });
 
   const [showForgotModal, setShowForgotModal] = useState(false);
-  
+
   // 🔥 STATE UNTUK FIRST LOGIN PASSWORD CHANGE
   const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
   const [tempToken, setTempToken] = useState("");
@@ -178,17 +178,19 @@ export default function LoginPage() {
 
             <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-5 mb-7 text-center">
               <p className="text-[13px] text-amber-900 font-medium leading-relaxed">
-                Untuk mereset password akun Anda, silakan hubungi <b>Administrator / HRD BSN</b> secara langsung.
+                Untuk mereset password akun Anda, silakan hubungi <b>Administrator / HRD BSN</b> secara langsung melalui WhatsApp.
               </p>
             </div>
 
             <div className="flex gap-3">
-              <button 
-                onClick={() => setShowForgotModal(false)}
-                className="flex-1 rounded-xl bg-slate-100 py-3 text-[13px] font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+              <a 
+                href="https://wa.me/6285338929242?text=Halo%20Administrator%2C%20saya%20butuh%20bantuan%20untuk%20mereset%20password%20akun%20BSNetOps%20saya."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#00634b] hover:bg-[#004d3a] py-3 text-[13px] font-bold text-white shadow-md shadow-[#00634b]/20 transition-all cursor-pointer"
               >
-                Saya Mengerti
-              </button>
+                <FaWhatsapp size={16} /> Hubungi Administrator
+              </a>
             </div>
           </div>
         </div>
@@ -270,7 +272,7 @@ export default function LoginPage() {
       {/* FORM LOGIN UTAMA */}
       <section className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="relative w-full max-w-[420px] rounded-[24px] bg-white px-8 py-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-          
+
           {/* 🔥 TOMBOL X UNTUK KEMBALI KE LANDING PAGE */}
           <button 
             type="button"
