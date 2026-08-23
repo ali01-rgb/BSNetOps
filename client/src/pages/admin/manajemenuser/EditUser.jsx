@@ -16,14 +16,19 @@ export default function EditUser({ userData, onClose, onSave }) {
 
   useEffect(() => {
     if (userData) {
+      // Normalisasi unit jika data lama bernilai null / '-' / kosong
+      const currentUnit = (userData.unit && userData.unit !== '-') 
+        ? userData.unit 
+        : (userData.divisi && userData.divisi !== '-' ? userData.divisi : 'CWO');
+
       setFormData({
         id: userData.id || '',
         originalId: userData.originalId || '',
         name: userData.name || '',
-        password: '', // Kosong secara default jika tidak ingin ganti password
+        password: '', // Dikosongkan secara default (hanya diisi jika ingin ganti password)
         role: userData.role || 'User',
         cabang: userData.cabang || 'KC Semarang',
-        unit: userData.unit || 'CWO',
+        unit: currentUnit,
         isSuspended: userData.isSuspended || false,
         isDeleted: userData.isDeleted || false 
       });
@@ -61,15 +66,15 @@ export default function EditUser({ userData, onClose, onSave }) {
             />
           </div>
 
-          {/* 🔥 EMAIL DIGANTI MENJADI GANTI PASSWORD */}
+          {/* 🔥 GANTI PASSWORD BARU */}
           <div>
             <label className="block text-sm font-semibold text-zinc-700 mb-1">Ganti Password Baru</label>
             <input 
               type="password" 
-              placeholder="Kosongkan jika tidak ingin mengubah password"
+              placeholder="Kosongkan jika tidak ingin mengubah password akun ini"
               value={formData.password} 
               onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
-              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white" 
+              className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] focus:bg-white placeholder:text-zinc-400" 
             />
           </div>
 
@@ -81,7 +86,6 @@ export default function EditUser({ userData, onClose, onSave }) {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })} 
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
               >
-                {/* 🔥 LOGIKA ROLE: Jika Manager, cuma bisa Manager. Jika User/Admin, hanya bisa User/Admin */}
                 {userData?.role === 'Manager' ? (
                   <option value="Manager">Manager</option>
                 ) : (
@@ -110,7 +114,7 @@ export default function EditUser({ userData, onClose, onSave }) {
             </div>
           </div>
 
-          {/* 🔥 STATUS KEAKTIFAN & UNIT BERDAMPINGAN */}
+          {/* 🔥 STATUS KEAKTIFAN & 11 UNIT RESMI BERDAMPINGAN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 mb-1">Status Keaktifan Akun</label>
@@ -132,13 +136,16 @@ export default function EditUser({ userData, onClose, onSave }) {
                 className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-[#00664b] bg-white cursor-pointer"
               >
                 <option value="CWO">CWO</option>
-                <option value="Teller">Teller</option>
-                <option value="Customer Service">Customer Service</option>
+                <option value="FA & FD">FA & FD</option>
+                <option value="Accounting">Accounting</option>
                 <option value="Operasional">Operasional</option>
-                <option value="Logistik">Logistik</option>
-                <option value="IT Support">IT Support</option>
-                <option value="SDM / HRD">SDM / HRD</option>
-                <option value="Umum">Umum</option>
+                <option value="Teller">Teller</option>
+                <option value="FS">FS</option>
+                <option value="CS">CS</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Sekretaris">Sekretaris</option>
+                <option value="Funding">Funding</option>
+                <option value="Consumer">Consumer</option>
               </select>
             </div>
           </div>
